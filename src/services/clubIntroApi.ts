@@ -17,11 +17,6 @@ export type ClubIntroResponse = ClubIntroPayload & {
   modifiedDate?: string;
 };
 
-export const testApiConnection = async () => {
-  const response = await axiosInstance.get("/api/club-project");
-  return response.data;
-};
-
 export const getClubIntroList = async (): Promise<ClubIntroResponse[]> => {
   const response = await axiosInstance.get("/api/club-intro");
   return response.data;
@@ -57,9 +52,13 @@ export const updateClubIntroImage = async (
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await axiosInstance.put(`/api/club-intro/${id}/image`, formData, {
-    responseType: "text",
-  });
+  const response = await axiosInstance.put(
+    `/api/club-intro/${id}/image`,
+    formData,
+    {
+      responseType: "text",
+    }
+  );
 
   return response.data;
 };
