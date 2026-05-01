@@ -4,17 +4,17 @@ import {
   createClubIntro,
   deleteClubIntro,
   getClubIntroList,
+  uploadClubIntroImage,
   type ClubIntroPayload,
   type ClubIntroResponse,
 } from "../../services/clubIntroApi";
-import { uploadImageToR2 } from "../../services/uploadApi";
 
 const initialForm: ClubIntroPayload = {
   title: "",
   subTitle: "",
   bannerUrl: "",
-  isActive: 1,
-  updatedBy: 1,
+  isActive: true,
+  updatedBy: "admin01",
 };
 
 export default function ClubIntroManagePage() {
@@ -60,8 +60,8 @@ export default function ClubIntroManagePage() {
       setForm((prev) => ({
         ...prev,
         [key]:
-          key === "isActive" || key === "updatedBy"
-            ? Number(value || 0)
+          key === "isActive"
+            ? value === "true" || value === "1"
             : value,
       }));
     };
@@ -87,7 +87,7 @@ export default function ClubIntroManagePage() {
       setIsUploading(true);
       setUploadMessage("");
 
-      const imageUrl = await uploadImageToR2(selectedFile, "club");
+      const imageUrl = await uploadClubIntroImage(selectedFile);
       setUploadedUrl(imageUrl);
       setForm((prev) => ({ ...prev, bannerUrl: imageUrl }));
       setUploadMessage("이미지 업로드가 완료되었습니다.");
@@ -239,8 +239,7 @@ export default function ClubIntroManagePage() {
                 <S.Field>
                   <S.FieldLabel>isActive</S.FieldLabel>
                   <S.Input
-                    type='number'
-                    value={form.isActive}
+                    value={String(form.isActive)}
                     onChange={handleTextChange("isActive")}
                   />
                 </S.Field>
@@ -248,7 +247,6 @@ export default function ClubIntroManagePage() {
                 <S.Field>
                   <S.FieldLabel>updatedBy</S.FieldLabel>
                   <S.Input
-                    type='number'
                     value={form.updatedBy}
                     onChange={handleTextChange("updatedBy")}
                   />

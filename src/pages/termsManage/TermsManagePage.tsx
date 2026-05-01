@@ -15,6 +15,7 @@ const initialForm: TermsPayload = {
   isCurrent: true,
   sortOrder: 1,
   version: "1.0",
+  updatedBy: "admin01",
 };
 
 export default function TermsManagePage() {
