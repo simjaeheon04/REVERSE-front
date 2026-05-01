@@ -30,12 +30,28 @@ export const getProjectList = async (): Promise<ClubProject[]> => {
 export const uploadProjectImage = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("folder", "project");
 
   const response = await axiosInstance.post(
     "/api/club-project/image",
-    formData
+    formData,
+    {
+      responseType: "text",
+    }
   );
+  return response.data;
+};
+
+export const updateProjectImage = async (
+  id: number | string,
+  file: File
+): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axiosInstance.put(`/api/club-project/${id}/image`, formData, {
+    responseType: "text",
+  });
+
   return response.data;
 };
 
@@ -48,6 +64,19 @@ export const createProject = async (
       "Content-Type": "application/json",
     },
   });
+  return response.data;
+};
+
+export const updateProject = async (
+  id: number | string,
+  payload: ClubProjectPayload
+): Promise<ClubProject> => {
+  const response = await axiosInstance.put(`/api/club-project/${id}`, payload, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
   return response.data;
 };
 
