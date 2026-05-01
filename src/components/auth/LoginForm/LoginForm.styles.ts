@@ -12,6 +12,15 @@ export const BottomText = styled.div`
   text-align: center;
 `;
 
+export const ErrorText = styled.p`
+  margin-top: 12px;
+  color: #8b1020;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+`;
+
 export const SignUpButton = styled.button`
   border: none;
   background: none;
