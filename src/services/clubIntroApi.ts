@@ -4,8 +4,8 @@ export type ClubIntroPayload = {
   title: string;
   subTitle: string;
   bannerUrl: string;
-  isActive: number;
-  updatedBy: number;
+  isActive: boolean;
+  updatedBy: string;
 };
 
 export type ClubIntroResponse = ClubIntroPayload & {
@@ -13,7 +13,8 @@ export type ClubIntroResponse = ClubIntroPayload & {
   id?: number;
   createdAt?: string;
   updatedAt?: string;
-  isActive?: boolean | number;
+  createdDate?: string;
+  modifiedDate?: string;
 };
 
 export const testApiConnection = async () => {
@@ -30,6 +31,44 @@ export const createClubIntro = async (
   payload: ClubIntroPayload
 ): Promise<ClubIntroResponse> => {
   const response = await axiosInstance.post("/api/club-intro", payload, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return response.data;
+};
+
+export const uploadClubIntroImage = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axiosInstance.post("/api/club-intro/image", formData, {
+    responseType: "text",
+  });
+
+  return response.data;
+};
+
+export const updateClubIntroImage = async (
+  id: number | string,
+  file: File
+): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axiosInstance.put(`/api/club-intro/${id}/image`, formData, {
+    responseType: "text",
+  });
+
+  return response.data;
+};
+
+export const updateClubIntro = async (
+  id: number | string,
+  payload: ClubIntroPayload
+): Promise<ClubIntroResponse> => {
+  const response = await axiosInstance.put(`/api/club-intro/${id}`, payload, {
     headers: {
       "Content-Type": "application/json",
     },
