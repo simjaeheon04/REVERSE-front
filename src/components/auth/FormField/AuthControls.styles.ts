@@ -62,6 +62,11 @@ export const PrimaryButton = styled.button`
   &:hover {
     filter: brightness(1.02);
   }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 `;
 
 export const GhostButton = styled.button`
