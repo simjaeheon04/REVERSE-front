@@ -1,5 +1,7 @@
-import * as S from "./CalendarSection.styles";
+import { useEffect, useMemo } from "react";
 import heroImage from "../../assets/images/calendar-bg.jpg";
+import { useCalendarStore } from "../../stores/calendarStore";
+import * as S from "./CalendarSection.styles";
 
 type CalendarDay = {
   day: number | null;
@@ -9,63 +11,101 @@ type CalendarDay = {
   clubEventColor?: "blue" | "white";
 };
 
-const CALENDAR_WEEKS: CalendarDay[][] = [
-  [
-    { day: 1, holiday: "3.1절", holidayColor: "blue" },
-    { day: 2, holiday: "대체공휴일", holidayColor: "blue" },
-    { day: 3, clubEvent: "개강", clubEventColor: "white" },
-    { day: 4 },
-    { day: 5 },
-    { day: 6 },
-    { day: 7 },
-  ],
-  [
-    { day: 8 },
-    { day: 9 },
-    { day: 10 },
-    { day: 11 },
-    { day: 12 },
-    { day: 13 },
-    { day: 14 },
-  ],
-  [
-    { day: 15 },
-    { day: 16 },
-    { day: 17 },
-    { day: 18, clubEvent: "임원 대면 회의", clubEventColor: "white" },
-    { day: 19, clubEvent: "동아리 OT", clubEventColor: "white" },
-    { day: 20 },
-    { day: 21 },
-  ],
-  [
-    { day: 22 },
-    { day: 23 },
-    { day: 24 },
-    { day: 25 },
-    { day: 26 },
-    { day: 27 },
-    { day: 28 },
-  ],
-  [
-    { day: 29 },
-    { day: 30 },
-    { day: 31 },
-    { day: null },
-    { day: null },
-    { day: null },
-    { day: null },
-  ],
-];
+const monthLabelFormatter = new Intl.DateTimeFormat("ko-KR", {
+  month: "numeric",
+});
 
-const EVENT_SUMMARY = [
-  "3.1 삼일절",
-  "3.2 대체공휴일",
-  "3.3 개강",
-  "3.18 임원 대면 회의",
-  "3.19 동아리 OT",
-];
+const buildCalendarWeeks = (
+  year: number,
+  month: number,
+  holidays: ReturnType<typeof useCalendarStore.getState>["holidays"],
+  schedules: ReturnType<typeof useCalendarStore.getState>["schedules"]
+) => {
+  const firstDay = new Date(year, month - 1, 1);
+  const lastDate = new Date(year, month, 0).getDate();
+  const firstWeekday = firstDay.getDay();
+  const holidayMap = new Map(
+    holidays.map((holiday) => [holiday.holidayDate, holiday.holidayName])
+  );
+  const scheduleMap = new Map<string, string>();
+
+  schedules.forEach((schedule) => {
+    if (!scheduleMap.has(schedule.startDate)) {
+      scheduleMap.set(schedule.startDate, schedule.title);
+    }
+  });
+
+  const cells: CalendarDay[] = Array.from({ length: firstWeekday }, () => ({
+    day: null,
+  }));
+
+  for (let day = 1; day <= lastDate; day += 1) {
+    const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(
+      day
+    ).padStart(2, "0")}`;
+    const holiday = holidayMap.get(dateKey);
+    const clubEvent = scheduleMap.get(dateKey);
+
+    cells.push({
+      day,
+      holiday,
+      clubEvent,
+      holidayColor: holiday ? "blue" : undefined,
+      clubEventColor: clubEvent ? "white" : undefined,
+    });
+  }
+
+  while (cells.length % 7 !== 0) {
+    cells.push({ day: null });
+  }
+
+  return Array.from({ length: cells.length / 7 }, (_, index) =>
+    cells.slice(index * 7, index * 7 + 7)
+  );
+};
+
+const moveMonth = (year: number, month: number, amount: number) => {
+  const nextDate = new Date(year, month - 1 + amount, 1);
+  return {
+    year: nextDate.getFullYear(),
+    month: nextDate.getMonth() + 1,
+  };
+};
 
 export default function CalendarSection() {
+  const year = useCalendarStore((state) => state.year);
+  const month = useCalendarStore((state) => state.month);
+  const schedules = useCalendarStore((state) => state.schedules);
+  const holidays = useCalendarStore((state) => state.holidays);
+  const isLoading = useCalendarStore((state) => state.isLoading);
+  const error = useCalendarStore((state) => state.error);
+  const fetchMonth = useCalendarStore((state) => state.fetchMonth);
+
+  useEffect(() => {
+    void fetchMonth();
+  }, [fetchMonth]);
+
+  const calendarWeeks = useMemo(
+    () => buildCalendarWeeks(year, month, holidays, schedules),
+    [year, month, holidays, schedules]
+  );
+
+  const eventSummary = useMemo(() => {
+    const holidaySummary = holidays.map(
+      (holiday) => `${holiday.holidayDate} ${holiday.holidayName}`
+    );
+    const scheduleSummary = schedules.map(
+      (schedule) => `${schedule.startDate} ${schedule.title}`
+    );
+
+    return [...holidaySummary, ...scheduleSummary];
+  }, [holidays, schedules]);
+
+  const handleMoveMonth = (amount: number) => {
+    const next = moveMonth(year, month, amount);
+    void fetchMonth(next.year, next.month);
+  };
+
   return (
     <S.Wrapper>
       <S.Hero $image={heroImage}>
@@ -85,41 +125,62 @@ export default function CalendarSection() {
 
       <S.Section>
         <S.Content>
-          <S.YearText>2026</S.YearText>
-          <S.MonthText>3월</S.MonthText>
+          <S.YearText>{year}</S.YearText>
+
+          <S.MonthHeader>
+            <S.MonthNavButton type='button' onClick={() => handleMoveMonth(-1)}>
+              ‹
+            </S.MonthNavButton>
+            <S.MonthText>
+              {monthLabelFormatter.format(new Date(year, month - 1, 1))}
+            </S.MonthText>
+            <S.MonthNavButton type='button' onClick={() => handleMoveMonth(1)}>
+              ›
+            </S.MonthNavButton>
+          </S.MonthHeader>
+
+          {isLoading ? (
+            <S.StateMessage>일정 정보를 불러오는 중입니다.</S.StateMessage>
+          ) : null}
+
+          {error ? <S.StateMessage>{error}</S.StateMessage> : null}
 
           <S.CalendarBox>
             <S.Grid>
-              {CALENDAR_WEEKS.flat().map((item, index) => (
+              {calendarWeeks.flat().map((item, index) => (
                 <S.Cell key={`${item.day}-${index}`}>
-                  {item.day !== null && (
+                  {item.day !== null ? (
                     <S.DayNumber
                       $variant={item.holidayColor || item.clubEventColor}
                     >
                       {item.day}
                     </S.DayNumber>
-                  )}
+                  ) : null}
 
-                  {item.holiday && (
+                  {item.holiday ? (
                     <S.HolidayText $variant={item.holidayColor ?? "blue"}>
                       {item.holiday}
                     </S.HolidayText>
-                  )}
+                  ) : null}
 
-                  {item.clubEvent && (
+                  {item.clubEvent ? (
                     <S.EventText $variant={item.clubEventColor ?? "white"}>
                       {item.clubEvent}
                     </S.EventText>
-                  )}
+                  ) : null}
                 </S.Cell>
               ))}
             </S.Grid>
           </S.CalendarBox>
 
           <S.EventSummaryBox>
-            {EVENT_SUMMARY.map((event) => (
-              <S.EventSummaryItem key={event}>• {event}</S.EventSummaryItem>
-            ))}
+            {eventSummary.length > 0 ? (
+              eventSummary.map((event) => (
+                <S.EventSummaryItem key={event}>• {event}</S.EventSummaryItem>
+              ))
+            ) : (
+              <S.EventSummaryItem>등록된 일정이 없습니다.</S.EventSummaryItem>
+            )}
           </S.EventSummaryBox>
         </S.Content>
       </S.Section>
