@@ -10,6 +10,7 @@ export default function Header({
   menus,
   logo = "REVERSE",
   loginText = "LOGIN",
+  loginDisabled = false,
   onLogoClick,
   onLoginClick,
 }: HeaderProps) {
@@ -112,7 +113,11 @@ export default function Header({
             )}
           </S.NavArea>
 
-          <S.LoginButton type="button" onClick={onLoginClick}>
+          <S.LoginButton
+            type="button"
+            onClick={onLoginClick}
+            disabled={loginDisabled}
+          >
             {loginText}
           </S.LoginButton>
         </S.RightArea>

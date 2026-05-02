@@ -19,6 +19,7 @@ export interface HeaderProps {
   menus: HeaderMenuItem[];
   logo?: string;
   loginText?: string;
+  loginDisabled?: boolean;
   onLogoClick?: () => void;
   onLoginClick?: () => void;
 }

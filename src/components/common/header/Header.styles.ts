@@ -110,6 +110,12 @@ export const LoginButton = styled.button`
     color: #373b4c;
     transform: translateY(-1px);
   }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+  }
 `;
 
 export const MegaMenuWrap = styled.div`
