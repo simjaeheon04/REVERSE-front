@@ -108,18 +108,16 @@ export default function RecruitApplyForm() {
         : values.emailDomain;
 
     const payload = {
-        recruitmentId: activeRecruitment.id,
-        applicantName: values.name.trim(),
-        department: values.major.trim(),
-        studentNumber: values.studentId.trim(),
-        phoneNumber: values.phone.trim(),
-        grade: Number(values.grade.replace(/\D/g, "")),
-        email: `${values.emailLocal.trim()}@${emailDomain}`,
-        termsAgreed: values.isPrivacyAgreed,
-        applyFields: values.supportFields,
-      };
-
-    console.log("[recruit/apply] payload", payload);
+      recruitmentId: activeRecruitment.id,
+      applicantName: values.name.trim(),
+      department: values.major.trim(),
+      studentNumber: values.studentId.trim(),
+      phoneNumber: values.phone.trim(),
+      grade: Number(values.grade.replace(/\D/g, "")),
+      email: `${values.emailLocal.trim()}@${emailDomain}`,
+      termsAgreed: values.isPrivacyAgreed,
+      applyFields: values.supportFields,
+    };
 
     try {
       await submitApplication(payload);
@@ -130,11 +128,6 @@ export default function RecruitApplyForm() {
       setIsSubmitConfirmOpen(false);
     }
   };
-
-  const emailDomain =
-    values.emailDomain === CUSTOM_EMAIL_DOMAIN
-      ? values.customEmailDomain.trim()
-      : values.emailDomain;
 
   return (
     <>
