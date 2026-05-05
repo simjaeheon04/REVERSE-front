@@ -38,7 +38,7 @@ export default function RecruitApplyInfo() {
           <span>
             회장 박시연: 010-000-0000
             <br />
-            부회장 홍길동: 010-000-0000
+            부회장 홍정민: 010-000-0000
           </span>
         </S.ContactItem>
 
