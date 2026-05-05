@@ -154,25 +154,26 @@ export const HolidayText = styled.span<{ $variant?: "blue" | "white" }>`
   word-break: keep-all;
 `;
 
-export const DayNumber = styled.span<{ $variant?: "blue" | "white" }>`
+export const DayNumber = styled.span<{ $variant?: "blue" | "white"; $color?: string }>`
   position: absolute;
   top: 10px;
   left: 10px;
 
-  color: ${({ $variant }) => ($variant === "blue" ? "#70e0ff" : "#8088a7")};
+  color: ${({ $variant, $color }) =>
+    $variant === "blue" ? "#70e0ff" : $color || "#8088a7"};
   font-size: 18px;
   font-weight: 400;
   line-height: 1;
 `;
 
-export const EventText = styled.p<{ $variant: "blue" | "white" }>`
+export const EventText = styled.p<{ $color?: string }>`
   position: absolute;
   top: 34px;
   left: 10px;
   right: 10px;
 
   margin: 0;
-  color: ${({ $variant }) => ($variant === "blue" ? "#70e0ff" : "#8088a7")};
+  color: ${({ $color }) => $color || "#8088a7"};
   font-size: 10px;
   font-weight: 500;
   line-height: 1.2;

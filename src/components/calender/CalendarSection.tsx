@@ -8,7 +8,7 @@ type CalendarDay = {
   holiday?: string;
   clubEvent?: string;
   holidayColor?: "blue" | "white";
-  clubEventColor?: "blue" | "white";
+  clubEventColor?: string;
 };
 
 const monthLabelFormatter = new Intl.DateTimeFormat("ko-KR", {
@@ -27,11 +27,14 @@ const buildCalendarWeeks = (
   const holidayMap = new Map(
     holidays.map((holiday) => [holiday.holidayDate, holiday.holidayName])
   );
-  const scheduleMap = new Map<string, string>();
+  const scheduleMap = new Map<string, { title: string; colorCode: string }>();
 
   schedules.forEach((schedule) => {
     if (!scheduleMap.has(schedule.startDate)) {
-      scheduleMap.set(schedule.startDate, schedule.title);
+      scheduleMap.set(schedule.startDate, {
+        title: schedule.title,
+        colorCode: schedule.colorCode,
+      });
     }
   });
 
@@ -49,9 +52,9 @@ const buildCalendarWeeks = (
     cells.push({
       day,
       holiday,
-      clubEvent,
+      clubEvent: clubEvent?.title,
       holidayColor: holiday ? "blue" : undefined,
-      clubEventColor: clubEvent ? "white" : undefined,
+      clubEventColor: clubEvent?.colorCode,
     });
   }
 
@@ -151,7 +154,8 @@ export default function CalendarSection() {
                 <S.Cell key={`${item.day}-${index}`}>
                   {item.day !== null ? (
                     <S.DayNumber
-                      $variant={item.holidayColor || item.clubEventColor}
+                      $variant={item.holidayColor}
+                      $color={!item.holidayColor ? item.clubEventColor : undefined}
                     >
                       {item.day}
                     </S.DayNumber>
@@ -164,7 +168,7 @@ export default function CalendarSection() {
                   ) : null}
 
                   {item.clubEvent ? (
-                    <S.EventText $variant={item.clubEventColor ?? "white"}>
+                    <S.EventText $color={item.clubEventColor}>
                       {item.clubEvent}
                     </S.EventText>
                   ) : null}
