@@ -20,6 +20,7 @@ export interface HeaderProps {
   logo?: string;
   loginText?: string;
   loginDisabled?: boolean;
+  canAccessAdmin?: boolean;
   onLogoClick?: () => void;
   onLoginClick?: () => void;
 }
