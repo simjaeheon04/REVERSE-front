@@ -7,15 +7,23 @@ import {
   type FieldPathValue,
 } from "react-hook-form";
 
-export const SUPPORT_FIELDS = ["메인 프로젝트", "토이 프로젝트", "스터디"];
+export const SUPPORT_FIELDS = [
+  { label: "메인 프로젝트", value: "메인프로젝트" },
+  { label: "토이 프로젝트", value: "토이프로젝트" },
+  { label: "스터디", value: "스터디" },
+] as const;
+
 export const GRADES = ["1학년", "2학년", "3학년", "4학년"];
+
 export const EMAIL_DOMAINS = [
   "naver.com",
   "gmail.com",
   "nsu.ac.kr",
   "직접 입력",
 ];
+
 export const CUSTOM_EMAIL_DOMAIN = "직접 입력";
+
 export const INTERVIEW_TIMES = ["오후 5시", "오후 6시", "오후 7시", "오후 8시"];
 
 export type RecruitApplyFormValues = {
@@ -84,8 +92,7 @@ export default function useRecruitApplyForm() {
     register("interviewDate", { required: "면접 일정을 선택해 주세요." });
     register("interviewTime", { required: "면접 시간을 선택해 주세요." });
     register("isPrivacyAgreed", {
-      validate: (value) =>
-        value || "개인정보 수집 및 이용 동의가 필요합니다.",
+      validate: (value) => value || "개인정보 수집 및 이용 동의가 필요합니다.",
     });
   }, [register]);
 
