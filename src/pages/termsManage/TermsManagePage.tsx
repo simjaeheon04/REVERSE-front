@@ -8,6 +8,7 @@ import {
   type TermsPayload,
   type TermsResponse,
 } from "../../services/termsApi";
+import { useAuthStore } from "../../stores/authStore";
 
 const initialForm: TermsPayload = {
   title: "",
@@ -15,10 +16,11 @@ const initialForm: TermsPayload = {
   isCurrent: true,
   sortOrder: 1,
   version: "1.0",
-  updatedBy: "admin01",
+  updatedBy: "",
 };
 
 export default function TermsManagePage() {
+  const userId = useAuthStore((state) => state.userId);
   const [createForm, setCreateForm] = useState<TermsPayload>(initialForm);
   const [updateId, setUpdateId] = useState("");
   const [updateForm, setUpdateForm] = useState<TermsPayload>(initialForm);
@@ -51,6 +53,17 @@ export default function TermsManagePage() {
   useEffect(() => {
     loadTerms();
   }, []);
+
+  useEffect(() => {
+    setCreateForm((prev) => ({
+      ...prev,
+      updatedBy: userId ?? "",
+    }));
+    setUpdateForm((prev) => ({
+      ...prev,
+      updatedBy: userId ?? "",
+    }));
+  }, [userId]);
 
   const handleChange =
     (

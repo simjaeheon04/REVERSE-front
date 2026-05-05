@@ -1,26 +1,30 @@
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import * as S from "./ProjectManagePage.styles";
 import {
   createProject,
   deleteProject,
+  getProjectList,
   uploadProjectImage,
   type ClubProject,
   type ClubProjectPayload,
 } from "../../services/projectAPI";
+import { useAuthStore } from "../../stores/authStore";
 
 const initialForm: ClubProjectPayload = {
   projectName: "",
   projectUrl: "",
   thumbnailUrl: "",
   sortOrder: 0,
-  updatedBy: "test",
+  updatedBy: "",
 };
 
 export default function ProjectManagePage() {
+  const userId = useAuthStore((state) => state.userId);
   const [form, setForm] = useState<ClubProjectPayload>(initialForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState("");
   const [response, setResponse] = useState<ClubProject | null>(null);
+  const [projects, setProjects] = useState<ClubProject[]>([]);
   const [deleteResponse, setDeleteResponse] = useState<unknown>(null);
   const [uploadMessage, setUploadMessage] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
@@ -29,8 +33,33 @@ export default function ProjectManagePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingList, setIsLoadingList] = useState(false);
 
   const activeThumbnailUrl = uploadedUrl || form.thumbnailUrl;
+
+  const loadProjects = async () => {
+    try {
+      setIsLoadingList(true);
+      const result = await getProjectList();
+      setProjects(Array.isArray(result) ? result : []);
+    } catch (error) {
+      console.error("project list fetch failed", error);
+      setProjects([]);
+    } finally {
+      setIsLoadingList(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadProjects();
+  }, []);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      updatedBy: userId ?? "",
+    }));
+  }, [userId]);
 
   const handleTextChange =
     (key: keyof ClubProjectPayload) =>
@@ -51,7 +80,7 @@ export default function ProjectManagePage() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setUploadMessage("업로드할 이미지를 먼저 선택해주세요.");
+      setUploadMessage("업로드할 이미지를 먼저 선택해 주세요.");
       return;
     }
 
@@ -89,6 +118,7 @@ export default function ProjectManagePage() {
       const result = await createProject(payload);
       setResponse(result);
       setSubmitMessage("프로젝트 등록이 완료되었습니다.");
+      await loadProjects();
     } catch (error) {
       console.error("project create failed", error);
       setSubmitMessage("프로젝트 등록에 실패했습니다.");
@@ -99,7 +129,7 @@ export default function ProjectManagePage() {
 
   const handleDelete = async () => {
     if (!deleteId.trim()) {
-      setDeleteMessage("삭제할 프로젝트 ID를 입력해주세요.");
+      setDeleteMessage("삭제할 프로젝트 ID를 입력해 주세요.");
       return;
     }
 
@@ -110,6 +140,7 @@ export default function ProjectManagePage() {
       const result = await deleteProject(deleteId.trim());
       setDeleteResponse(result);
       setDeleteMessage("프로젝트 삭제가 완료되었습니다.");
+      await loadProjects();
     } catch (error) {
       console.error("project delete failed", error);
       setDeleteMessage("프로젝트 삭제에 실패했습니다.");
@@ -125,8 +156,8 @@ export default function ProjectManagePage() {
           <S.Eyebrow>Project Admin</S.Eyebrow>
           <S.Title>프로젝트 관리</S.Title>
           <S.Description>
-            썸네일 이미지를 업로드하고, 프로젝트 등록과 삭제를 한 화면에서
-            처리할 수 있는 관리 페이지입니다.
+            썸네일 이미지를 업로드하고 프로젝트 등록, 조회, 삭제를 한 화면에서
+            처리할 수 있는 관리자 페이지입니다.
           </S.Description>
         </S.Header>
 
@@ -134,8 +165,8 @@ export default function ProjectManagePage() {
           <S.Card>
             <S.CardTitle>썸네일 업로드</S.CardTitle>
             <S.CardText>
-              이미지를 업로드한 뒤 반환된 URL을 등록 폼의
-              <code> thumbnailUrl </code>값으로 자동 반영합니다.
+              이미지를 업로드한 뒤 반환된 URL이 등록 요청의
+              <code> thumbnailUrl </code> 값으로 자동 반영됩니다.
             </S.CardText>
 
             <S.Field>
@@ -145,7 +176,7 @@ export default function ProjectManagePage() {
 
             <S.ButtonRow>
               <S.PrimaryButton type="button" onClick={handleUpload}>
-                {isUploading ? "업로드 중..." : "이미지 업로드"}
+                {isUploading ? "업로드 중.." : "이미지 업로드"}
               </S.PrimaryButton>
             </S.ButtonRow>
 
@@ -157,14 +188,12 @@ export default function ProjectManagePage() {
               {activeThumbnailUrl ? (
                 <S.PreviewImage src={activeThumbnailUrl} alt="thumbnail preview" />
               ) : (
-                <S.EmptyPreview>
-                  업로드 후 미리보기가 여기에 표시됩니다.
-                </S.EmptyPreview>
+                <S.EmptyPreview>업로드한 미리보기가 여기에 표시됩니다.</S.EmptyPreview>
               )}
               <S.MetaList>
                 <S.MetaLabel>선택 파일</S.MetaLabel>
                 <S.MetaValue>
-                  {selectedFile ? selectedFile.name : "선택된 파일이 없습니다."}
+                  {selectedFile ? selectedFile.name : "선택한 파일이 없습니다."}
                 </S.MetaValue>
                 <S.MetaLabel>업로드 URL</S.MetaLabel>
                 <S.MetaValue>
@@ -217,23 +246,26 @@ export default function ProjectManagePage() {
             </S.Field>
 
             <S.Field>
-              <S.FieldLabel>수정자</S.FieldLabel>
+              <S.FieldLabel>updatedBy</S.FieldLabel>
               <S.Input
                 value={form.updatedBy}
                 onChange={handleTextChange("updatedBy")}
-                placeholder="예: test"
+                placeholder={userId ?? ""}
               />
             </S.Field>
 
             <S.ButtonRow>
               <S.PrimaryButton type="button" onClick={handleSubmit}>
-                {isSubmitting ? "등록 중..." : "프로젝트 등록"}
+                {isSubmitting ? "등록 중.." : "프로젝트 등록"}
               </S.PrimaryButton>
 
               <S.SecondaryButton
                 type="button"
                 onClick={() => {
-                  setForm(initialForm);
+                  setForm({
+                    ...initialForm,
+                    updatedBy: userId ?? "",
+                  });
                   setUploadedUrl("");
                   setResponse(null);
                   setUploadMessage("");
@@ -270,9 +302,24 @@ export default function ProjectManagePage() {
           </S.Card>
 
           <S.Card>
+            <S.CardTitle>프로젝트 목록 조회</S.CardTitle>
+            <S.CardText>
+              <code>GET /api/club-project</code> 응답을 그대로 확인할 수 있습니다.
+            </S.CardText>
+
+            <S.ButtonRow>
+              <S.SecondaryButton type="button" onClick={loadProjects}>
+                {isLoadingList ? "불러오는 중.." : "목록 새로고침"}
+              </S.SecondaryButton>
+            </S.ButtonRow>
+
+            <S.CodeBlock>{JSON.stringify(projects, null, 2)}</S.CodeBlock>
+          </S.Card>
+
+          <S.Card>
             <S.CardTitle>프로젝트 삭제</S.CardTitle>
             <S.CardText>
-              삭제할 프로젝트의 ID를 입력한 뒤{" "}
+              삭제할 프로젝트 ID를 입력하면
               <code>DELETE /api/club-project/{`{id}`}</code> 요청을 보냅니다.
             </S.CardText>
 
@@ -280,8 +327,8 @@ export default function ProjectManagePage() {
               <S.FieldLabel>프로젝트 ID</S.FieldLabel>
               <S.Input
                 value={deleteId}
-                onChange={(e) => {
-                  setDeleteId(e.target.value);
+                onChange={(event) => {
+                  setDeleteId(event.target.value);
                   setDeleteMessage("");
                 }}
                 placeholder="삭제할 프로젝트 ID"
@@ -290,7 +337,7 @@ export default function ProjectManagePage() {
 
             <S.ButtonRow>
               <S.DangerButton type="button" onClick={handleDelete}>
-                {isDeleting ? "삭제 중..." : "프로젝트 삭제"}
+                {isDeleting ? "삭제 중.." : "프로젝트 삭제"}
               </S.DangerButton>
             </S.ButtonRow>
 

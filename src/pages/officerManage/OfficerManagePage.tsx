@@ -8,6 +8,7 @@ import {
   type OfficerPayload,
   type OfficerResponse,
 } from "../../services/officerApi";
+import { useAuthStore } from "../../stores/authStore";
 
 const initialForm: OfficerPayload = {
   name: "",
@@ -18,10 +19,11 @@ const initialForm: OfficerPayload = {
   photoUrl: "",
   sortOrder: 0,
   isVisible: true,
-  updatedBy: "test",
+  updatedBy: "",
 };
 
 export default function OfficerManagePage() {
+  const userId = useAuthStore((state) => state.userId);
   const [form, setForm] = useState<OfficerPayload>(initialForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState("");
@@ -53,8 +55,15 @@ export default function OfficerManagePage() {
   };
 
   useEffect(() => {
-    loadOfficers();
+    void loadOfficers();
   }, []);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      updatedBy: userId ?? "",
+    }));
+  }, [userId]);
 
   const handleTextChange =
     (key: keyof OfficerPayload) =>
@@ -90,7 +99,7 @@ export default function OfficerManagePage() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setUploadMessage("업로드할 프로필 이미지를 먼저 선택해주세요.");
+      setUploadMessage("업로드할 프로필 이미지를 먼저 선택해 주세요.");
       return;
     }
 
@@ -136,7 +145,7 @@ export default function OfficerManagePage() {
 
   const handleDelete = async () => {
     if (!deleteId.trim()) {
-      setDeleteMessage("삭제할 임원진 ID를 입력해주세요.");
+      setDeleteMessage("삭제할 임원진 ID를 입력해 주세요.");
       return;
     }
 
@@ -164,7 +173,7 @@ export default function OfficerManagePage() {
           <S.Title>임원진 소개 관리</S.Title>
           <S.Description>
             프로필 이미지를 업로드하고 임원진 정보를 등록, 조회, 삭제할 수 있는
-            관리 페이지입니다.
+            관리자 페이지입니다.
           </S.Description>
         </S.Header>
 
@@ -172,18 +181,18 @@ export default function OfficerManagePage() {
           <S.Card>
             <S.CardTitle>프로필 이미지 업로드</S.CardTitle>
             <S.CardText>
-              <code>/api/officer/image</code>로 프로필 이미지를 업로드하고, 반환된
-              URL을 등록 폼의 <code>photoUrl</code>에 자동 반영합니다.
+              <code>/api/officer/image</code>로 프로필 이미지를 업로드하고 반환된
+              URL이 등록 요청의 <code>photoUrl</code>에 자동 반영됩니다.
             </S.CardText>
 
             <S.Field>
               <S.FieldLabel>이미지 파일</S.FieldLabel>
-              <S.Input type='file' accept='image/*' onChange={handleFileChange} />
+              <S.Input type="file" accept="image/*" onChange={handleFileChange} />
             </S.Field>
 
             <S.ButtonRow>
-              <S.PrimaryButton type='button' onClick={handleUpload}>
-                {isUploading ? "업로드 중..." : "프로필 이미지 업로드"}
+              <S.PrimaryButton type="button" onClick={handleUpload}>
+                {isUploading ? "업로드 중.." : "프로필 이미지 업로드"}
               </S.PrimaryButton>
             </S.ButtonRow>
 
@@ -193,17 +202,17 @@ export default function OfficerManagePage() {
 
             <S.PreviewPanel>
               {activePhotoUrl ? (
-                <S.PreviewImage src={activePhotoUrl} alt='officer preview' />
+                <S.PreviewImage src={activePhotoUrl} alt="officer preview" />
               ) : (
                 <S.EmptyPreview>
-                  업로드 후 프로필 미리보기가 여기에 표시됩니다.
+                  업로드한 프로필 미리보기가 여기에 표시됩니다.
                 </S.EmptyPreview>
               )}
 
               <S.MetaList>
                 <S.MetaLabel>선택 파일</S.MetaLabel>
                 <S.MetaValue>
-                  {selectedFile ? selectedFile.name : "선택된 파일이 없습니다."}
+                  {selectedFile ? selectedFile.name : "선택한 파일이 없습니다."}
                 </S.MetaValue>
 
                 <S.MetaLabel>업로드 URL</S.MetaLabel>
@@ -224,7 +233,7 @@ export default function OfficerManagePage() {
                 <S.Input
                   value={form.name}
                   onChange={handleTextChange("name")}
-                  placeholder='박종호'
+                  placeholder="홍길동"
                 />
               </S.Field>
 
@@ -232,7 +241,7 @@ export default function OfficerManagePage() {
                 <S.Field>
                   <S.FieldLabel>기수</S.FieldLabel>
                   <S.Input
-                    type='number'
+                    type="number"
                     value={form.generation}
                     onChange={handleTextChange("generation")}
                   />
@@ -241,7 +250,7 @@ export default function OfficerManagePage() {
                 <S.Field>
                   <S.FieldLabel>정렬 순서</S.FieldLabel>
                   <S.Input
-                    type='number'
+                    type="number"
                     value={form.sortOrder}
                     onChange={handleTextChange("sortOrder")}
                   />
@@ -249,20 +258,20 @@ export default function OfficerManagePage() {
               </S.InlineFields>
 
               <S.Field>
-                <S.FieldLabel>역할(role)</S.FieldLabel>
+                <S.FieldLabel>역할</S.FieldLabel>
                 <S.Input
                   value={form.role}
                   onChange={handleTextChange("role")}
-                  placeholder='행사부장'
+                  placeholder="회장"
                 />
               </S.Field>
 
               <S.Field>
-                <S.FieldLabel>부서(department)</S.FieldLabel>
+                <S.FieldLabel>부서</S.FieldLabel>
                 <S.Input
                   value={form.department}
                   onChange={handleTextChange("department")}
-                  placeholder='행사'
+                  placeholder="기획"
                 />
               </S.Field>
 
@@ -271,7 +280,7 @@ export default function OfficerManagePage() {
                 <S.Input
                   value={form.email}
                   onChange={handleTextChange("email")}
-                  placeholder='jongho@reverse.com'
+                  placeholder="reverse@example.com"
                 />
               </S.Field>
 
@@ -280,19 +289,19 @@ export default function OfficerManagePage() {
                 <S.Input
                   value={activePhotoUrl}
                   onChange={handleTextChange("photoUrl")}
-                  placeholder='업로드 후 자동 반영되거나 직접 입력할 수 있습니다.'
+                  placeholder="업로드 후 자동 반영되거나 직접 입력할 수 있습니다."
                 />
               </S.Field>
 
               <S.InlineFields>
                 <S.Field>
-                  <S.FieldLabel>노출 여부(isVisible)</S.FieldLabel>
+                  <S.FieldLabel>노출 여부</S.FieldLabel>
                   <S.Select
                     value={String(form.isVisible)}
                     onChange={handleVisibleChange}
                   >
-                    <option value='true'>true</option>
-                    <option value='false'>false</option>
+                    <option value="true">true</option>
+                    <option value="false">false</option>
                   </S.Select>
                 </S.Field>
 
@@ -301,19 +310,22 @@ export default function OfficerManagePage() {
                   <S.Input
                     value={form.updatedBy}
                     onChange={handleTextChange("updatedBy")}
-                    placeholder='test'
+                    placeholder={userId ?? ""}
                   />
                 </S.Field>
               </S.InlineFields>
 
               <S.ButtonRow>
-                <S.PrimaryButton type='submit'>
-                  {isSubmitting ? "등록 중..." : "임원진 등록"}
+                <S.PrimaryButton type="submit">
+                  {isSubmitting ? "등록 중.." : "임원진 등록"}
                 </S.PrimaryButton>
                 <S.SecondaryButton
-                  type='button'
+                  type="button"
                   onClick={() => {
-                    setForm(initialForm);
+                    setForm({
+                      ...initialForm,
+                      updatedBy: userId ?? "",
+                    });
                     setUploadedUrl("");
                     setResponse(null);
                     setUploadMessage("");
@@ -332,7 +344,7 @@ export default function OfficerManagePage() {
 
             <S.PreviewPanel>
               <div>
-                <S.CardTitle as='h3'>요청 미리보기</S.CardTitle>
+                <S.CardTitle as="h3">요청 미리보기</S.CardTitle>
               </div>
               <S.CodeBlock>
                 {JSON.stringify(
@@ -346,12 +358,10 @@ export default function OfficerManagePage() {
               </S.CodeBlock>
 
               <div>
-                <S.CardTitle as='h3'>응답</S.CardTitle>
+                <S.CardTitle as="h3">응답</S.CardTitle>
               </div>
               <S.CodeBlock>
-                {response
-                  ? JSON.stringify(response, null, 2)
-                  : "아직 응답이 없습니다."}
+                {response ? JSON.stringify(response, null, 2) : "아직 응답이 없습니다."}
               </S.CodeBlock>
             </S.PreviewPanel>
           </S.Card>
@@ -363,8 +373,8 @@ export default function OfficerManagePage() {
             </S.CardText>
 
             <S.ButtonRow>
-              <S.SecondaryButton type='button' onClick={loadOfficers}>
-                {isLoadingList ? "불러오는 중..." : "목록 새로고침"}
+              <S.SecondaryButton type="button" onClick={loadOfficers}>
+                {isLoadingList ? "불러오는 중.." : "목록 새로고침"}
               </S.SecondaryButton>
             </S.ButtonRow>
 
@@ -374,8 +384,8 @@ export default function OfficerManagePage() {
           <S.Card>
             <S.CardTitle>임원진 정보 삭제</S.CardTitle>
             <S.CardText>
-              삭제할 임원진 ID를 입력한 뒤 <code>DELETE /api/officer/{`{id}`}</code>
-              요청을 보냅니다.
+              삭제할 임원진 ID를 입력하면
+              <code>DELETE /api/officer/{`{id}`}</code> 요청을 보냅니다.
             </S.CardText>
 
             <S.Field>
@@ -383,13 +393,13 @@ export default function OfficerManagePage() {
               <S.Input
                 value={deleteId}
                 onChange={handleDeleteIdChange}
-                placeholder='삭제할 임원진 ID'
+                placeholder="삭제할 임원진 ID"
               />
             </S.Field>
 
             <S.ButtonRow>
-              <S.DangerButton type='button' onClick={handleDelete}>
-                {isDeleting ? "삭제 중..." : "임원진 삭제"}
+              <S.DangerButton type="button" onClick={handleDelete}>
+                {isDeleting ? "삭제 중.." : "임원진 삭제"}
               </S.DangerButton>
             </S.ButtonRow>
 
@@ -399,7 +409,7 @@ export default function OfficerManagePage() {
 
             <S.PreviewPanel>
               <div>
-                <S.CardTitle as='h3'>삭제 요청</S.CardTitle>
+                <S.CardTitle as="h3">삭제 요청</S.CardTitle>
               </div>
               <S.CodeBlock>
                 {deleteId.trim()
@@ -408,7 +418,7 @@ export default function OfficerManagePage() {
               </S.CodeBlock>
 
               <div>
-                <S.CardTitle as='h3'>응답</S.CardTitle>
+                <S.CardTitle as="h3">응답</S.CardTitle>
               </div>
               <S.CodeBlock>
                 {deleteResponse

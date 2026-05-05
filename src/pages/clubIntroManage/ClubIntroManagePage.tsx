@@ -8,16 +8,18 @@ import {
   type ClubIntroPayload,
   type ClubIntroResponse,
 } from "../../services/clubIntroApi";
+import { useAuthStore } from "../../stores/authStore";
 
 const initialForm: ClubIntroPayload = {
   title: "",
   subTitle: "",
   bannerUrl: "",
   isActive: true,
-  updatedBy: "admin01",
+  updatedBy: "",
 };
 
 export default function ClubIntroManagePage() {
+  const userId = useAuthStore((state) => state.userId);
   const [form, setForm] = useState<ClubIntroPayload>(initialForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState("");
@@ -51,6 +53,13 @@ export default function ClubIntroManagePage() {
   useEffect(() => {
     loadClubIntros();
   }, []);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      updatedBy: userId ?? "",
+    }));
+  }, [userId]);
 
   const handleTextChange =
     (key: keyof ClubIntroPayload) =>
@@ -260,7 +269,10 @@ export default function ClubIntroManagePage() {
                 <S.SecondaryButton
                   type='button'
                   onClick={() => {
-                    setForm(initialForm);
+                    setForm({
+                      ...initialForm,
+                      updatedBy: userId ?? "",
+                    });
                     setUploadedUrl("");
                     setResponse(null);
                     setUploadMessage("");
