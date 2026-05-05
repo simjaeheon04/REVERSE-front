@@ -9,18 +9,33 @@ const adminMenus = [
   },
   {
     title: "임원진 관리",
-    description: "임원진 프로필, 역할, 노출 여부를 등록하고 관리합니다.",
+    description: "임원진 프로필과 역할, 노출 여부를 등록하고 관리합니다.",
     path: "/admin/officer",
   },
   {
-    title: "규정 관리",
-    description: "동아리 규정과 약관 데이터를 등록, 수정, 삭제합니다.",
+    title: "약관 관리",
+    description: "동아리 약관과 버전 정보를 등록, 수정, 삭제합니다.",
     path: "/admin/terms",
   },
   {
     title: "프로젝트 관리",
     description: "프로젝트 이름, 링크, 썸네일 이미지를 등록하고 관리합니다.",
     path: "/admin/project",
+  },
+  {
+    title: "캘린더 관리",
+    description: "일정 카테고리와 실제 일정을 등록, 조회, 삭제합니다.",
+    path: "/admin/calendar",
+  },
+  {
+    title: "공지사항 관리",
+    description: "외부 공지사항 목록을 확인하고 공지를 등록, 수정, 삭제합니다.",
+    path: "/admin/notice",
+  },
+  {
+    title: "모집공고 관리",
+    description: "모집공고 목록을 조회하고 공고 등록, 수정, 삭제를 테스트합니다.",
+    path: "/admin/recruit",
   },
 ];
 
@@ -31,11 +46,10 @@ export default function AdminPage() {
     <S.Page>
       <S.Shell>
         <S.Header>
-          <S.Eyebrow>Temporary Admin</S.Eyebrow>
-          <S.Title>관리자 임시 진입 페이지</S.Title>
+          <S.Eyebrow>Admin</S.Eyebrow>
+          <S.Title>관리자 페이지</S.Title>
           <S.Description>
-            개발 중 흩어져 있는 관리자 페이지에 빠르게 접근하기 위한 임시
-            페이지입니다.
+            관리자 기능으로 이동할 수 있는 진입 페이지입니다.
           </S.Description>
         </S.Header>
 
@@ -44,7 +58,7 @@ export default function AdminPage() {
             <S.Card key={menu.path}>
               <S.CardTitle>{menu.title}</S.CardTitle>
               <S.CardText>{menu.description}</S.CardText>
-              <S.MoveButton type='button' onClick={() => navigate(menu.path)}>
+              <S.MoveButton type="button" onClick={() => navigate(menu.path)}>
                 이동하기
               </S.MoveButton>
             </S.Card>
