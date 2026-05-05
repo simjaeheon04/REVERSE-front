@@ -1,17 +1,10 @@
 import { useMemo, useState, type ChangeEvent } from "react";
 import * as S from "./RecruitInterviewCalendar.styles";
 
-type InterviewRange = {
-  startDate: string;
-  endDate: string;
-};
-
 type CalendarDay = {
-  date: Date;
   key: string;
   day: number;
   isCurrentMonth: boolean;
-  interviewPosition: "start" | "middle" | "end" | "single" | null;
 };
 
 type DayVariant = "plain" | "dark" | "light";
@@ -19,6 +12,8 @@ type DayVariant = "plain" | "dark" | "light";
 type RecruitInterviewCalendarProps = {
   selectedDate: string;
   onSelectDate: (date: string) => void;
+  availableStartDate?: string | null;
+  availableEndDate?: string | null;
   error?: string;
 };
 
@@ -39,12 +34,7 @@ const monthLabels = [
 
 const weekLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-const interviewDateRanges: InterviewRange[] = [
-  {
-    startDate: "2026-09-09",
-    endDate: "2026-09-13",
-  },
-];
+const today = new Date();
 
 const toDateKey = (date: Date) => {
   const year = date.getFullYear();
@@ -54,62 +44,57 @@ const toDateKey = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const createDateFromKey = (key: string) => {
-  const [year, month, day] = key.split("-").map(Number);
-  return new Date(year, month - 1, day);
-};
-
 const addDays = (date: Date, amount: number) => {
   const nextDate = new Date(date);
   nextDate.setDate(nextDate.getDate() + amount);
   return nextDate;
 };
 
-const getInterviewPosition = (dateKey: string) => {
-  for (const range of interviewDateRanges) {
-    const start = createDateFromKey(range.startDate);
-    const end = createDateFromKey(range.endDate);
-    const current = createDateFromKey(dateKey);
-
-    if (current < start || current > end) {
-      continue;
-    }
-
-    if (range.startDate === range.endDate) {
-      return "single";
-    }
-
-    if (dateKey === range.startDate) {
-      return "start";
-    }
-
-    if (dateKey === range.endDate) {
-      return "end";
-    }
-
-    return "middle";
+const getDatePart = (value?: string | null) => {
+  if (!value) {
+    return null;
   }
 
-  return null;
+  const [datePart] = value.split("T");
+  return datePart || null;
 };
 
-const getDefaultVariant = (
-  position: CalendarDay["interviewPosition"]
-): DayVariant => {
-  if (!position) {
-    return "plain";
+const createDateFromKey = (key: string) => {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const isDateWithinRange = (
+  dateKey: string,
+  startDateKey?: string | null,
+  endDateKey?: string | null
+) => {
+  if (!startDateKey || !endDateKey) {
+    return false;
   }
 
-  return "dark";
+  const startDate = createDateFromKey(startDateKey);
+  const endDate = createDateFromKey(endDateKey);
+  const currentDate = createDateFromKey(dateKey);
+
+  return currentDate >= startDate && currentDate <= endDate;
 };
 
 export default function RecruitInterviewCalendar({
   selectedDate,
   onSelectDate,
+  availableStartDate,
+  availableEndDate,
   error,
 }: RecruitInterviewCalendarProps) {
-  const [currentYear, setCurrentYear] = useState(2026);
-  const [currentMonth, setCurrentMonth] = useState(8);
+  const startDateKey = getDatePart(availableStartDate);
+  const endDateKey = getDatePart(availableEndDate);
+  const initialVisibleDate = startDateKey
+    ? createDateFromKey(startDateKey)
+    : today;
+
+  const [currentYear, setCurrentYear] = useState(initialVisibleDate.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(initialVisibleDate.getMonth());
 
   const calendarDays = useMemo<CalendarDay[]>(() => {
     const firstDate = new Date(currentYear, currentMonth, 1);
@@ -117,14 +102,11 @@ export default function RecruitInterviewCalendar({
 
     return Array.from({ length: 35 }, (_, index) => {
       const date = addDays(firstGridDate, index);
-      const key = toDateKey(date);
 
       return {
-        date,
-        key,
+        key: toDateKey(date),
         day: date.getDate(),
         isCurrentMonth: date.getMonth() === currentMonth,
-        interviewPosition: getInterviewPosition(key),
       };
     });
   }, [currentMonth, currentYear]);
@@ -149,19 +131,15 @@ export default function RecruitInterviewCalendar({
       <S.CalendarBox>
         <S.CalendarHeader>
           <S.MoveButton
-            type='button'
-            aria-label='이전 달'
+            type="button"
+            aria-label="이전 달"
             onClick={() => moveMonth(-1)}
           >
-            ‹
+            {"<"}
           </S.MoveButton>
 
           <S.SelectGroup>
-            <S.Select
-              aria-label='월 선택'
-              value={currentMonth}
-              onChange={handleMonthChange}
-            >
+            <S.Select aria-label="월 선택" value={currentMonth} onChange={handleMonthChange}>
               {monthLabels.map((month, index) => (
                 <option key={month} value={index}>
                   {month}
@@ -169,29 +147,27 @@ export default function RecruitInterviewCalendar({
               ))}
             </S.Select>
 
-            <S.Select
-              aria-label='연도 선택'
-              value={currentYear}
-              onChange={handleYearChange}
-            >
-              {[2025, 2026, 2027].map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
+            <S.Select aria-label="연도 선택" value={currentYear} onChange={handleYearChange}>
+              {[today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1].map(
+                (year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                )
+              )}
             </S.Select>
           </S.SelectGroup>
 
           <S.MoveButton
-            type='button'
-            aria-label='다음 달'
+            type="button"
+            aria-label="다음 달"
             onClick={() => moveMonth(1)}
           >
-            ›
+            {">"}
           </S.MoveButton>
         </S.CalendarHeader>
 
-        <S.WeekGrid aria-hidden='true'>
+        <S.WeekGrid aria-hidden="true">
           {weekLabels.map((week) => (
             <S.WeekLabel key={week}>{week}</S.WeekLabel>
           ))}
@@ -199,20 +175,27 @@ export default function RecruitInterviewCalendar({
 
         <S.DayGrid>
           {calendarDays.map((item) => {
-            const defaultVariant = getDefaultVariant(item.interviewPosition);
-            const variant =
-              selectedDate === item.key && defaultVariant === "dark"
-                ? "light"
-                : defaultVariant;
-            const isInterviewDate = Boolean(item.interviewPosition);
+            const isAvailableDate = isDateWithinRange(
+              item.key,
+              startDateKey,
+              endDateKey
+            );
+            const isSelected = selectedDate === item.key;
+            let variant: DayVariant = "plain";
+
+            if (isSelected && isAvailableDate) {
+              variant = "light";
+            } else if (isAvailableDate) {
+              variant = "dark";
+            }
 
             return (
               <S.DayButton
                 key={item.key}
-                type='button'
+                type="button"
                 $variant={variant}
                 $currentMonth={item.isCurrentMonth}
-                disabled={!isInterviewDate}
+                disabled={!item.isCurrentMonth || !isAvailableDate}
                 onClick={() => onSelectDate(item.key)}
               >
                 {item.day}
