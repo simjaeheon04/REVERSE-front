@@ -4,11 +4,11 @@ import { useAuthStore } from "../stores/authStore";
 import GlobalStyle from "../styles/globalStyle";
 
 function App() {
-  const hydrate = useAuthStore((state) => state.hydrate);
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    void initializeAuth();
+  }, [initializeAuth]);
 
   return (
     <>
