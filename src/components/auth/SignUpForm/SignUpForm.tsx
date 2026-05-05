@@ -80,7 +80,7 @@ export default function SignUpForm() {
               <option value='naver.com'>naver.com</option>
               <option value='daum.net'>daum.net</option>
             </C.Select>
-            <C.GhostButton type='button'>중복 확인</C.GhostButton>
+            <C.GhostButton type='button'>전송</C.GhostButton>
           </C.EmailRow>
         </FormField>
 
