@@ -87,3 +87,75 @@ export const Strong = styled.strong`
   line-height: 1.8;
   word-break: keep-all;
 `;
+
+export const NotifyCard = styled.div`
+  width: min(840px, 100%);
+  margin: 96px auto 0;
+  padding: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  background: rgba(20, 26, 39, 0.9);
+  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.24);
+`;
+
+export const NotifyTitle = styled.h3`
+  margin: 0 0 12px;
+  color: #eef2ff;
+  font-size: 32px;
+  font-weight: 800;
+`;
+
+export const NotifyDescription = styled.p`
+  margin: 0 0 24px;
+  color: #cad1de;
+  font-size: 15px;
+  line-height: 1.6;
+`;
+
+export const NotifyRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const NotifyInput = styled.input`
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: #0f1522;
+  color: #eef2ff;
+  font-size: 15px;
+
+  &::placeholder {
+    color: rgba(238, 242, 255, 0.34);
+  }
+`;
+
+export const NotifyButton = styled.button`
+  min-width: 160px;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #9eb3ff 0%, #7b90ec 100%);
+  color: #0f1525;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+`;
+
+export const NotifyMessage = styled.p`
+  margin: 16px 0 0;
+  color: #d7e6ff;
+  font-size: 14px;
+  line-height: 1.5;
+`;

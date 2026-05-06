@@ -1,11 +1,37 @@
+import { useState, type ChangeEvent } from "react";
+import { subscribeRecruitNotification } from "../../../services/recruitApi";
 import * as S from "./RecruitContactSection.styles";
 
 export default function RecruitContactSection() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubscribe = async () => {
+    if (!email.trim()) {
+      setMessage("¾Ë¸² ¹ŞÀ» ÀÌ¸ŞÀÏÀ» ÀÔ·ÂÇØÁÖ¼¼¿ä.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setMessage("");
+      const responseMessage = await subscribeRecruitNotification(email.trim());
+      setMessage(responseMessage || "¸ğÁı ¾Ë¸² ±¸µ¶ÀÌ ¿Ï·áµÇ¾ú½À´Ï´Ù.");
+      setEmail("");
+    } catch (error) {
+      console.error("recruit notification subscribe failed", error);
+      setMessage("¸ğÁı ¾Ë¸² ±¸µ¶¿¡ ½ÇÆĞÇß½À´Ï´Ù.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <S.Section>
       <S.Header>
-        <S.Title>ë¬¸ì˜ ì‚¬í•­</S.Title>
-        <S.Subtitle>ê¶ê¸ˆí•˜ì‹  ì ì€ ì–¸ì œë“ ì§€ í¸í•˜ê²Œ ì—°ë½ ì£¼ì„¸ìš”</S.Subtitle>
+        <S.Title>¹®ÀÇ »çÇ×</S.Title>
+        <S.Subtitle>±Ã±İÇÏ½Å Á¡ÀÌ ÀÖ´Ù¸é ¾Æ·¡ Ã¤³Î·Î ÆíÇÏ°Ô ¿¬¶ô ÁÖ¼¼¿ä.</S.Subtitle>
       </S.Header>
 
       <S.Grid>
@@ -16,7 +42,7 @@ export default function RecruitContactSection() {
           </S.Icon>
           <S.Label>SNS</S.Label>
           <S.Description>
-            REVERSEì˜ í™œë™ê³¼ ëª¨ì§‘ ì†Œì‹ì€ ì¸ìŠ¤íƒ€ê·¸ë¨ì—ì„œ í™•ì¸í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+            REVERSEÀÇ È°µ¿°ú ¸ğÁı ¼Ò½ÄÀº ÀÎ½ºÅ¸±×·¥¿¡¼­ °¡Àå ºü¸£°Ô È®ÀÎÇÒ ¼ö ÀÖ½À´Ï´Ù.
           </S.Description>
           <S.Strong>@nsu_reverse</S.Strong>
         </S.Item>
@@ -32,10 +58,10 @@ export default function RecruitContactSection() {
           </S.Icon>
           <S.Label>Phone</S.Label>
           <S.Description>
-            ëª¨ì§‘ ê´€ë ¨ ë¬¸ì˜ëŠ” íšŒì¥ë‹¨ì—ê²Œ í¸í•˜ê²Œ ì—°ë½í•´ ì£¼ì„¸ìš”.
+            ¸ğÁı °ü·Ã ¹®ÀÇ´Â È¸Àå´Ü¿¡°Ô ÆíÇÏ°Ô ¿¬¶ôÇØ ÁÖ¼¼¿ä.
           </S.Description>
-          <S.Strong>íšŒì¥ ë°•ì‹œì—°: 010-000-0000</S.Strong>
-          <S.Strong>ë¶€íšŒì¥ í™ì •ë¯¼: 010-000-0000</S.Strong>
+          <S.Strong>È¸Àå ¹Ú½ÃÇö 010-000-0000</S.Strong>
+          <S.Strong>ºÎÈ¸Àå Å¹Á¤¹Î 010-000-0000</S.Strong>
         </S.Item>
 
         <S.Item>
@@ -50,11 +76,32 @@ export default function RecruitContactSection() {
           </S.Icon>
           <S.Label>Club Room</S.Label>
           <S.Description>
-            ì§ì ‘ ë°©ë¬¸í•´ ë™ì•„ë¦¬ í™œë™ê³¼ ëª¨ì§‘ ì ˆì°¨ë¥¼ ì•ˆë‚´ë°›ì„ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+            Á÷Á¢ ¹æ¹®ÇÏ¸é µ¿¾Æ¸® È°µ¿°ú ¸ğÁı ÀÏÁ¤À» ´õ ÀÚ¼¼È÷ ¾È³»¹ŞÀ» ¼ö ÀÖ½À´Ï´Ù.
           </S.Description>
-          <S.Strong>ë‚¨ì„œìš¸ëŒ€í•™êµ ì»´í“¨í„°ì†Œí”„íŠ¸ì›¨ì–´í•™ê³¼</S.Strong>
+          <S.Strong>³²¼­¿ï´ëÇĞ±³ ÄÄÇ»ÅÍ¼ÒÇÁÆ®¿ş¾îÇĞ°ú</S.Strong>
         </S.Item>
       </S.Grid>
+
+      <S.NotifyCard>
+        <S.NotifyTitle>¸ğÁı ¾Ë¸² ±¸µ¶</S.NotifyTitle>
+        <S.NotifyDescription>
+          ´ÙÀ½ ¸ğÁıÀÌ ¿­¸®¸é ÀÌ¸ŞÀÏ·Î ¼Ò½ÄÀ» ¹Ş¾Æº¼ ¼ö ÀÖ½À´Ï´Ù.
+        </S.NotifyDescription>
+
+        <S.NotifyRow>
+          <S.NotifyInput
+            type="email"
+            value={email}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
+            placeholder="example@email.com"
+          />
+          <S.NotifyButton type="button" onClick={handleSubscribe} disabled={isSubmitting}>
+            {isSubmitting ? "±¸µ¶ Áß..." : "¾Ë¸² ¹Ş±â"}
+          </S.NotifyButton>
+        </S.NotifyRow>
+
+        {message ? <S.NotifyMessage>{message}</S.NotifyMessage> : null}
+      </S.NotifyCard>
     </S.Section>
   );
 }

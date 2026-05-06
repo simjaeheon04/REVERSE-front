@@ -7,6 +7,7 @@ import {
   getRecruitmentList,
   getRecruitmentRequestPreview,
   updateRecruitment,
+  updateRecruitmentStatus,
   type RecruitmentItem,
   type RecruitmentPayload,
 } from "../../services/recruitApi";
@@ -52,14 +53,17 @@ export default function RecruitManagePage() {
   const [selectedRecruitment, setSelectedRecruitment] =
     useState<RecruitmentItem | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [statusRoleId, setStatusRoleId] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [listMessage, setListMessage] = useState("");
   const [detailMessage, setDetailMessage] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
   const [isLoadingList, setIsLoadingList] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isEditMode = useMemo(() => editingId !== null, [editingId]);
@@ -116,6 +120,7 @@ export default function RecruitManagePage() {
     setSelectedRecruitment(null);
     setDetailMessage("");
     setSaveMessage("");
+    setStatusMessage("");
   };
 
   const handleLoadDetail = async (recruitmentId: number) => {
@@ -134,6 +139,7 @@ export default function RecruitManagePage() {
         applyEndDate: detail.applyEndDate?.slice(0, 10) ?? "",
         updatedBy: userId ?? "",
       });
+      setStatusMessage("");
       setDetailMessage("모집공고 상세 정보를 불러왔습니다.");
     } catch (error) {
       setDetailMessage(
@@ -168,6 +174,42 @@ export default function RecruitManagePage() {
     }
   };
 
+  const handleStatusChange = async (recruitment: RecruitmentItem, nextIsActive: boolean) => {
+    if (!statusRoleId.trim()) {
+      setStatusMessage("상태를 변경하려면 roleId를 입력해 주세요.");
+      return;
+    }
+
+    try {
+      setIsUpdatingStatus(true);
+      setStatusMessage("");
+
+      await updateRecruitmentStatus(recruitment.id, Number(statusRoleId), {
+        isActive: nextIsActive,
+      });
+
+      setStatusMessage(
+        `모집공고 ${recruitment.id}의 상태가 ${nextIsActive ? "활성" : "비활성"}으로 변경되었습니다.`
+      );
+      await loadRecruitments();
+
+      if (selectedRecruitment?.id === recruitment.id) {
+        setSelectedRecruitment((prev) =>
+          prev
+            ? {
+                ...prev,
+                isActive: nextIsActive,
+              }
+            : prev
+        );
+      }
+    } catch (error) {
+      setStatusMessage(getApiErrorMessage(error, "모집공고 상태 변경에 실패했습니다."));
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteId.trim()) {
       setDeleteMessage("삭제할 모집공고 ID를 입력해 주세요.");
@@ -199,10 +241,10 @@ export default function RecruitManagePage() {
     <S.Page>
       <S.Shell>
         <S.Header>
-          <S.Eyebrow>Recruit Admin</S.Eyebrow>
-          <S.Title>모집공고 관리</S.Title>
+          <S.Eyebrow>모집 관리자</S.Eyebrow>
+          <S.Title>모집 관리</S.Title>
           <S.Description>
-            모집공고 목록 조회, 단건 불러오기, 등록, 수정, 삭제를 한 화면에서 테스트할 수 있는 관리자 페이지입니다.
+            모집공고 등록, 수정, 상태 변경, 삭제를 한 화면에서 관리할 수 있습니다.
           </S.Description>
         </S.Header>
 
@@ -210,7 +252,7 @@ export default function RecruitManagePage() {
           <S.Card>
             <S.CardTitle>{isEditMode ? "모집공고 수정" : "모집공고 등록"}</S.CardTitle>
             <S.CardText>
-              <code>/api/recruit</code> 기준으로 공고 생성과 수정을 처리합니다.
+              <code>/api/recruit</code> 기준으로 모집공고를 등록하거나 수정합니다.
             </S.CardText>
 
             <S.Form onSubmit={handleSubmit}>
@@ -253,7 +295,7 @@ export default function RecruitManagePage() {
               </S.InlineFields>
 
               <S.Field>
-                <S.FieldLabel>updatedBy</S.FieldLabel>
+                <S.FieldLabel>수정자</S.FieldLabel>
                 <S.Input
                   value={form.updatedBy}
                   onChange={handleFieldChange("updatedBy")}
@@ -263,20 +305,16 @@ export default function RecruitManagePage() {
 
               <S.ButtonRow>
                 <S.PrimaryButton type="submit">
-                  {isSaving ? "저장 중..." : isEditMode ? "모집공고 수정" : "모집공고 등록"}
+                  {isSaving ? "저장 중..." : isEditMode ? "공고 수정" : "공고 등록"}
                 </S.PrimaryButton>
                 <S.SecondaryButton type="button" onClick={handleReset}>
-                  폼 초기화
+                  초기화
                 </S.SecondaryButton>
               </S.ButtonRow>
             </S.Form>
 
             {detailMessage ? <S.StatusText>{detailMessage}</S.StatusText> : null}
-            {saveMessage ? (
-              <S.StatusText $error={!saveMessage.includes("되었습니다")}>
-                {saveMessage}
-              </S.StatusText>
-            ) : null}
+            {saveMessage ? <S.StatusText>{saveMessage}</S.StatusText> : null}
 
             <S.PreviewPanel>
               <S.CardTitle as="h3">요청 미리보기</S.CardTitle>
@@ -287,10 +325,19 @@ export default function RecruitManagePage() {
           </S.Card>
 
           <S.Card>
-            <S.CardTitle>모집공고 목록 조회</S.CardTitle>
+            <S.CardTitle>모집공고 목록</S.CardTitle>
             <S.CardText>
-              <code>GET /api/recruit</code>와 <code>GET /api/recruit/{`{id}`}</code>를 확인합니다.
+              목록 확인, 상세 불러오기, 활성 상태 변경을 여기서 처리합니다.
             </S.CardText>
+
+            <S.Field>
+              <S.FieldLabel>roleId</S.FieldLabel>
+              <S.Input
+                value={statusRoleId}
+                onChange={(event) => setStatusRoleId(event.target.value)}
+                placeholder="상태 변경에 필요한 roleId"
+              />
+            </S.Field>
 
             <S.ButtonRow>
               <S.SecondaryButton type="button" onClick={() => void loadRecruitments()}>
@@ -301,10 +348,11 @@ export default function RecruitManagePage() {
             {listMessage ? (
               <S.StatusText $error={!recruitments.length}>{listMessage}</S.StatusText>
             ) : null}
+            {statusMessage ? <S.StatusText>{statusMessage}</S.StatusText> : null}
 
             <S.CodeBlock>{JSON.stringify(recruitments, null, 2)}</S.CodeBlock>
 
-            <S.CardTitle as="h3">상세 불러오기</S.CardTitle>
+            <S.CardTitle as="h3">상세 조회 / 상태 변경</S.CardTitle>
             <S.ButtonRow>
               {recruitments.map((recruitment) => (
                 <S.SecondaryButton
@@ -313,6 +361,19 @@ export default function RecruitManagePage() {
                   onClick={() => void handleLoadDetail(recruitment.id)}
                 >
                   {recruitment.id}. {recruitment.title}
+                </S.SecondaryButton>
+              ))}
+            </S.ButtonRow>
+
+            <S.ButtonRow>
+              {recruitments.map((recruitment) => (
+                <S.SecondaryButton
+                  key={`status-${recruitment.id}`}
+                  type="button"
+                  onClick={() => void handleStatusChange(recruitment, !recruitment.isActive)}
+                  disabled={isUpdatingStatus}
+                >
+                  {recruitment.id}. {recruitment.isActive ? "비활성화" : "활성화"}
                 </S.SecondaryButton>
               ))}
             </S.ButtonRow>
@@ -329,11 +390,11 @@ export default function RecruitManagePage() {
           <S.Card>
             <S.CardTitle>모집공고 삭제</S.CardTitle>
             <S.CardText>
-              <code>DELETE /api/recruit/{`{id}`}</code>로 공고를 삭제합니다.
+              <code>DELETE /api/recruit/{`{id}`}</code>로 모집공고를 삭제합니다.
             </S.CardText>
 
             <S.Field>
-              <S.FieldLabel>삭제할 모집공고 ID</S.FieldLabel>
+              <S.FieldLabel>모집공고 ID</S.FieldLabel>
               <S.Input
                 value={deleteId}
                 onChange={(event) => setDeleteId(event.target.value)}
@@ -343,15 +404,11 @@ export default function RecruitManagePage() {
 
             <S.ButtonRow>
               <S.DangerButton type="button" onClick={handleDelete}>
-                {isDeleting ? "삭제 중..." : "모집공고 삭제"}
+                {isDeleting ? "삭제 중..." : "공고 삭제"}
               </S.DangerButton>
             </S.ButtonRow>
 
-            {deleteMessage ? (
-              <S.StatusText $error={!deleteMessage.includes("되었습니다")}>
-                {deleteMessage}
-              </S.StatusText>
-            ) : null}
+            {deleteMessage ? <S.StatusText>{deleteMessage}</S.StatusText> : null}
           </S.Card>
         </S.Grid>
       </S.Shell>

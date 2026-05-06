@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import * as S from "../clubIntroManage/ClubIntroManagePage.styles";
+import { syncHolidayList } from "../../services/holidayApi";
 import {
   createSchedule,
   createScheduleCategory,
@@ -7,6 +8,8 @@ import {
   deleteScheduleCategory,
   getAdminScheduleCategories,
   getAdminSchedules,
+  updateSchedule,
+  updateScheduleCategory,
   type ScheduleCategory,
   type ScheduleCategoryPayload,
   type ScheduleItem,
@@ -37,12 +40,24 @@ const initialScheduleForm: SchedulePayload = {
   updatedBy: "",
 };
 
+const toTimeInputValue = (value?: string | null) => {
+  if (!value) {
+    return "";
+  }
+
+  return value.slice(0, 5);
+};
+
 export default function CalendarManagePage() {
   const userId = useAuthStore((state) => state.userId);
   const [categoryForm, setCategoryForm] =
     useState<ScheduleCategoryPayload>(initialCategoryForm);
   const [scheduleForm, setScheduleForm] =
     useState<SchedulePayload>(initialScheduleForm);
+  const [selectedCategory, setSelectedCategory] = useState<ScheduleCategory | null>(null);
+  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleItem | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
+  const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
   const [categories, setCategories] = useState<ScheduleCategory[]>([]);
   const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
   const [queryYear, setQueryYear] = useState(String(today.getFullYear()));
@@ -51,20 +66,26 @@ export default function CalendarManagePage() {
   const [scheduleDeleteId, setScheduleDeleteId] = useState("");
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [isCreatingSchedule, setIsCreatingSchedule] = useState(false);
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
   const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
+  const [isSyncingHoliday, setIsSyncingHoliday] = useState(false);
   const [categoryMessage, setCategoryMessage] = useState("");
   const [scheduleMessage, setScheduleMessage] = useState("");
+  const [categoryDetailMessage, setCategoryDetailMessage] = useState("");
+  const [scheduleDetailMessage, setScheduleDetailMessage] = useState("");
   const [categoryDeleteMessage, setCategoryDeleteMessage] = useState("");
   const [scheduleDeleteMessage, setScheduleDeleteMessage] = useState("");
+  const [holidaySyncMessage, setHolidaySyncMessage] = useState("");
 
   const normalizedYear = useMemo(() => Number(queryYear || today.getFullYear()), [queryYear]);
   const normalizedMonth = useMemo(
     () => Number(queryMonth || today.getMonth() + 1),
     [queryMonth]
   );
+  const isCategoryEditMode = editingCategoryId !== null;
+  const isScheduleEditMode = editingScheduleId !== null;
 
   const loadCategories = async () => {
     try {
@@ -117,6 +138,29 @@ export default function CalendarManagePage() {
     }
   }, [categories, scheduleForm.categoryId]);
 
+  const resetCategoryForm = () => {
+    setCategoryForm({
+      ...initialCategoryForm,
+      updatedBy: userId ?? "",
+    });
+    setSelectedCategory(null);
+    setEditingCategoryId(null);
+    setCategoryMessage("");
+    setCategoryDetailMessage("");
+  };
+
+  const resetScheduleForm = () => {
+    setScheduleForm({
+      ...initialScheduleForm,
+      categoryId: categories[0]?.id ?? 0,
+      updatedBy: userId ?? "",
+    });
+    setSelectedSchedule(null);
+    setEditingScheduleId(null);
+    setScheduleMessage("");
+    setScheduleDetailMessage("");
+  };
+
   const handleCategoryChange =
     (key: keyof ScheduleCategoryPayload) =>
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -157,48 +201,94 @@ export default function CalendarManagePage() {
       }));
     };
 
-  const handleCreateCategory = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSelectCategory = (category: ScheduleCategory) => {
+    setSelectedCategory(category);
+    setEditingCategoryId(category.id);
+    setCategoryMessage("");
+    setCategoryDetailMessage("선택한 카테고리를 수정 모드로 불러왔습니다.");
+    setCategoryForm({
+      categoryName: category.categoryName,
+      colorCode: category.colorCode,
+      sortOrder: category.sortOrder,
+      isVisible: category.isVisible,
+      updatedBy: userId ?? "",
+    });
+  };
+
+  const handleSelectSchedule = (schedule: ScheduleItem) => {
+    setSelectedSchedule(schedule);
+    setEditingScheduleId(schedule.id);
+    setScheduleMessage("");
+    setScheduleDetailMessage("선택한 일정을 수정 모드로 불러왔습니다.");
+    setScheduleForm({
+      categoryId: schedule.categoryId,
+      title: schedule.title,
+      description: schedule.description ?? "",
+      startDate: schedule.startDate,
+      endDate: schedule.endDate,
+      startTime: toTimeInputValue(schedule.startTime),
+      endTime: toTimeInputValue(schedule.endTime),
+      isAllDay: schedule.isAllDay,
+      isVisible: schedule.isVisible,
+      updatedBy: userId ?? "",
+    });
+  };
+
+  const handleSaveCategory = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
-      setIsCreatingCategory(true);
+      setIsSavingCategory(true);
       setCategoryMessage("");
 
-      await createScheduleCategory(categoryForm);
-      setCategoryMessage("일정 카테고리가 등록되었습니다.");
-      setCategoryForm({
-        ...initialCategoryForm,
-        updatedBy: userId ?? "",
-      });
+      if (editingCategoryId !== null) {
+        await updateScheduleCategory(editingCategoryId, categoryForm);
+        setCategoryMessage("카테고리가 수정되었습니다.");
+      } else {
+        await createScheduleCategory(categoryForm);
+        setCategoryMessage("카테고리가 등록되었습니다.");
+      }
+
       await loadCategories();
+      resetCategoryForm();
     } catch (error) {
-      console.error("schedule category create failed", error);
-      setCategoryMessage("일정 카테고리 등록에 실패했습니다.");
+      console.error("schedule category save failed", error);
+      setCategoryMessage(
+        editingCategoryId !== null
+          ? "카테고리 수정에 실패했습니다."
+          : "카테고리 등록에 실패했습니다."
+      );
     } finally {
-      setIsCreatingCategory(false);
+      setIsSavingCategory(false);
     }
   };
 
-  const handleCreateSchedule = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSaveSchedule = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
-      setIsCreatingSchedule(true);
+      setIsSavingSchedule(true);
       setScheduleMessage("");
 
-      await createSchedule(scheduleForm);
-      setScheduleMessage("일정이 등록되었습니다.");
-      setScheduleForm((prev) => ({
-        ...initialScheduleForm,
-        categoryId: prev.categoryId,
-        updatedBy: userId ?? "",
-      }));
+      if (editingScheduleId !== null) {
+        await updateSchedule(editingScheduleId, scheduleForm);
+        setScheduleMessage("일정이 수정되었습니다.");
+      } else {
+        await createSchedule(scheduleForm);
+        setScheduleMessage("일정이 등록되었습니다.");
+      }
+
       await loadSchedules();
+      resetScheduleForm();
     } catch (error) {
-      console.error("schedule create failed", error);
-      setScheduleMessage("일정 등록에 실패했습니다.");
+      console.error("schedule save failed", error);
+      setScheduleMessage(
+        editingScheduleId !== null
+          ? "일정 수정에 실패했습니다."
+          : "일정 등록에 실패했습니다."
+      );
     } finally {
-      setIsCreatingSchedule(false);
+      setIsSavingSchedule(false);
     }
   };
 
@@ -212,7 +302,13 @@ export default function CalendarManagePage() {
       setIsDeletingCategory(true);
       setCategoryDeleteMessage("");
       await deleteScheduleCategory(categoryDeleteId.trim());
-      setCategoryDeleteMessage("카테고리 삭제가 완료되었습니다.");
+      setCategoryDeleteMessage("카테고리가 삭제되었습니다.");
+
+      if (editingCategoryId === Number(categoryDeleteId.trim())) {
+        resetCategoryForm();
+      }
+
+      setCategoryDeleteId("");
       await loadCategories();
     } catch (error) {
       console.error("schedule category delete failed", error);
@@ -232,7 +328,13 @@ export default function CalendarManagePage() {
       setIsDeletingSchedule(true);
       setScheduleDeleteMessage("");
       await deleteSchedule(scheduleDeleteId.trim());
-      setScheduleDeleteMessage("일정 삭제가 완료되었습니다.");
+      setScheduleDeleteMessage("일정이 삭제되었습니다.");
+
+      if (editingScheduleId === Number(scheduleDeleteId.trim())) {
+        resetScheduleForm();
+      }
+
+      setScheduleDeleteId("");
       await loadSchedules();
     } catch (error) {
       console.error("schedule delete failed", error);
@@ -242,31 +344,46 @@ export default function CalendarManagePage() {
     }
   };
 
+  const handleHolidaySync = async () => {
+    try {
+      setIsSyncingHoliday(true);
+      setHolidaySyncMessage("");
+      const result = await syncHolidayList(normalizedYear);
+      setHolidaySyncMessage(result.message || "공휴일 동기화가 완료되었습니다.");
+      await loadSchedules(normalizedYear, normalizedMonth);
+    } catch (error) {
+      console.error("holiday sync failed", error);
+      setHolidaySyncMessage("공휴일 동기화에 실패했습니다.");
+    } finally {
+      setIsSyncingHoliday(false);
+    }
+  };
+
   return (
     <S.Page>
       <S.Shell>
         <S.Header>
-          <S.Eyebrow>Calendar Admin</S.Eyebrow>
+          <S.Eyebrow>캘린더 관리자</S.Eyebrow>
           <S.Title>캘린더 관리</S.Title>
           <S.Description>
-            일정 카테고리와 월별 일정을 등록, 조회, 삭제할 수 있는 관리자 페이지입니다.
+            일정 카테고리, 일정, 공휴일 동기화를 한 화면에서 관리할 수 있습니다.
           </S.Description>
         </S.Header>
 
         <S.Grid>
           <S.Card>
-            <S.CardTitle>카테고리 등록</S.CardTitle>
+            <S.CardTitle>{isCategoryEditMode ? "카테고리 수정" : "카테고리 등록"}</S.CardTitle>
             <S.CardText>
-              <code>/api/schedule/admin/category</code>로 일정 카테고리를 등록합니다.
+              <code>/api/schedule/admin/category</code> 기준으로 일정 카테고리를 등록하거나 수정합니다.
             </S.CardText>
 
-            <S.Form onSubmit={handleCreateCategory}>
+            <S.Form onSubmit={handleSaveCategory}>
               <S.Field>
-                <S.FieldLabel>카테고리 이름</S.FieldLabel>
+                <S.FieldLabel>카테고리명</S.FieldLabel>
                 <S.Input
                   value={categoryForm.categoryName}
                   onChange={handleCategoryChange("categoryName")}
-                  placeholder="예: 동아리 일정"
+                  placeholder="카테고리 이름"
                 />
               </S.Field>
 
@@ -292,7 +409,7 @@ export default function CalendarManagePage() {
 
               <S.InlineFields>
                 <S.Field>
-                  <S.FieldLabel>노출 여부</S.FieldLabel>
+                  <S.FieldLabel>isVisible</S.FieldLabel>
                   <S.Select
                     value={String(categoryForm.isVisible)}
                     onChange={handleCategoryVisibleChange}
@@ -303,7 +420,7 @@ export default function CalendarManagePage() {
                 </S.Field>
 
                 <S.Field>
-                  <S.FieldLabel>updatedBy</S.FieldLabel>
+                  <S.FieldLabel>수정자</S.FieldLabel>
                   <S.Input
                     value={categoryForm.updatedBy}
                     onChange={handleCategoryChange("updatedBy")}
@@ -314,27 +431,27 @@ export default function CalendarManagePage() {
 
               <S.ButtonRow>
                 <S.PrimaryButton type="submit">
-                  {isCreatingCategory ? "등록 중.." : "카테고리 등록"}
+                  {isSavingCategory ? "저장 중..." : isCategoryEditMode ? "카테고리 저장" : "카테고리 등록"}
                 </S.PrimaryButton>
+                <S.SecondaryButton type="button" onClick={resetCategoryForm}>
+                  초기화
+                </S.SecondaryButton>
               </S.ButtonRow>
             </S.Form>
 
-            {categoryMessage ? (
-              <S.StatusText $error={!categoryMessage.includes("등록되었습니다")}>
-                {categoryMessage}
-              </S.StatusText>
-            ) : null}
+            {categoryDetailMessage ? <S.StatusText>{categoryDetailMessage}</S.StatusText> : null}
+            {categoryMessage ? <S.StatusText>{categoryMessage}</S.StatusText> : null}
 
             <S.CodeBlock>{JSON.stringify(categoryForm, null, 2)}</S.CodeBlock>
           </S.Card>
 
           <S.Card>
-            <S.CardTitle>일정 등록</S.CardTitle>
+            <S.CardTitle>{isScheduleEditMode ? "일정 수정" : "일정 등록"}</S.CardTitle>
             <S.CardText>
-              <code>/api/schedule/admin</code>로 일정을 등록합니다.
+              <code>/api/schedule/admin</code> 기준으로 일정을 등록하거나 수정합니다.
             </S.CardText>
 
-            <S.Form onSubmit={handleCreateSchedule}>
+            <S.Form onSubmit={handleSaveSchedule}>
               <S.Field>
                 <S.FieldLabel>카테고리</S.FieldLabel>
                 <S.Select
@@ -342,7 +459,7 @@ export default function CalendarManagePage() {
                   onChange={handleScheduleChange("categoryId")}
                 >
                   {categories.length === 0 ? (
-                    <option value="0">카테고리를 먼저 등록해 주세요</option>
+                    <option value="0">먼저 카테고리를 등록해 주세요.</option>
                   ) : (
                     categories.map((category) => (
                       <option key={category.id} value={category.id}>
@@ -358,7 +475,7 @@ export default function CalendarManagePage() {
                 <S.Input
                   value={scheduleForm.title}
                   onChange={handleScheduleChange("title")}
-                  placeholder="예: 5월 정기 회의"
+                  placeholder="일정 제목"
                 />
               </S.Field>
 
@@ -413,7 +530,7 @@ export default function CalendarManagePage() {
 
               <S.InlineFields>
                 <S.Field>
-                  <S.FieldLabel>종일 여부</S.FieldLabel>
+                  <S.FieldLabel>isAllDay</S.FieldLabel>
                   <S.Select
                     value={String(scheduleForm.isAllDay)}
                     onChange={handleScheduleBooleanChange("isAllDay")}
@@ -424,7 +541,7 @@ export default function CalendarManagePage() {
                 </S.Field>
 
                 <S.Field>
-                  <S.FieldLabel>노출 여부</S.FieldLabel>
+                  <S.FieldLabel>isVisible</S.FieldLabel>
                   <S.Select
                     value={String(scheduleForm.isVisible)}
                     onChange={handleScheduleBooleanChange("isVisible")}
@@ -436,7 +553,7 @@ export default function CalendarManagePage() {
               </S.InlineFields>
 
               <S.Field>
-                <S.FieldLabel>updatedBy</S.FieldLabel>
+                  <S.FieldLabel>수정자</S.FieldLabel>
                 <S.Input
                   value={scheduleForm.updatedBy}
                   onChange={handleScheduleChange("updatedBy")}
@@ -446,24 +563,24 @@ export default function CalendarManagePage() {
 
               <S.ButtonRow>
                 <S.PrimaryButton type="submit">
-                  {isCreatingSchedule ? "등록 중.." : "일정 등록"}
+                  {isSavingSchedule ? "저장 중..." : isScheduleEditMode ? "일정 저장" : "일정 등록"}
                 </S.PrimaryButton>
+                <S.SecondaryButton type="button" onClick={resetScheduleForm}>
+                  초기화
+                </S.SecondaryButton>
               </S.ButtonRow>
             </S.Form>
 
-            {scheduleMessage ? (
-              <S.StatusText $error={!scheduleMessage.includes("등록되었습니다")}>
-                {scheduleMessage}
-              </S.StatusText>
-            ) : null}
+            {scheduleDetailMessage ? <S.StatusText>{scheduleDetailMessage}</S.StatusText> : null}
+            {scheduleMessage ? <S.StatusText>{scheduleMessage}</S.StatusText> : null}
 
             <S.CodeBlock>{JSON.stringify(scheduleForm, null, 2)}</S.CodeBlock>
           </S.Card>
 
           <S.Card>
-            <S.CardTitle>월별 일정 조회</S.CardTitle>
+            <S.CardTitle>관리자 일정 목록</S.CardTitle>
             <S.CardText>
-              <code>GET /api/schedule/admin</code> 응답을 그대로 확인할 수 있습니다.
+              <code>GET /api/schedule/admin</code> 응답을 확인하고 수정할 일정이나 카테고리를 선택합니다.
             </S.CardText>
 
             <S.InlineFields>
@@ -490,25 +607,74 @@ export default function CalendarManagePage() {
 
             <S.ButtonRow>
               <S.SecondaryButton type="button" onClick={() => void loadSchedules()}>
-                {isLoadingSchedules ? "불러오는 중.." : "일정 새로고침"}
+                {isLoadingSchedules ? "불러오는 중..." : "일정 새로고침"}
               </S.SecondaryButton>
 
               <S.SecondaryButton type="button" onClick={() => void loadCategories()}>
-                {isLoadingCategories ? "불러오는 중.." : "카테고리 새로고침"}
+                {isLoadingCategories ? "불러오는 중..." : "카테고리 새로고침"}
               </S.SecondaryButton>
             </S.ButtonRow>
 
-            <S.CodeBlock>{JSON.stringify(schedules, null, 2)}</S.CodeBlock>
+            <S.CardTitle as="h3">수정할 카테고리 선택</S.CardTitle>
+            <S.ButtonRow>
+              {categories.map((category) => (
+                <S.SecondaryButton
+                  key={category.id}
+                  type="button"
+                  onClick={() => handleSelectCategory(category)}
+                >
+                  {category.id}. {category.categoryName}
+                </S.SecondaryButton>
+              ))}
+            </S.ButtonRow>
+
+            <S.CardTitle as="h3">수정할 일정 선택</S.CardTitle>
+            <S.ButtonRow>
+              {schedules.map((schedule) => (
+                <S.SecondaryButton
+                  key={schedule.id}
+                  type="button"
+                  onClick={() => handleSelectSchedule(schedule)}
+                >
+                  {schedule.id}. {schedule.title}
+                </S.SecondaryButton>
+              ))}
+            </S.ButtonRow>
+
+            <S.CodeBlock>
+              {JSON.stringify(
+                {
+                  categories,
+                  schedules,
+                },
+                null,
+                2
+              )}
+            </S.CodeBlock>
+
+            <S.CardTitle as="h3">선택한 카테고리</S.CardTitle>
+            <S.CodeBlock>
+              {selectedCategory
+                ? JSON.stringify(selectedCategory, null, 2)
+                : "선택한 카테고리가 없습니다."}
+            </S.CodeBlock>
+
+            <S.CardTitle as="h3">선택한 일정</S.CardTitle>
+            <S.CodeBlock>
+              {selectedSchedule
+                ? JSON.stringify(selectedSchedule, null, 2)
+                : "선택한 일정이 없습니다."}
+            </S.CodeBlock>
           </S.Card>
 
           <S.Card>
             <S.CardTitle>카테고리 / 일정 삭제</S.CardTitle>
             <S.CardText>
-              카테고리와 일정은 각각 ID 기준으로 삭제합니다.
+              ID를 입력해 카테고리나 일정을 삭제합니다.
             </S.CardText>
 
             <S.Field>
-              <S.FieldLabel>삭제할 카테고리 ID</S.FieldLabel>
+              <S.FieldLabel>카테고리 ID</S.FieldLabel>
               <S.Input
                 value={categoryDeleteId}
                 onChange={(event) => {
@@ -521,18 +687,14 @@ export default function CalendarManagePage() {
 
             <S.ButtonRow>
               <S.DangerButton type="button" onClick={handleDeleteCategory}>
-                {isDeletingCategory ? "삭제 중.." : "카테고리 삭제"}
+                {isDeletingCategory ? "삭제 중..." : "카테고리 삭제"}
               </S.DangerButton>
             </S.ButtonRow>
 
-            {categoryDeleteMessage ? (
-              <S.StatusText $error={!categoryDeleteMessage.includes("완료")}>
-                {categoryDeleteMessage}
-              </S.StatusText>
-            ) : null}
+            {categoryDeleteMessage ? <S.StatusText>{categoryDeleteMessage}</S.StatusText> : null}
 
             <S.Field>
-              <S.FieldLabel>삭제할 일정 ID</S.FieldLabel>
+              <S.FieldLabel>일정 ID</S.FieldLabel>
               <S.Input
                 value={scheduleDeleteId}
                 onChange={(event) => {
@@ -545,17 +707,39 @@ export default function CalendarManagePage() {
 
             <S.ButtonRow>
               <S.DangerButton type="button" onClick={handleDeleteSchedule}>
-                {isDeletingSchedule ? "삭제 중.." : "일정 삭제"}
+                {isDeletingSchedule ? "삭제 중..." : "일정 삭제"}
               </S.DangerButton>
             </S.ButtonRow>
 
-            {scheduleDeleteMessage ? (
-              <S.StatusText $error={!scheduleDeleteMessage.includes("완료")}>
-                {scheduleDeleteMessage}
-              </S.StatusText>
-            ) : null}
+            {scheduleDeleteMessage ? <S.StatusText>{scheduleDeleteMessage}</S.StatusText> : null}
 
             <S.CodeBlock>{JSON.stringify(categories, null, 2)}</S.CodeBlock>
+          </S.Card>
+
+          <S.Card>
+            <S.CardTitle>공휴일 동기화</S.CardTitle>
+            <S.CardText>
+              <code>POST /api/holiday/admin/sync</code>로 선택한 연도의 공휴일 데이터를 동기화합니다.
+            </S.CardText>
+
+            <S.Field>
+              <S.FieldLabel>동기화 연도</S.FieldLabel>
+              <S.Input
+                type="number"
+                value={queryYear}
+                onChange={(event) => setQueryYear(event.target.value)}
+              />
+            </S.Field>
+
+            <S.ButtonRow>
+              <S.PrimaryButton type="button" onClick={handleHolidaySync}>
+                {isSyncingHoliday ? "동기화 중..." : "공휴일 동기화"}
+              </S.PrimaryButton>
+            </S.ButtonRow>
+
+            {holidaySyncMessage ? <S.StatusText>{holidaySyncMessage}</S.StatusText> : null}
+
+            <S.CodeBlock>{JSON.stringify({ year: normalizedYear }, null, 2)}</S.CodeBlock>
           </S.Card>
         </S.Grid>
       </S.Shell>

@@ -7,32 +7,73 @@ import {
   type NoticeListItem,
 } from "../../services/noticeApi";
 
+const getCategoryColor = (category: string) => {
+  const key = category.trim().toLowerCase();
+
+  if (key.includes("external") || key.includes("���")) {
+    return "#4b78ff";
+  }
+
+  if (key.includes("club") || key.includes("���Ƹ�")) {
+    return "#7d5cff";
+  }
+
+  return "#5b647a";
+};
+
 export default function NoticeSection() {
-  const [notices, setNotices] = useState<NoticeListItem[]>([]);
+  const [noticePage, setNoticePage] = useState<{
+    content: NoticeListItem[];
+    totalPages: number;
+    totalElements: number;
+    number: number;
+    size: number;
+  }>({
+    content: [],
+    totalPages: 0,
+    totalElements: 0,
+    number: 0,
+    size: 6,
+  });
   const [selectedNotice, setSelectedNotice] = useState<NoticeDetail | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [knownCategories, setKnownCategories] = useState<string[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
-
-  const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
     const loadNotices = async () => {
       try {
         setIsLoadingList(true);
         setErrorMessage("");
-        const result = await getNoticeList();
-        setNotices(Array.isArray(result) ? result : []);
+        const result = await getNoticeList({
+          category: selectedCategory || undefined,
+          page: currentPage,
+        });
+
+        const categories = Array.from(
+          new Set(result.content.map((notice) => notice.category).filter(Boolean))
+        );
+
+        setNoticePage(result);
+        setKnownCategories((prev) => Array.from(new Set([...prev, ...categories])));
       } catch {
-        setNotices([]);
-        setErrorMessage("공지사항 목록을 불러오지 못했습니다.");
+        setNoticePage({
+          content: [],
+          totalPages: 0,
+          totalElements: 0,
+          number: currentPage,
+          size: 6,
+        });
+        setErrorMessage("Failed to load notices.");
       } finally {
         setIsLoadingList(false);
       }
     };
 
     void loadNotices();
-  }, []);
+  }, [currentPage, selectedCategory]);
 
   useEffect(() => {
     if (!selectedNotice) {
@@ -47,19 +88,14 @@ export default function NoticeSection() {
     };
   }, [selectedNotice]);
 
-  const totalPages = Math.max(1, Math.ceil(notices.length / ITEMS_PER_PAGE));
-
-  const pagedList = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return notices.slice(start, start + ITEMS_PER_PAGE);
-  }, [notices, currentPage]);
+  const categories = useMemo(() => ["", ...knownCategories], [knownCategories]);
 
   const handleOpenModal = async (noticeId: number) => {
     try {
       const detail = await getNoticeDetail(noticeId);
       setSelectedNotice(detail);
     } catch {
-      setErrorMessage("공지사항 상세 정보를 불러오지 못했습니다.");
+      setErrorMessage("Failed to load notice detail.");
     }
   };
 
@@ -67,12 +103,19 @@ export default function NoticeSection() {
     setSelectedNotice(null);
   };
 
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(0);
+  };
+
+  const totalPages = Math.max(noticePage.totalPages, 1);
+
   return (
     <>
       <S.HeroSection>
         <S.HeroTextWrap>
-          <S.HeroTitle>공지사항</S.HeroTitle>
-          <S.HeroDesc>REVERSE의 최신 공지사항을 확인할 수 있는 페이지입니다.</S.HeroDesc>
+          <S.HeroTitle>NOTICE</S.HeroTitle>
+          <S.HeroDesc>Browse the latest REVERSE announcements.</S.HeroDesc>
         </S.HeroTextWrap>
       </S.HeroSection>
 
@@ -80,27 +123,40 @@ export default function NoticeSection() {
         <S.Inner>
           <S.TopLine />
 
+          <S.TabList>
+            {categories.map((category) => {
+              const label = category || "ALL";
+              return (
+                <S.TabButton
+                  key={label}
+                  type="button"
+                  $active={selectedCategory === category}
+                  onClick={() => handleCategoryChange(category)}
+                >
+                  {label}
+                </S.TabButton>
+              );
+            })}
+          </S.TabList>
+
           <S.CardList>
-            {isLoadingList ? <S.EmptyState>공지사항 목록을 불러오는 중입니다.</S.EmptyState> : null}
+            {isLoadingList ? <S.EmptyState>Loading notices...</S.EmptyState> : null}
 
-            {!isLoadingList && errorMessage ? (
-              <S.EmptyState>{errorMessage}</S.EmptyState>
-            ) : null}
+            {!isLoadingList && errorMessage ? <S.EmptyState>{errorMessage}</S.EmptyState> : null}
 
-            {!isLoadingList && !errorMessage && pagedList.length === 0 ? (
-              <S.EmptyState>등록된 공지사항이 없습니다.</S.EmptyState>
+            {!isLoadingList && !errorMessage && noticePage.content.length === 0 ? (
+              <S.EmptyState>No notices found.</S.EmptyState>
             ) : null}
 
             {!isLoadingList &&
               !errorMessage &&
-              pagedList.map((notice) => (
-                <S.Card
-                  key={notice.id}
-                  type="button"
-                  onClick={() => void handleOpenModal(notice.id)}
-                >
+              noticePage.content.map((notice) => (
+                <S.Card key={notice.id} type="button" onClick={() => void handleOpenModal(notice.id)}>
                   <S.CardRow>
                     <S.Left>
+                      <S.Category $bgColor={getCategoryColor(notice.category)}>
+                        {notice.category}
+                      </S.Category>
                       <S.Title>{notice.title}</S.Title>
                     </S.Left>
 
@@ -113,33 +169,33 @@ export default function NoticeSection() {
               ))}
           </S.CardList>
 
-          {!isLoadingList && !errorMessage && notices.length > 0 ? (
+          {!isLoadingList && !errorMessage && noticePage.totalPages > 0 ? (
             <S.Pagination>
               <S.PageNavButton
                 type="button"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 0))}
               >
-                이전
+                Prev
               </S.PageNavButton>
 
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+              {Array.from({ length: totalPages }, (_, index) => index).map((page) => (
                 <S.PageNumberButton
                   key={page}
                   type="button"
                   $active={currentPage === page}
                   onClick={() => setCurrentPage(page)}
                 >
-                  {page}
+                  {page + 1}
                 </S.PageNumberButton>
               ))}
 
               <S.PageNavButton
                 type="button"
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage >= totalPages - 1}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1))}
               >
-                다음
+                Next
               </S.PageNavButton>
             </S.Pagination>
           ) : null}
@@ -150,10 +206,13 @@ export default function NoticeSection() {
         <S.ModalOverlay onClick={handleCloseModal}>
           <S.ModalContainer onClick={(event) => event.stopPropagation()}>
             <S.Close type="button" onClick={handleCloseModal}>
-              ×
+              X
             </S.Close>
 
             <S.ModalTopBar>
+              <S.ModalCategoryChip $bgColor={getCategoryColor(selectedNotice.category)}>
+                {selectedNotice.category}
+              </S.ModalCategoryChip>
               <S.ModalTopTitle>{selectedNotice.title}</S.ModalTopTitle>
             </S.ModalTopBar>
 
@@ -162,15 +221,24 @@ export default function NoticeSection() {
             <S.ModalHeaderRow>
               <S.ModalHeaderLeft>
                 <S.ModalTitle>{selectedNotice.title}</S.ModalTitle>
-                <S.ModalSub>REVERSE 공지사항 상세</S.ModalSub>
+                <S.ModalSub>REVERSE Notice Detail</S.ModalSub>
               </S.ModalHeaderLeft>
 
               <S.Meta>
-                <S.DateText>작성일: {selectedNotice.createdAt}</S.DateText>
+                <S.AuthorText>{selectedNotice.userId}</S.AuthorText>
+                <S.DateText>{selectedNotice.createdAt}</S.DateText>
               </S.Meta>
             </S.ModalHeaderRow>
 
             <S.ContentBox>{selectedNotice.content}</S.ContentBox>
+
+            {selectedNotice.imageUrls.length > 0 ? (
+              <S.ImageBox>
+                {selectedNotice.imageUrls.map((imageUrl) => (
+                  <img key={imageUrl} src={imageUrl} alt="notice" />
+                ))}
+              </S.ImageBox>
+            ) : null}
           </S.ModalContainer>
         </S.ModalOverlay>
       )}

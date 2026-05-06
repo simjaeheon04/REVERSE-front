@@ -1,15 +1,28 @@
 import { axiosInstance } from "./axiosInstance";
 
 type ApiSuccessResponse<T> = {
-  success: true;
+  status: string;
+  message: string | null;
   data: T;
-  message?: string;
 };
+
+export type NoticeCategory = string;
 
 export type NoticeListItem = {
   id: number;
   title: string;
   createdAt: string;
+  userId: string;
+  category: NoticeCategory;
+  isExternal: boolean;
+};
+
+export type NoticeListPage = {
+  content: NoticeListItem[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
+  size: number;
 };
 
 export type NoticeDetail = {
@@ -17,12 +30,25 @@ export type NoticeDetail = {
   title: string;
   content: string;
   createdAt: string;
+  userId: string;
+  category: NoticeCategory;
+  isExternal: boolean;
+  imageUrls: string[];
+  isPinned?: boolean;
+};
+
+export type NoticeListParams = {
+  category?: string;
+  page?: number;
 };
 
 export type NoticeUpsertPayload = {
   title: string;
   content: string;
   isPinned: boolean;
+  isExternal: boolean;
+  category: string;
+  imageUrls: string[];
   noticeId?: number;
 };
 
@@ -34,9 +60,29 @@ export type NoticeDeleteResult = {
   noticeId: number;
 };
 
-export const getNoticeList = async (): Promise<NoticeListItem[]> => {
-  const response =
-    await axiosInstance.get<ApiSuccessResponse<NoticeListItem[]>>("/api/notices");
+export const uploadNoticeImage = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axiosInstance.post("/api/notices/image", formData, {
+    responseType: "text",
+  });
+
+  return response.data;
+};
+
+export const getNoticeList = async (
+  params: NoticeListParams = {}
+): Promise<NoticeListPage> => {
+  const response = await axiosInstance.get<ApiSuccessResponse<NoticeListPage>>(
+    "/api/notices",
+    {
+      params: {
+        category: params.category || undefined,
+        page: params.page ?? 0,
+      },
+    }
+  );
 
   return response.data.data;
 };

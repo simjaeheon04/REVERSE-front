@@ -4,6 +4,8 @@ import {
   createClubIntro,
   deleteClubIntro,
   getClubIntroList,
+  updateClubIntro,
+  updateClubIntroImage,
   uploadClubIntroImage,
   type ClubIntroPayload,
   type ClubIntroResponse,
@@ -18,16 +20,22 @@ const initialForm: ClubIntroPayload = {
   updatedBy: "",
 };
 
+const getClubIntroId = (clubIntro: ClubIntroResponse) =>
+  clubIntro.clubIntroId ?? clubIntro.id ?? null;
+
 export default function ClubIntroManagePage() {
   const userId = useAuthStore((state) => state.userId);
   const [form, setForm] = useState<ClubIntroPayload>(initialForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState("");
   const [response, setResponse] = useState<ClubIntroResponse | null>(null);
+  const [selectedClubIntro, setSelectedClubIntro] = useState<ClubIntroResponse | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteResponse, setDeleteResponse] = useState<unknown>(null);
   const [clubIntros, setClubIntros] = useState<ClubIntroResponse[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
+  const [detailMessage, setDetailMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -35,6 +43,7 @@ export default function ClubIntroManagePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoadingList, setIsLoadingList] = useState(false);
 
+  const isEditMode = editingId !== null;
   const activeBannerUrl = uploadedUrl || form.bannerUrl;
 
   const loadClubIntros = async () => {
@@ -51,7 +60,7 @@ export default function ClubIntroManagePage() {
   };
 
   useEffect(() => {
-    loadClubIntros();
+    void loadClubIntros();
   }, []);
 
   useEffect(() => {
@@ -61,6 +70,21 @@ export default function ClubIntroManagePage() {
     }));
   }, [userId]);
 
+  const resetForm = () => {
+    setForm({
+      ...initialForm,
+      updatedBy: userId ?? "",
+    });
+    setSelectedFile(null);
+    setUploadedUrl("");
+    setResponse(null);
+    setSelectedClubIntro(null);
+    setEditingId(null);
+    setUploadMessage("");
+    setSubmitMessage("");
+    setDetailMessage("");
+  };
+
   const handleTextChange =
     (key: keyof ClubIntroPayload) =>
     (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -68,10 +92,7 @@ export default function ClubIntroManagePage() {
 
       setForm((prev) => ({
         ...prev,
-        [key]:
-          key === "isActive"
-            ? value === "true" || value === "1"
-            : value,
+        [key]: key === "isActive" ? value === "true" || value === "1" : value,
       }));
     };
 
@@ -86,9 +107,28 @@ export default function ClubIntroManagePage() {
     setDeleteMessage("");
   };
 
+  const handleSelectClubIntro = (clubIntro: ClubIntroResponse) => {
+    const clubIntroId = getClubIntroId(clubIntro);
+
+    setSelectedClubIntro(clubIntro);
+    setEditingId(clubIntroId);
+    setUploadedUrl(clubIntro.bannerUrl ?? "");
+    setSelectedFile(null);
+    setUploadMessage("");
+    setSubmitMessage("");
+    setDetailMessage("선택한 동아리 소개를 수정 모드로 불러왔습니다.");
+    setForm({
+      title: clubIntro.title ?? "",
+      subTitle: clubIntro.subTitle ?? "",
+      bannerUrl: clubIntro.bannerUrl ?? "",
+      isActive: clubIntro.isActive ?? true,
+      updatedBy: userId ?? "",
+    });
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) {
-      setUploadMessage("업로드할 이미지를 먼저 선택해주세요.");
+      setUploadMessage("먼저 이미지 파일을 선택해 주세요.");
       return;
     }
 
@@ -96,10 +136,18 @@ export default function ClubIntroManagePage() {
       setIsUploading(true);
       setUploadMessage("");
 
-      const imageUrl = await uploadClubIntroImage(selectedFile);
+      const imageUrl =
+        editingId !== null
+          ? await updateClubIntroImage(editingId, selectedFile)
+          : await uploadClubIntroImage(selectedFile);
+
       setUploadedUrl(imageUrl);
       setForm((prev) => ({ ...prev, bannerUrl: imageUrl }));
-      setUploadMessage("이미지 업로드가 완료되었습니다.");
+      setUploadMessage(
+        editingId !== null
+          ? "배너 이미지가 수정되었습니다."
+          : "배너 이미지가 업로드되었습니다."
+      );
     } catch (error) {
       console.error("image upload failed", error);
       setUploadMessage("이미지 업로드에 실패했습니다.");
@@ -120,13 +168,26 @@ export default function ClubIntroManagePage() {
         bannerUrl: activeBannerUrl,
       };
 
-      const result = await createClubIntro(payload);
+      const result =
+        editingId !== null
+          ? await updateClubIntro(editingId, payload)
+          : await createClubIntro(payload);
+
       setResponse(result);
-      setSubmitMessage("동아리 소개 등록 요청이 완료되었습니다.");
+      setSubmitMessage(
+        editingId !== null
+          ? "동아리 소개가 수정되었습니다."
+          : "동아리 소개가 등록되었습니다."
+      );
       await loadClubIntros();
+      resetForm();
     } catch (error) {
-      console.error("club intro create failed", error);
-      setSubmitMessage("동아리 소개 등록 요청에 실패했습니다.");
+      console.error("club intro submit failed", error);
+      setSubmitMessage(
+        editingId !== null
+          ? "동아리 소개 수정에 실패했습니다."
+          : "동아리 소개 등록에 실패했습니다."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +195,7 @@ export default function ClubIntroManagePage() {
 
   const handleDelete = async () => {
     if (!deleteId.trim()) {
-      setDeleteMessage("삭제할 소개 ID를 입력해주세요.");
+      setDeleteMessage("삭제할 동아리 소개 ID를 입력해 주세요.");
       return;
     }
 
@@ -144,11 +205,17 @@ export default function ClubIntroManagePage() {
 
       const result = await deleteClubIntro(deleteId.trim());
       setDeleteResponse(result);
-      setDeleteMessage("동아리 소개 삭제 요청이 완료되었습니다.");
+      setDeleteMessage("동아리 소개가 삭제되었습니다.");
+
+      if (editingId === Number(deleteId.trim())) {
+        resetForm();
+      }
+
+      setDeleteId("");
       await loadClubIntros();
     } catch (error) {
       console.error("club intro delete failed", error);
-      setDeleteMessage("동아리 소개 삭제 요청에 실패했습니다.");
+      setDeleteMessage("동아리 소개 삭제에 실패했습니다.");
     } finally {
       setIsDeleting(false);
     }
@@ -158,12 +225,10 @@ export default function ClubIntroManagePage() {
     <S.Page>
       <S.Shell>
         <S.Header>
-          <S.Eyebrow>Club Intro Admin</S.Eyebrow>
+          <S.Eyebrow>동아리 소개 관리자</S.Eyebrow>
           <S.Title>동아리 소개 관리</S.Title>
           <S.Description>
-            배너 이미지를 업로드하고 소개 등록, 조회, 삭제를 한 화면에서 처리할
-            수 있는 관리 페이지입니다. 클럽 소개 배너는 항상 club 경로로
-            업로드됩니다.
+            배너 업로드, 동아리 소개 등록, 기존 항목 수정까지 한 화면에서 관리할 수 있습니다.
           </S.Description>
         </S.Header>
 
@@ -171,67 +236,61 @@ export default function ClubIntroManagePage() {
           <S.Card>
             <S.CardTitle>배너 업로드</S.CardTitle>
             <S.CardText>
-              R2에 이미지를 업로드한 뒤 반환된 URL을 소개 등록 폼의
-              <code> bannerUrl </code>값으로 자동 반영합니다.
+              먼저 배너 이미지를 업로드해 주세요. 수정 모드에서는 현재 배너 이미지를 교체합니다.
             </S.CardText>
 
             <S.Field>
               <S.FieldLabel>이미지 파일</S.FieldLabel>
-              <S.Input type='file' accept='image/*' onChange={handleFileChange} />
+              <S.Input type="file" accept="image/*" onChange={handleFileChange} />
             </S.Field>
 
             <S.ButtonRow>
-              <S.PrimaryButton type='button' onClick={handleUpload}>
-                {isUploading ? "업로드 중..." : "이미지 업로드"}
+              <S.PrimaryButton type="button" onClick={handleUpload}>
+                {isUploading ? "업로드 중..." : isEditMode ? "이미지 수정" : "이미지 업로드"}
               </S.PrimaryButton>
             </S.ButtonRow>
 
             {uploadMessage ? (
-              <S.StatusText $error={!uploadedUrl}>{uploadMessage}</S.StatusText>
+              <S.StatusText $error={!activeBannerUrl}>{uploadMessage}</S.StatusText>
             ) : null}
 
             <S.PreviewPanel>
               {activeBannerUrl ? (
-                <S.PreviewImage src={activeBannerUrl} alt='banner preview' />
+                <S.PreviewImage src={activeBannerUrl} alt="배너 미리보기" />
               ) : (
-                <S.EmptyPreview>업로드 후 미리보기가 여기에 표시됩니다.</S.EmptyPreview>
+                <S.EmptyPreview>배너 미리보기가 여기에 표시됩니다.</S.EmptyPreview>
               )}
 
               <S.MetaList>
-                <S.MetaLabel>선택 파일</S.MetaLabel>
-                <S.MetaValue>
-                  {selectedFile ? selectedFile.name : "선택된 파일이 없습니다."}
-                </S.MetaValue>
+                <S.MetaLabel>파일</S.MetaLabel>
+                <S.MetaValue>{selectedFile ? selectedFile.name : "선택된 파일이 없습니다."}</S.MetaValue>
 
-                <S.MetaLabel>업로드 URL</S.MetaLabel>
-                <S.MetaValue>{activeBannerUrl || "아직 URL이 없습니다."}</S.MetaValue>
+                <S.MetaLabel>URL</S.MetaLabel>
+                <S.MetaValue>{activeBannerUrl || "업로드된 URL이 없습니다."}</S.MetaValue>
               </S.MetaList>
             </S.PreviewPanel>
           </S.Card>
 
           <S.Card>
-            <S.CardTitle>소개 등록</S.CardTitle>
+            <S.CardTitle>{isEditMode ? "동아리 소개 수정" : "동아리 소개 등록"}</S.CardTitle>
             <S.CardText>
-              업로드한 배너 URL을 포함해 <code>/api/club-intro</code>로 소개
-              정보를 등록합니다.
+              {isEditMode
+                ? "선택한 동아리 소개를 수정하고 저장합니다."
+                : "새 동아리 소개 항목을 등록합니다."}
             </S.CardText>
 
             <S.Form onSubmit={handleSubmit}>
               <S.Field>
-                <S.FieldLabel>동아리 이름</S.FieldLabel>
-                <S.Input
-                  value={form.title}
-                  onChange={handleTextChange("title")}
-                  placeholder='동아리 이름'
-                />
+                <S.FieldLabel>제목</S.FieldLabel>
+                <S.Input value={form.title} onChange={handleTextChange("title")} placeholder="REVERSE" />
               </S.Field>
 
               <S.Field>
-                <S.FieldLabel>한 줄 소개</S.FieldLabel>
+                <S.FieldLabel>부제목</S.FieldLabel>
                 <S.TextArea
                   value={form.subTitle}
                   onChange={handleTextChange("subTitle")}
-                  placeholder='동아리 한 줄 소개'
+                  placeholder="동아리 소개 부제목"
                 />
               </S.Field>
 
@@ -240,116 +299,93 @@ export default function ClubIntroManagePage() {
                 <S.Input
                   value={activeBannerUrl}
                   onChange={handleTextChange("bannerUrl")}
-                  placeholder='업로드 후 자동 반영되거나 직접 입력할 수 있습니다.'
+                  placeholder="배너 이미지 URL"
                 />
               </S.Field>
 
               <S.InlineFields>
                 <S.Field>
                   <S.FieldLabel>isActive</S.FieldLabel>
-                  <S.Input
-                    value={String(form.isActive)}
-                    onChange={handleTextChange("isActive")}
-                  />
+                  <S.Input value={String(form.isActive)} onChange={handleTextChange("isActive")} />
                 </S.Field>
 
                 <S.Field>
-                  <S.FieldLabel>updatedBy</S.FieldLabel>
-                  <S.Input
-                    value={form.updatedBy}
-                    onChange={handleTextChange("updatedBy")}
-                  />
+                  <S.FieldLabel>수정자</S.FieldLabel>
+                  <S.Input value={form.updatedBy} onChange={handleTextChange("updatedBy")} />
                 </S.Field>
               </S.InlineFields>
 
               <S.ButtonRow>
-                <S.PrimaryButton type='submit'>
-                  {isSubmitting ? "등록 중..." : "소개 등록"}
+                <S.PrimaryButton type="submit">
+                  {isSubmitting ? "저장 중..." : isEditMode ? "수정 저장" : "소개 등록"}
                 </S.PrimaryButton>
-                <S.SecondaryButton
-                  type='button'
-                  onClick={() => {
-                    setForm({
-                      ...initialForm,
-                      updatedBy: userId ?? "",
-                    });
-                    setUploadedUrl("");
-                    setResponse(null);
-                    setUploadMessage("");
-                    setSubmitMessage("");
-                    setSelectedFile(null);
-                  }}
-                >
-                  폼 초기화
+                <S.SecondaryButton type="button" onClick={resetForm}>
+                  초기화
                 </S.SecondaryButton>
               </S.ButtonRow>
             </S.Form>
 
-            {submitMessage ? (
-              <S.StatusText $error={!response}>{submitMessage}</S.StatusText>
-            ) : null}
+            {detailMessage ? <S.StatusText>{detailMessage}</S.StatusText> : null}
+            {submitMessage ? <S.StatusText $error={!response}>{submitMessage}</S.StatusText> : null}
 
             <S.PreviewPanel>
-              <div>
-                <S.CardTitle as='h3'>요청 미리보기</S.CardTitle>
-              </div>
-              <S.CodeBlock>
-                {JSON.stringify(
-                  {
-                    ...form,
-                    bannerUrl: activeBannerUrl,
-                  },
-                  null,
-                  2
-                )}
-              </S.CodeBlock>
+              <S.CardTitle as="h3">요청 미리보기</S.CardTitle>
+              <S.CodeBlock>{JSON.stringify({ ...form, bannerUrl: activeBannerUrl }, null, 2)}</S.CodeBlock>
 
-              <div>
-                <S.CardTitle as='h3'>응답</S.CardTitle>
-              </div>
+              <S.CardTitle as="h3">응답</S.CardTitle>
               <S.CodeBlock>
-                {response
-                  ? JSON.stringify(response, null, 2)
-                  : "아직 응답이 없습니다."}
+                {response ? JSON.stringify(response, null, 2) : "아직 응답이 없습니다."}
               </S.CodeBlock>
             </S.PreviewPanel>
           </S.Card>
 
           <S.Card>
-            <S.CardTitle>동아리 소개 전체 조회</S.CardTitle>
-            <S.CardText>
-              <code>GET /api/club-intro</code> 응답을 그대로 확인할 수 있습니다.
-            </S.CardText>
+            <S.CardTitle>동아리 소개 목록</S.CardTitle>
+            <S.CardText>목록을 새로고침하고 수정할 항목을 선택해 주세요.</S.CardText>
 
             <S.ButtonRow>
-              <S.SecondaryButton type='button' onClick={loadClubIntros}>
+              <S.SecondaryButton type="button" onClick={() => void loadClubIntros()}>
                 {isLoadingList ? "불러오는 중..." : "목록 새로고침"}
               </S.SecondaryButton>
             </S.ButtonRow>
 
+            <S.CardTitle as="h3">수정할 항목 선택</S.CardTitle>
+            <S.ButtonRow>
+              {clubIntros.map((clubIntro) => {
+                const clubIntroId = getClubIntroId(clubIntro);
+                return (
+                  <S.SecondaryButton
+                    key={clubIntroId ?? clubIntro.title}
+                    type="button"
+                    onClick={() => handleSelectClubIntro(clubIntro)}
+                  >
+                    {clubIntroId ?? "-"}. {clubIntro.title}
+                  </S.SecondaryButton>
+                );
+              })}
+            </S.ButtonRow>
+
+            <S.CodeBlock>{JSON.stringify(clubIntros, null, 2)}</S.CodeBlock>
+
+            <S.CardTitle as="h3">선택한 항목</S.CardTitle>
             <S.CodeBlock>
-              {JSON.stringify(clubIntros, null, 2)}
+              {selectedClubIntro
+                ? JSON.stringify(selectedClubIntro, null, 2)
+                : "선택한 동아리 소개가 없습니다."}
             </S.CodeBlock>
           </S.Card>
 
           <S.Card>
             <S.CardTitle>동아리 소개 삭제</S.CardTitle>
-            <S.CardText>
-              삭제할 소개의 ID를 입력한 뒤 <code>DELETE /api/club-intro/{`{id}`}</code>
-              요청을 보냅니다.
-            </S.CardText>
+            <S.CardText>ID를 입력해 항목을 삭제합니다.</S.CardText>
 
             <S.Field>
-              <S.FieldLabel>소개 ID</S.FieldLabel>
-              <S.Input
-                value={deleteId}
-                onChange={handleDeleteIdChange}
-                placeholder='삭제할 소개 ID'
-              />
+              <S.FieldLabel>동아리 소개 ID</S.FieldLabel>
+              <S.Input value={deleteId} onChange={handleDeleteIdChange} placeholder="삭제할 ID" />
             </S.Field>
 
             <S.ButtonRow>
-              <S.DangerButton type='button' onClick={handleDelete}>
+              <S.DangerButton type="button" onClick={handleDelete}>
                 {isDeleting ? "삭제 중..." : "소개 삭제"}
               </S.DangerButton>
             </S.ButtonRow>
@@ -359,22 +395,16 @@ export default function ClubIntroManagePage() {
             ) : null}
 
             <S.PreviewPanel>
-              <div>
-                <S.CardTitle as='h3'>삭제 요청</S.CardTitle>
-              </div>
+              <S.CardTitle as="h3">삭제 요청</S.CardTitle>
               <S.CodeBlock>
                 {deleteId.trim()
                   ? `DELETE /api/club-intro/${deleteId.trim()}`
-                  : "삭제할 ID를 입력하면 요청 경로가 여기에 표시됩니다."}
+                  : "ID를 입력하면 삭제 경로가 표시됩니다."}
               </S.CodeBlock>
 
-              <div>
-                <S.CardTitle as='h3'>응답</S.CardTitle>
-              </div>
+              <S.CardTitle as="h3">응답</S.CardTitle>
               <S.CodeBlock>
-                {deleteResponse
-                  ? JSON.stringify(deleteResponse, null, 2)
-                  : "아직 삭제 응답이 없습니다."}
+                {deleteResponse ? JSON.stringify(deleteResponse, null, 2) : "아직 삭제 응답이 없습니다."}
               </S.CodeBlock>
             </S.PreviewPanel>
           </S.Card>
