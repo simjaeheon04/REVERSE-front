@@ -5,6 +5,7 @@ export const Section = styled.section`
   width: 100%;
   overflow: hidden;
   padding: 120px 20px 140px;
+  background-color : #2D303A;
 `;
 
 export const Inner = styled.div`
@@ -17,7 +18,7 @@ export const Inner = styled.div`
 export const Header = styled.div`
   text-align: center;
   color: #ffffff;
-  margin-bottom: 72px;
+  margin-bottom: 90px;
 `;
 
 export const Title = styled.h2`
@@ -25,7 +26,7 @@ export const Title = styled.h2`
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.03em;
-  margin-bottom: 18px;
+  margin-bottom: 40px;
 
   @media (max-width: 1200px) {
     font-size: 48px;
@@ -37,8 +38,8 @@ export const Title = styled.h2`
 `;
 
 export const Subtitle = styled.p`
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 300;
   color: rgba(255, 255, 255, 0.82);
 
   @media (max-width: 1200px) {
@@ -128,6 +129,20 @@ export const Avatar = styled.div`
   }
 `;
 
+export const AvatarImage = styled.img`
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  @media (max-width: 1200px) {
+    width: 64px;
+    height: 64px;
+  }
+`;
+
 export const MemberInfo = styled.div`
   min-width: 0;
   display: flex;
@@ -156,4 +171,26 @@ export const Email = styled.div`
   font-weight: 400;
   color: rgba(255, 255, 255, 0.72);
   word-break: break-all;
+`;
+
+export const EmptyState = styled.div`
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 24px;
+`;
+
+export const DecoBox = styled.div`
+  position: absolute;
+
+  right: -90px;
+  bottom: -90px;
+
+  width: 25px;
+  height: 25px;
+
+  background-color: #4A4D56;
 `;

@@ -1,9 +1,26 @@
 import styled from "styled-components";
+ 
+if (typeof document !== "undefined") {
+  const existing = document.querySelector(
+    "link[href*='fonts.googleapis.com']"
+  );
+
+  if (!existing) {
+    const link = document.createElement("link");
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Jersey+25&family=Inter:wght@400;500;700&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+  }
+}
 
 export const Section = styled.section`
   position: relative;
   width: 100%;
   padding: 140px 20px 150px;
+  background-color : #2D303A;
+
+  font-family: 'Inter', sans-serif;
 `;
 
 export const Inner = styled.div`
@@ -20,11 +37,13 @@ export const Header = styled.div`
 `;
 
 export const Title = styled.h2`
-  font-size: 52px;
+  font-size: 75px;
   font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.02em;
   margin-bottom: 40px;
+
+  font-family: 'Jersey 25', sans-serif;
 
   @media (max-width: 1200px) {
     font-size: 52px;
@@ -32,8 +51,8 @@ export const Title = styled.h2`
 `;
 
 export const Subtitle = styled.p`
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 100;
   color: #ffffff;
 
   @media (max-width: 1200px) {
@@ -65,6 +84,7 @@ export const CardFrame = styled.div`
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
+  border-radius : 25px;
 `;
 
 export const ImageCard = styled.button`
@@ -111,13 +131,13 @@ export const DetailCard = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
-  background: #050505;
   border: 1px solid rgba(255, 255, 255, 0.45);
   box-shadow: 0 4px 18px rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  border-radius : 25px;
 `;
 
 export const DetailGlowWrap = styled.div`
@@ -157,8 +177,8 @@ export const CloseButton = styled.button`
 export const CardTitle = styled.h3`
   margin-top: 22px;
   color: #ffffff;
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 300;
   text-align: center;
 
   @media (max-width: 1200px) {

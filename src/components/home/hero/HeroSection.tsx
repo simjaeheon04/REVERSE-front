@@ -1,16 +1,62 @@
+import { useEffect, useState } from "react";
 import * as S from "./HeroSection.styles";
-import heroBg from "../../../assets/images/hero-bg.jpg";
 
-export default function HeroSection() {
+const AUTO_SLIDE_DELAY = 4000;
+
+type HeroSectionProps = {
+  imageUrls: string[];
+};
+
+export default function HeroSection({ imageUrls }: HeroSectionProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (imageUrls.length <= 1) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % imageUrls.length);
+    }, AUTO_SLIDE_DELAY);
+
+    return () => window.clearInterval(intervalId);
+  }, [imageUrls]);
+
+  if (imageUrls.length === 0) {
+    return (
+      <S.Section>
+        <S.EmptyState>등록된 배너 이미지가 없습니다.</S.EmptyState>
+      </S.Section>
+    );
+  }
+
+  const visibleIndex = activeIndex < imageUrls.length ? activeIndex : 0;
+
   return (
     <S.Section>
-      <S.BackgroundImage src={heroBg} alt='REVERSE hero background' />
-      <S.Overlay />
+      <S.SliderTrack style={{ transform: `translateX(-${visibleIndex * 100}%)` }}>
+        {imageUrls.map((image, index) => (
+          <S.Slide key={`${image}-${index}`}>
+            <S.BackgroundImage
+              src={image}
+              alt={`REVERSE hero slide ${index + 1}`}
+            />
+            <S.Overlay />
+          </S.Slide>
+        ))}
+      </S.SliderTrack>
 
-      <S.Content>
-        <S.Title>REVERSE</S.Title>
-        <S.Subtitle>남서울대학교 컴퓨터 소프트웨어학과 동아리</S.Subtitle>
-      </S.Content>
+      <S.IndicatorList>
+        {imageUrls.map((_, index) => (
+          <S.IndicatorButton
+            key={`hero-indicator-${index}`}
+            type='button'
+            $active={visibleIndex === index}
+            aria-label={`Go to hero slide ${index + 1}`}
+            onClick={() => setActiveIndex(index)}
+          />
+        ))}
+      </S.IndicatorList>
     </S.Section>
   );
 }

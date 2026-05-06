@@ -5,6 +5,36 @@ export const Section = styled.section`
   width: 100%;
   height: 640px;
   overflow: hidden;
+  border-radius: 0 0 22px 22px;
+  box-shadow: 0 24px 56px rgba(61, 77, 135, 0.16);
+
+  @media (max-width: 768px) {
+    height: 460px;
+    margin-top: 10px;
+  }
+`;
+
+export const EmptyState = styled.div`
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 16px;
+  background: linear-gradient(180deg, #1a2030 0%, #0f1420 100%);
+`;
+
+export const SliderTrack = styled.div`
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s ease-in-out;
+`;
+
+export const Slide = styled.div`
+  position: relative;
+  height: 100%;
+  flex: 0 0 100%;
 `;
 
 export const BackgroundImage = styled.img`
@@ -18,51 +48,40 @@ export const BackgroundImage = styled.img`
 export const Overlay = styled.div`
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(12, 18, 32, 0.12) 55%,
+    rgba(5, 9, 19, 0.24) 100%
+  );
 `;
 
-export const Content = styled.div`
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  height: 100%;
-
+export const IndicatorList = styled.div`
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 3;
+  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-
-  text-align: center;
-  color: #ffffff;
-  padding: 0 20px;
+  gap: 10px;
 `;
 
-export const Title = styled.h1`
-  font-size: 78px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  margin-bottom: 28px;
+export const IndicatorButton = styled.button<{ $active: boolean }>`
+  width: ${({ $active }) => ($active ? "34px" : "12px")};
+  height: 12px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  background: ${({ $active }) =>
+    $active ? "#8C9FBF" : "rgba(255, 255, 255, 0.52)"};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  transition:
+    width 0.25s ease,
+    background-color 0.25s ease,
+    transform 0.25s ease;
 
-  @media (max-width: 1200px) {
-    font-size: 64px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 48px;
-  }
-`;
-
-export const Subtitle = styled.p`
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.4;
-
-  @media (max-width: 1200px) {
-    font-size: 20px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 17px;
+  &:hover {
+    transform: translateY(-1px);
   }
 `;

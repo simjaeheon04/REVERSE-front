@@ -1,80 +1,127 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 export const Section = styled.section`
   position: relative;
   width: 100%;
-  height: 640px;
+  min-height: 880px;
   overflow: hidden;
+  background: #2d303a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
-export const Background = styled.img`
+export const BackgroundMark = styled.img`
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
+  left: -4%;
+  bottom: -4%;
+  width: min(960px, 50vw);
+  height: auto;
+  object-fit: contain;
 
-export const Overlay = styled.div`
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  user-select: none;
+
+  @media (max-width: 768px) {
+    width: 72vw;
+    left: -14%;
+    bottom: -2%;
+  }
 `;
 
 export const Content = styled.div`
   position: relative;
-  z-index: 2;
-
-  width: 100%;
-  height: 100%;
-
+  z-index: 1;
+  width: min(920px, calc(100% - 40px));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
   text-align: center;
-  color: white;
-  padding: 0 20px;
+  padding: 64px 20px 72px;
 `;
 
 export const Title = styled.h2`
-  font-size: 48px;
-  font-weight: 800;
-  margin-bottom: 30px;
-`;
-
-export const SubTitle = styled.h3`
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 28px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(46px, 6vw, 76px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 3px 0 rgba(195, 200, 219, 0.9),
+    0 10px 18px rgba(112, 118, 150, 0.18);
 `;
 
 export const Description = styled.p`
-  font-size: 18px;
-  line-height: 1.7;
-  max-width: 900px;
-  margin-bottom: 40px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.98);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-shadow: 0 3px 8px rgba(108, 114, 141, 0.24);
 `;
 
 export const ButtonGroup = styled.div`
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 64px;
 `;
 
-export const PrimaryButton = styled.button`
-  padding: 14px 28px;
-  background: white;
-  color: black;
+export const LinkButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  padding: 14px 24px;
+  border: 1px solid rgba(176, 181, 203, 0.9);
+  background: rgba(255, 255, 255, 0.92);
+  color: #292d3c;
+  font-size: 14px;
   font-weight: 700;
-  border-radius: 4px;
+  border-radius: 2px;
+  box-shadow: 0 3px 8px rgba(127, 133, 165, 0.18);
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(127, 133, 165, 0.2);
+  }
 `;
 
-export const SecondButton = styled.button`
-  padding: 14px 28px;
-  background: transparent;
-  border: 2px solid white;
-  color: white;
-  font-weight: 700;
-  border-radius: 4px;
+export const ButtonArrow = styled.span`
+  font-size: 12px;
+  line-height: 1;
+`;
+
+export const ButtonIcon = styled.span`
+  font-size: 14px;
+  line-height: 1;
+  margin-left: auto;
+`;
+
+const visibleStyle = css`
+  opacity: 1;
+  transform: translateY(0);
+`;
+
+export const Reveal = styled.span<{ $visible: boolean }>`
+  display: block;
+  opacity: 0;
+  transform: translateY(40px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+
+  ${({ $visible }) => $visible && visibleStyle}
 `;

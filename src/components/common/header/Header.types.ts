@@ -1,6 +1,11 @@
+export interface MegaMenuItem {
+  label: string;
+  path?: string;
+}
+
 export interface MegaMenuSection {
   title: string;
-  items: string[];
+  items: MegaMenuItem[];
 }
 
 export interface HeaderMenuItem {
@@ -14,6 +19,8 @@ export interface HeaderProps {
   menus: HeaderMenuItem[];
   logo?: string;
   loginText?: string;
+  loginDisabled?: boolean;
+  canAccessAdmin?: boolean;
   onLogoClick?: () => void;
   onLoginClick?: () => void;
 }

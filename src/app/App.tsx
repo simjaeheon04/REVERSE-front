@@ -1,21 +1,15 @@
+import { useEffect } from "react";
 import Router from "../routes";
+import { useAuthStore } from "../stores/authStore";
 import GlobalStyle from "../styles/globalStyle";
 
-import { testApiConnection } from "../services/testAPI";
-import { useEffect } from "react";
-
 function App() {
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
+
   useEffect(() => {
-    const testConnection = async () => {
-      try {
-        const data = await testApiConnection();
-        console.log("API Connection Successful:", data);
-      } catch (error) {
-        console.error("API Connection Failed:", error);
-      }
-    };
-    testConnection();
-  }, []);
+    void initializeAuth();
+  }, [initializeAuth]);
+
   return (
     <>
       <GlobalStyle />

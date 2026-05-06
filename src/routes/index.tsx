@@ -1,7 +1,8 @@
-import { Routes, Route } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
-import { mainRoutes } from "./mainRoutes";
+import { adminRoutes } from "./adminRoutes";
 import { authRoutes } from "./authRoutes";
+import { mainRoutes } from "./mainRoutes";
 
 export default function Router() {
   return (
@@ -10,8 +11,10 @@ export default function Router() {
         {mainRoutes.map((route) => (
           <Route key={route.path} path={route.path} element={route.element} />
         ))}
-
         {authRoutes.map((route) => (
+          <Route key={route.path} path={route.path} element={route.element} />
+        ))}
+        {adminRoutes.map((route) => (
           <Route key={route.path} path={route.path} element={route.element} />
         ))}
       </Route>

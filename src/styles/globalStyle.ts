@@ -1,6 +1,9 @@
 import { createGlobalStyle } from "styled-components";
 
 const GlobalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=Rubik+80s+Fade&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@700&display=swap');
+
   *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -16,7 +19,7 @@ const GlobalStyle = createGlobalStyle`
 
   body {
     overflow-x: hidden;
-    background-color: #101014;
+    background-color: #2C2F39;
     line-height: 1;
   }
 `;

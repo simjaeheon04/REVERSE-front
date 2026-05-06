@@ -8,21 +8,21 @@ export const Form = styled.form`
 
 export const Input = styled.input`
   width: 100%;
-  height: 44px;
+  height: 36px;
   padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(237, 241, 255, 0.34);
-  background: rgba(255, 255, 255, 0.04);
-  color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.88);
+  color: #222222;
   font-size: 12px;
   outline: none;
 
   &::placeholder {
-    color: rgba(235, 239, 255, 0.38);
+    color: rgba(52, 56, 68, 0.28);
   }
 
   &:focus {
-    border-color: rgba(184, 156, 255, 0.92);
+    border-color: rgba(214, 217, 255, 0.92);
   }
 `;
 
@@ -48,18 +48,24 @@ export const Select = styled.select`
 
 export const PrimaryButton = styled.button`
   width: 100%;
-  height: 42px;
-  margin-top: 38px;
+  height: 36px;
+  margin-top: 34px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: #ffffff;
-  background: #6f3bf4;
+  background: #bac2ea;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.22);
 
   &:hover {
-    opacity: 0.96;
+    filter: brightness(1.02);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
@@ -117,7 +123,7 @@ export const TextButton = styled.button`
   background: none;
   padding: 0 0 0 6px;
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 400;
+  font-size: 12px;
+  font-weight: 500;
   color: #ffffff;
 `;

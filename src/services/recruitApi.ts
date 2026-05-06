@@ -1,0 +1,205 @@
+import { axiosInstance } from "./axiosInstance";
+
+export type RecruitmentItem = {
+  id: number;
+  title: string;
+  description: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  applyStartDate?: string;
+  applyEndDate?: string;
+};
+
+export type RecruitmentPayload = {
+  title: string;
+  description: string;
+  applyStartDate: string;
+  applyEndDate: string;
+  updatedBy: string;
+};
+
+export type RecruitmentStatusPayload = {
+  isActive: boolean;
+};
+
+export type RecruitApplicationPayload = {
+  recruitmentId: number;
+  applicantName: string;
+  department: string;
+  studentNumber: string;
+  phoneNumber: string;
+  grade: number;
+  email: string;
+  termsAgreed: boolean;
+  applyFields: string[];
+};
+
+type RecruitmentApiRecord = Partial<RecruitmentItem> & {
+  recruitmentId?: number;
+};
+
+type RecruitmentApiResponse<T> =
+  | T
+  | {
+      success?: boolean;
+      data?: T;
+    };
+
+const toRecruitmentDateTime = (
+  value: string,
+  fallbackTime: "00:00:00" | "23:59:59"
+) => {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  if (trimmed.includes("T")) {
+    return trimmed;
+  }
+
+  return `${trimmed}T${fallbackTime}`;
+};
+
+const normalizeRecruitmentPayload = (
+  payload: RecruitmentPayload
+): RecruitmentPayload => ({
+  ...payload,
+  applyStartDate: toRecruitmentDateTime(payload.applyStartDate, "00:00:00"),
+  applyEndDate: toRecruitmentDateTime(payload.applyEndDate, "23:59:59"),
+});
+
+const unwrapRecruitmentResponse = <T>(payload: RecruitmentApiResponse<T>) => {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return payload.data as T;
+  }
+
+  return payload as T;
+};
+
+const normalizeRecruitmentItem = (
+  item: RecruitmentApiRecord
+): RecruitmentItem => ({
+  id: Number(item.id ?? item.recruitmentId ?? 0),
+  title: item.title ?? "",
+  description: item.description ?? "",
+  isActive: Boolean(item.isActive),
+  createdAt: item.createdAt ?? "",
+  updatedAt: item.updatedAt ?? "",
+  applyStartDate: item.applyStartDate,
+  applyEndDate: item.applyEndDate,
+});
+
+export const getRecruitmentList = async (): Promise<RecruitmentItem[]> => {
+  const response = await axiosInstance.get<RecruitmentApiResponse<RecruitmentApiRecord[]>>(
+    "/api/recruit"
+  );
+  const unwrapped = unwrapRecruitmentResponse(response.data);
+  const items = Array.isArray(unwrapped) ? unwrapped : [];
+
+  return items.map(normalizeRecruitmentItem);
+};
+
+export const getRecruitmentDetail = async (
+  id: number | string
+): Promise<RecruitmentItem> => {
+  const response = await axiosInstance.get<RecruitmentApiResponse<RecruitmentApiRecord>>(
+    `/api/recruit/${id}`
+  );
+  const unwrapped = unwrapRecruitmentResponse(response.data);
+
+  return normalizeRecruitmentItem(unwrapped);
+};
+
+export const createRecruitment = async (
+  payload: RecruitmentPayload
+): Promise<RecruitmentItem> => {
+  const response = await axiosInstance.post(
+    "/api/recruit",
+    normalizeRecruitmentPayload(payload),
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return normalizeRecruitmentItem(
+    unwrapRecruitmentResponse(response.data as RecruitmentApiResponse<RecruitmentApiRecord>)
+  );
+};
+
+export const updateRecruitment = async (
+  id: number | string,
+  payload: RecruitmentPayload
+): Promise<RecruitmentItem> => {
+  const response = await axiosInstance.put(
+    `/api/recruit/${id}`,
+    normalizeRecruitmentPayload(payload),
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return normalizeRecruitmentItem(
+    unwrapRecruitmentResponse(response.data as RecruitmentApiResponse<RecruitmentApiRecord>)
+  );
+};
+
+export const getRecruitmentRequestPreview = (payload: RecruitmentPayload) =>
+  normalizeRecruitmentPayload(payload);
+
+export const deleteRecruitment = async (id: number | string): Promise<string> => {
+  const response = await axiosInstance.delete(`/api/recruit/${id}`, {
+    responseType: "text",
+  });
+
+  return response.data;
+};
+
+export const updateRecruitmentStatus = async (
+  id: number | string,
+  roleId: number,
+  payload: RecruitmentStatusPayload
+) => {
+  const response = await axiosInstance.patch(
+    `/api/recruit/admin/${id}/status`,
+    payload,
+    {
+      params: { roleId },
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const submitRecruitApplication = async (
+  payload: RecruitApplicationPayload
+): Promise<string> => {
+  const response = await axiosInstance.post("/api/recruit/apply", payload, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    responseType: "text",
+  });
+
+  return response.data;
+};
+
+export const subscribeRecruitNotification = async (
+  email: string
+): Promise<string> => {
+  const response = await axiosInstance.post("/api/recruit/notify", undefined, {
+    params: { email },
+    responseType: "text",
+  });
+
+  return response.data;
+};

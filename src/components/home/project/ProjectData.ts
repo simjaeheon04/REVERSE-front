@@ -12,19 +12,19 @@ export interface ProjectItem {
 export const projectData: ProjectItem[] = [
   {
     id: 1,
-    title: "메인 프로젝트",
+    title: "Main Project",
     image: mainProjectImg,
     detailText: "메인 프로젝트 상세 내용",
   },
   {
     id: 2,
-    title: "토이프로젝트",
+    title: "Toy Project",
     image: toyProjectImg,
     detailText: "토이프로젝트 상세 내용",
   },
   {
     id: 3,
-    title: "스터디",
+    title: "Study",
     image: studyImg,
     detailText: "스터디 상세 내용",
   },

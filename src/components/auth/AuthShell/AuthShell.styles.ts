@@ -3,14 +3,12 @@ import styled from "styled-components";
 export const Frame = styled.section`
   position: relative;
   width: 100%;
-  max-width: 680px;
-  min-height: 600px;
-  border-radius: 24px;
-  padding: 18px;
+  max-width: 624px;
+  min-height: 560px;
+  border-radius: 8px;
+  padding: 20px;
   border: none;
-  background: linear-gradient(180deg, #ffffff1a 0%, #cfd6ff14 100%), #00000099;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: #455179;
   overflow: hidden;
   isolation: isolate;
 
@@ -19,14 +17,14 @@ export const Frame = styled.section`
     position: absolute;
     inset: 0;
     padding: 1px;
-    border-radius: 24px;
-    background: linear-gradient(
-      90deg,
-      #6872ff 9%,
-      #a268ff 28%,
-      #dc68ff 47%,
-      #190dc0 75%,
-      #6cb3ff 100%
+    border-radius: 8px;
+    background: radial-gradient(
+      89% 142% at 50% 50%,
+      #d6d9ff 9%,
+      #d8c0ff 28%,
+      #efb9ff 47%,
+      #8a84dd 75%,
+      #ffffff 100%
     );
     -webkit-mask: linear-gradient(#fff 0 0) content-box,
       linear-gradient(#fff 0 0);
@@ -39,26 +37,26 @@ export const Frame = styled.section`
   @media (max-width: 768px) {
     min-height: auto;
     padding: 14px;
-    border-radius: 18px;
 
     &::before {
-      border-radius: 18px;
+      border-radius: 8px;
     }
   }
 `;
 
 export const Inner = styled.div`
   width: 100%;
-  min-height: 564px;
-  border-radius: 18px;
-  padding: 56px 54px 42px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: #ffffff20;
+  min-height: 520px;
+  border-radius: 8px;
+  padding: 20px 26px 30px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: rgba(206, 206, 206, 0.5);
+  box-shadow: inset 0 3px 8px rgba(255, 255, 255, 0.5),
+    inset 0 -3px 8px rgba(113, 126, 170, 0.2);
 
   @media (max-width: 768px) {
     min-height: auto;
-    padding: 36px 22px 28px;
-    border-radius: 16px;
+    padding: 18px 18px 24px;
   }
 `;
 
@@ -67,12 +65,22 @@ export const TopArea = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-bottom: 56px;
+  margin-bottom: 40px;
+
+  img {
+    filter: drop-shadow(0 10px 18px rgba(85, 95, 132, 0.34));
+  }
 `;
 
-export const Title = styled.h1`
-  margin-top: 12px;
-  font-size: 22px;
-  font-weight: 800;
-  color: #ffffff;
+export const Title = styled.svg`
+  margin-top: 8px;
+
+  text {
+    fill: #ffffff;
+    filter: url(#auth-title-inner-shadow);
+    font-family: "Barlow", sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.015em;
+  }
 `;

@@ -14,7 +14,7 @@ export const ContentLayer = styled.div`
 `;
 
 export const Page = styled.main`
-  background: #111111;
+  background: #2d303a;
   position: relative;
   overflow: hidden;
 `;

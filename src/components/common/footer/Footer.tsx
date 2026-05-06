@@ -1,4 +1,5 @@
 import * as S from "./Footer.styles";
+import footerLogo from "../../../assets/logos/Logo_5.png";
 
 const footerMenus = ["About Us", "활동 및 참여", "정보 및 교류", "게시판"];
 
@@ -13,7 +14,7 @@ export default function Footer() {
     <S.Footer>
       <S.Inner>
         <S.TopRow>
-          <S.LogoButton type='button'>Logo</S.LogoButton>
+          <S.TopSpacer />
 
           <S.Nav>
             {footerMenus.map((menu) => (
@@ -25,46 +26,54 @@ export default function Footer() {
 
           <S.IconButton
             type='button'
-            aria-label='인스타그램 바로가기'
+            aria-label='Instagram'
             onClick={() =>
               window.open("https://www.instagram.com/nsu_reverse/", "_blank")
             }
           >
             <S.InstagramIcon viewBox='0 0 24 24' fill='none'>
               <rect
-                x='3.5'
-                y='3.5'
-                width='17'
-                height='17'
-                rx='4.5'
+                x='5.25'
+                y='5.25'
+                width='13.5'
+                height='13.5'
+                rx='3.75'
                 stroke='currentColor'
-                strokeWidth='1.8'
+                strokeWidth='1.5'
               />
               <circle
                 cx='12'
                 cy='12'
-                r='4'
+                r='3.2'
                 stroke='currentColor'
-                strokeWidth='1.8'
+                strokeWidth='1.5'
               />
-              <circle cx='17.3' cy='6.7' r='1.1' fill='currentColor' />
+              <circle cx='16.5' cy='7.5' r='1' fill='currentColor' />
             </S.InstagramIcon>
           </S.IconButton>
         </S.TopRow>
 
-        <S.Divider />
+        <S.BottomBlock>
+          <S.BrandRow>
+            <S.LogoButton type='button' aria-label='REVERSE home'>
+              <S.LogoImage src={footerLogo} alt='REVERSE logo' />
+            </S.LogoButton>
 
-        <S.BottomRow>
-          <S.CopyText>© 2024 Relume. All rights reserved.</S.CopyText>
+            <S.Divider />
+          </S.BrandRow>
 
-          <S.PolicyList>
-            {footerPolicies.map((item) => (
-              <S.PolicyButton key={item} type='button'>
-                {item}
-              </S.PolicyButton>
-            ))}
-          </S.PolicyList>
-        </S.BottomRow>
+          <S.BottomRow>
+            <S.CopyText>© 2024 Relume. All rights reserved.</S.CopyText>
+
+            <S.PolicyList>
+              {footerPolicies.map((item) => (
+                <S.PolicyButton key={item} type='button'>
+                  {item}
+                </S.PolicyButton>
+              ))}
+            </S.PolicyList>
+          </S.BottomRow>
+        </S.BottomBlock>
       </S.Inner>
     </S.Footer>
   );
