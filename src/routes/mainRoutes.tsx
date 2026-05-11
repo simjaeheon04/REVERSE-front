@@ -1,3 +1,6 @@
+import BoardDetailPage from "../pages/BoardDetailPage/BoardDetailPage";
+import BoardPage from "../pages/BoardPage/BoardPage";
+import BoardWritePage from "../pages/BoardWritePage/BoardWritePage";
 import CalendarPage from "../pages/CalendarPage";
 import HomePage from "../pages/HomePage/HomePage";
 import NoticePage from "../pages/NoticePage";
@@ -15,6 +18,18 @@ export const mainRoutes = [
     element: <NoticePage />,
   },
   {
+    path: "/board",
+    element: <BoardPage />,
+  },
+  {
+    path: "/board/:postId",
+    element: <BoardDetailPage />,
+  },
+  {
+    path: "/board/write",
+    element: <BoardWritePage />,
+  },
+  {
     path: "/recruit",
     element: <RecruitPage />,
   },
@@ -26,7 +41,6 @@ export const mainRoutes = [
     path: "/recruit/apply/complete",
     element: <RecruitApplyCompletePage />,
   },
-
   {
     path: "calendar",
     element: <CalendarPage />,

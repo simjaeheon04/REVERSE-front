@@ -63,22 +63,23 @@ export const headerMenus: HeaderMenuItem[] = [
   {
     key: "board",
     label: "게시판",
+    path: "/board",
     sections: [
       {
         title: "자유 게시판",
-        items: [],
+        items: [{ label: "자유 게시판", path: "/board" }],
       },
       {
         title: "대외활동 게시판",
-        items: [],
+        items: [{ label: "대외활동 게시판", path: "/board" }],
       },
       {
         title: "나눔 게시판",
-        items: [],
+        items: [{ label: "나눔 게시판", path: "/board" }],
       },
       {
         title: "질의응답 게시판",
-        items: [],
+        items: [{ label: "질의응답 게시판", path: "/board" }],
       },
     ],
   },
