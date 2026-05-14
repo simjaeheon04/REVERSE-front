@@ -32,6 +32,11 @@ const adminMenus = [
     description: "행사 일정 생성, 수정, 삭제 및 외부 캘린더 데이터를 관리합니다.",
     path: "/admin/calendar",
   },
+  {
+    title: "게시판 관리",
+    description: "메인 게시판 게시글 목록 조회와 게시글 등록 API를 관리합니다.",
+    path: "/admin/board",
+  },
 ];
 
 export default function AdminPage() {
