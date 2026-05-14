@@ -37,6 +37,21 @@ const adminMenus = [
     description: "메인 게시판 게시글 목록 조회와 게시글 등록 API를 관리합니다.",
     path: "/admin/board",
   },
+  {
+    title: "회원가입",
+    description: "회원가입 화면에서 이메일 인증과 가입 API를 확인합니다.",
+    path: "/signup",
+  },
+  {
+    title: "아이디 찾기",
+    description: "이름과 이메일 인증으로 아이디 찾기 API를 확인합니다.",
+    path: "/find-id",
+  },
+  {
+    title: "비밀번호 찾기",
+    description: "아이디와 이메일 인증으로 임시 비밀번호 발급 API를 확인합니다.",
+    path: "/find-password",
+  },
 ];
 
 export default function AdminPage() {

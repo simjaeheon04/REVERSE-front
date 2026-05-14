@@ -1,38 +1,129 @@
+import { useState, type ChangeEvent } from "react";
+import {
+  issueTemporaryPassword,
+  sendFindPasswordCode,
+  verifyFindPasswordCode,
+} from "../../../services/authAPI";
 import AuthShell from "../AuthShell/AuthShell";
 import FormField from "../FormField/FormField";
 import * as C from "../FormField/AuthControls.styles";
-import { useState } from "react";
 
 export default function FindPasswordForm() {
+  const [userId, setUserId] = useState("");
+  const [emailId, setEmailId] = useState("");
+  const [emailDomain, setEmailDomain] = useState("");
+  const [authCode, setAuthCode] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
     type?: "error" | "success";
   }>({ text: "", type: undefined });
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isIssuing, setIsIssuing] = useState(false);
+
+  const email = emailId && emailDomain ? `${emailId}@${emailDomain}` : "";
+
+  const handleSendCode = async () => {
+    if (!userId.trim() || !email) {
+      setMessage({ text: "아이디와 이메일을 모두 입력해주세요.", type: "error" });
+      return;
+    }
+
+    try {
+      setIsSending(true);
+      const result = await sendFindPasswordCode({
+        userId: userId.trim(),
+        email,
+      });
+      setMessage({ text: result.message ?? "인증번호가 발송되었습니다.", type: "success" });
+    } catch (error) {
+      console.error("find password send failed", error);
+      setMessage({ text: "비밀번호 찾기 인증번호 발송에 실패했습니다.", type: "error" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!email || !authCode.trim()) {
+      setMessage({ text: "이메일과 인증번호를 입력해주세요.", type: "error" });
+      return;
+    }
+
+    try {
+      setIsVerifying(true);
+      const result = await verifyFindPasswordCode({
+        email,
+        authCode: authCode.trim(),
+      });
+      setIsVerified(true);
+      setMessage({ text: result.message ?? "인증에 성공했습니다.", type: "success" });
+    } catch (error) {
+      console.error("find password verify failed", error);
+      setIsVerified(false);
+      setMessage({ text: "인증번호 확인에 실패했습니다.", type: "error" });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleIssuePassword = async () => {
+    if (!isVerified) {
+      setMessage({ text: "이메일 인증을 먼저 완료해주세요.", type: "error" });
+      return;
+    }
+
+    try {
+      setIsIssuing(true);
+      const result = await issueTemporaryPassword({
+        userId: userId.trim(),
+        email,
+      });
+      setMessage({
+        text: result.message ?? "임시 비밀번호가 메일로 전송되었습니다.",
+        type: "success",
+      });
+    } catch (error) {
+      console.error("temporary password issue failed", error);
+      setMessage({ text: "임시 비밀번호 발급에 실패했습니다.", type: "error" });
+    } finally {
+      setIsIssuing(false);
+    }
+  };
 
   return (
     <AuthShell title='비밀번호 찾기'>
       <C.Form>
-        <FormField label='이름' htmlFor='find-pw-name'>
-          <C.Input
-            id='find-pw-name'
-            type='text'
-            placeholder='이름을 입력하세요.'
-          />
-        </FormField>
-
         <FormField label='아이디' htmlFor='find-pw-id'>
           <C.Input
             id='find-pw-id'
             type='text'
             placeholder='아이디를 입력하세요.'
+            value={userId}
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setUserId(event.target.value)
+            }
           />
         </FormField>
 
         <FormField label='이메일'>
           <C.EmailRow>
-            <C.Input type='text' placeholder='이메일을 입력하세요.' />
+            <C.Input
+              type='text'
+              placeholder='이메일을 입력하세요.'
+              value={emailId}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setEmailId(event.target.value)
+              }
+            />
             <C.At>@</C.At>
-            <C.Select defaultValue=''>
+            <C.Select
+              value={emailDomain}
+              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                setEmailDomain(event.target.value)
+              }
+            >
               <option value='' disabled>
                 선택하세요.
               </option>
@@ -43,14 +134,9 @@ export default function FindPasswordForm() {
 
             <C.GhostButton
               type='button'
-              onClick={() =>
-                setMessage({
-                  text: "인증번호가 전송되었습니다.",
-                  type: "success",
-                })
-              }
+              onClick={handleSendCode}
             >
-              인증번호 전송
+              {isSending ? "전송 중..." : "인증번호 전송"}
             </C.GhostButton>
           </C.EmailRow>
         </FormField>
@@ -61,44 +147,29 @@ export default function FindPasswordForm() {
               id='find-pw-code'
               type='text'
               placeholder='인증번호를 입력하세요.'
+              value={authCode}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setAuthCode(event.target.value)
+              }
             />
             <C.GhostButton
               type='button'
-              onClick={() =>
-                setMessage({
-                  text: "인증이 완료되었습니다.",
-                  type: "success",
-                })
-              }
+              onClick={handleVerifyCode}
             >
-              인증번호 확인
+              {isVerifying ? "확인 중..." : "인증번호 확인"}
             </C.GhostButton>
           </C.Row>
         </FormField>
 
-        {message.text && (
-          <p
-            style={{
-              marginTop: "12px",
-              fontSize: "13px",
-              textAlign: "center",
-              color: message.type === "error" ? "#ff7b7b" : "#7ea6ff",
-            }}
-          >
-            {message.text}
-          </p>
-        )}
+        {message.text ? (
+          <C.Message $type={message.type}>{message.text}</C.Message>
+        ) : null}
 
         <C.PrimaryButton
           type='button'
-          onClick={() =>
-            setMessage({
-              text: "임시 비밀번호가 이메일로 전송되었습니다.",
-              type: "success",
-            })
-          }
+          onClick={handleIssuePassword}
         >
-          비밀번호 찾기
+          {isIssuing ? "발급 중..." : "비밀번호 찾기"}
         </C.PrimaryButton>
       </C.Form>
     </AuthShell>
