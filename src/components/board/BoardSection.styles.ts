@@ -173,6 +173,21 @@ export const PostList = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
+  min-height: 454px;
+`;
+
+export const StatusText = styled.p`
+  width: 100%;
+  min-height: 64px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 4px;
+  background: rgba(135, 140, 156, 0.18);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
 `;
 
 export const PostCard = styled.button`

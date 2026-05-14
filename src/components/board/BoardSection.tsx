@@ -1,18 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getBoardPosts,
+  type BoardPostListItem,
+  type BoardSearchType,
+  type BoardType,
+} from "../../services/boardAPI";
 import * as S from "./BoardSection.styles";
 
 type BoardCategory = "전체" | "자유" | "대외활동" | "족보" | "교재·교구 나눔" | "질의응답";
 type SearchField = "제목" | "본문" | "작성자";
-
-type BoardPost = {
-  id: number;
-  title: string;
-  category: Exclude<BoardCategory, "전체">;
-  author: string;
-  createdAt: string;
-  content: string;
-  avatarColor: string;
-};
 
 const CATEGORIES: BoardCategory[] = [
   "전체",
@@ -24,63 +20,51 @@ const CATEGORIES: BoardCategory[] = [
 ];
 
 const SEARCH_FIELDS: SearchField[] = ["제목", "본문", "작성자"];
+const PAGE_SIZE = 6;
 
-const BOARD_POSTS: BoardPost[] = [
-  {
-    id: 1,
-    title: "게시글2",
-    category: "질의응답",
-    author: "익명 회원",
-    createdAt: "2026.04.04",
-    content: "자유로운 질문과 답변을 나누는 게시글입니다.",
-    avatarColor: "#8990a3",
-  },
-  {
-    id: 2,
-    title: "게시글3",
-    category: "자유",
-    author: "익명 회원",
-    createdAt: "2026.03.26",
-    content: "동아리 생활과 일상 이야기를 공유합니다.",
-    avatarColor: "#51a8ff",
-  },
-  {
-    id: 3,
-    title: "게시글4",
-    category: "자유",
-    author: "익명 회원",
-    createdAt: "2026.03.10",
-    content: "자유게시판에 등록된 게시글입니다.",
-    avatarColor: "#62c9e5",
-  },
-  {
-    id: 4,
-    title: "게시글5",
-    category: "자유",
-    author: "익명 회원",
-    createdAt: "2026.03.06",
-    content: "서로의 정보를 편하게 나누는 공간입니다.",
-    avatarColor: "#c8df3e",
-  },
-  {
-    id: 5,
-    title: "게시글6",
-    category: "교재·교구 나눔",
-    author: "익명 회원",
-    createdAt: "2026.02.14",
-    content: "필요한 교재와 교구를 나누는 게시글입니다.",
-    avatarColor: "#c69a58",
-  },
-  {
-    id: 6,
-    title: "게시글7",
-    category: "대외활동",
-    author: "익명 회원",
-    createdAt: "2025.10.15",
-    content: "대외활동 정보를 공유하는 게시글입니다.",
-    avatarColor: "#ff6e57",
-  },
-];
+const CATEGORY_TO_BOARD_TYPE: Record<
+  Exclude<BoardCategory, "전체">,
+  BoardType
+> = {
+  자유: "FREE",
+  대외활동: "ACTIVITY",
+  족보: "INFO",
+  "교재·교구 나눔": "TRADE",
+  질의응답: "QNA",
+};
+
+const BOARD_TYPE_TO_CATEGORY: Record<BoardType, Exclude<BoardCategory, "전체">> = {
+  FREE: "자유",
+  ACTIVITY: "대외활동",
+  INFO: "족보",
+  TRADE: "교재·교구 나눔",
+  QNA: "질의응답",
+};
+
+const SEARCH_FIELD_TO_TYPE: Record<SearchField, BoardSearchType> = {
+  제목: "TITLE",
+  본문: "CONTENT",
+  작성자: "AUTHOR",
+};
+
+const AVATAR_COLORS = ["#8990a3", "#51a8ff", "#62c9e5", "#c8df3e", "#c69a58", "#ff6e57"];
+
+const getPostId = (post: BoardPostListItem) => post.postId ?? post.id ?? 0;
+
+const getBoardType = (post: BoardPostListItem): BoardType =>
+  post.boardType ?? post.category ?? "FREE";
+
+const getCategory = (post: BoardPostListItem) =>
+  BOARD_TYPE_TO_CATEGORY[getBoardType(post)] ?? "자유";
+
+const getAuthor = (post: BoardPostListItem) =>
+  post.author ?? post.authorName ?? post.writerName ?? post.nickname ?? "익명 회원";
+
+const formatDate = (date: string) => {
+  if (!date) return "";
+
+  return date.slice(0, 10).replaceAll("-", ".");
+};
 
 export default function BoardSection() {
   const [activeCategory, setActiveCategory] = useState<BoardCategory>("전체");
@@ -88,32 +72,56 @@ export default function BoardSection() {
   const [keyword, setKeyword] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [posts, setPosts] = useState<BoardPostListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
 
-  const filteredPosts = useMemo(() => {
-    const normalizedKeyword = submittedKeyword.trim().toLowerCase();
+  const pages = useMemo(() => {
+    const visiblePages = Math.min(totalPages, 3);
+    return Array.from({ length: visiblePages }, (_, index) => index + 1);
+  }, [totalPages]);
 
-    return BOARD_POSTS.filter((post) => {
-      const matchesCategory =
-        activeCategory === "전체" || post.category === activeCategory;
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const trimmedKeyword = submittedKeyword.trim();
 
-      if (!matchesCategory) {
-        return false;
+      if (trimmedKeyword && trimmedKeyword.length < 2) {
+        setPosts([]);
+        setTotalPages(1);
+        setStatusMessage("검색어는 2글자 이상 입력해주세요.");
+        return;
       }
 
-      if (normalizedKeyword.length < 2) {
-        return true;
+      try {
+        setIsLoading(true);
+        setStatusMessage("");
+
+        const result = await getBoardPosts({
+          boardType:
+            activeCategory === "전체"
+              ? undefined
+              : CATEGORY_TO_BOARD_TYPE[activeCategory],
+          searchType: trimmedKeyword ? SEARCH_FIELD_TO_TYPE[searchField] : undefined,
+          keyword: trimmedKeyword || undefined,
+          page: currentPage,
+          size: PAGE_SIZE,
+        });
+
+        setPosts(result.posts);
+        setTotalPages(Math.max(1, result.totalPages));
+        setStatusMessage(result.posts.length ? "" : "게시글이 없습니다.");
+      } catch (error) {
+        console.error("board posts fetch failed", error);
+        setPosts([]);
+        setStatusMessage("게시글 목록을 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      const target =
-        searchField === "제목"
-          ? post.title
-          : searchField === "본문"
-            ? post.content
-            : post.author;
-
-      return target.toLowerCase().includes(normalizedKeyword);
-    });
-  }, [activeCategory, searchField, submittedKeyword]);
+    fetchPosts();
+  }, [activeCategory, currentPage, searchField, submittedKeyword]);
 
   const handleCategoryChange = (category: BoardCategory) => {
     setActiveCategory(category);
@@ -188,19 +196,26 @@ export default function BoardSection() {
           </S.Toolbar>
 
           <S.PostList>
-            {filteredPosts.map((post) => (
-              <S.PostCard key={post.id} type="button">
+            {isLoading ? <S.StatusText>게시글을 불러오는 중입니다.</S.StatusText> : null}
+            {!isLoading && statusMessage ? (
+              <S.StatusText>{statusMessage}</S.StatusText>
+            ) : null}
+
+            {!isLoading && posts.map((post, index) => (
+              <S.PostCard key={getPostId(post)} type="button">
                 <S.PostInfo>
                   <S.PostTitleRow>
                     <S.PostTitle>{post.title}</S.PostTitle>
-                    <S.PostCategory>{post.category}</S.PostCategory>
+                    <S.PostCategory>{getCategory(post)}</S.PostCategory>
                   </S.PostTitleRow>
 
                   <S.MetaRow>
-                    <S.Avatar $color={post.avatarColor}>{post.author.slice(0, 1)}</S.Avatar>
+                    <S.Avatar $color={AVATAR_COLORS[index % AVATAR_COLORS.length]}>
+                      {getAuthor(post).slice(0, 1)}
+                    </S.Avatar>
                     <S.MetaText>
-                      <span>{post.author}</span>
-                      <span>{post.createdAt}</span>
+                      <span>{getAuthor(post)}</span>
+                      <span>{formatDate(post.createdAt)}</span>
                     </S.MetaText>
                   </S.MetaRow>
                 </S.PostInfo>
@@ -221,7 +236,7 @@ export default function BoardSection() {
             >
               Previous
             </S.PageNavButton>
-            {[1, 2, 3].map((page) => (
+            {pages.map((page) => (
               <S.PageNumberButton
                 key={page}
                 type="button"
@@ -231,10 +246,18 @@ export default function BoardSection() {
                 {page}
               </S.PageNumberButton>
             ))}
-            <S.PageDots>...</S.PageDots>
-            <S.PageStaticNumber>67</S.PageStaticNumber>
-            <S.PageStaticNumber>68</S.PageStaticNumber>
-            <S.PageNavButton type="button" onClick={() => setCurrentPage((page) => page + 1)}>
+            {totalPages > 3 ? (
+              <>
+                <S.PageDots>...</S.PageDots>
+                <S.PageStaticNumber>{totalPages - 1}</S.PageStaticNumber>
+                <S.PageStaticNumber>{totalPages}</S.PageStaticNumber>
+              </>
+            ) : null}
+            <S.PageNavButton
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
+            >
               Next
             </S.PageNavButton>
           </S.Pagination>
