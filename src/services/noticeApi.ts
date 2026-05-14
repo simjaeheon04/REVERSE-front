@@ -1,12 +1,15 @@
 import { axiosInstance } from "./axiosInstance";
 
 type ApiSuccessResponse<T> = {
-  status: string;
-  message: string | null;
+  success?: boolean;
+  status?: string;
+  message?: string | null;
   data: T;
 };
 
-export type NoticeCategory = string;
+export const NOTICE_CATEGORIES = ["전체", "동아리 활동", "대외활동"] as const;
+
+export type NoticeCategory = (typeof NOTICE_CATEGORIES)[number] | string;
 
 export type NoticeListItem = {
   id: number;
@@ -74,11 +77,12 @@ export const uploadNoticeImage = async (file: File): Promise<string> => {
 export const getNoticeList = async (
   params: NoticeListParams = {}
 ): Promise<NoticeListPage> => {
+  const category = params.category?.trim() || "전체";
   const response = await axiosInstance.get<ApiSuccessResponse<NoticeListPage>>(
     "/api/notices",
     {
       params: {
-        category: params.category || undefined,
+        category,
         page: params.page ?? 0,
       },
     }

@@ -10,6 +10,7 @@ export const Section = styled.section`
   background: radial-gradient(circle at 50% 40%, rgba(69, 76, 96, 0.22), transparent 26%),
     ${pageBg};
   color: ${textMain};
+  font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
 `;
 
 export const Header = styled.div`

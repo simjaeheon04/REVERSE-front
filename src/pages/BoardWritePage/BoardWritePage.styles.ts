@@ -78,6 +78,13 @@ export const AttachmentInput = styled(Input)`
   max-width: 450px;
 `;
 
+export const ErrorText = styled.p`
+  margin: 18px 0 0;
+  color: #ff9d9d;
+  font-size: 14px;
+  font-weight: 600;
+`;
+
 export const TextArea = styled.textarea`
   width: 100%;
   min-height: 288px;
@@ -116,11 +123,22 @@ export const CategoryButton = styled.button<{ $active: boolean }>`
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 export const AttachmentRow = styled.div`
   display: flex;
   align-items: center;
+  gap: 10px;
+`;
+
+export const AttachmentList = styled.div`
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 `;
 
@@ -134,6 +152,21 @@ export const AttachmentButton = styled.button`
   color: #ffffff;
   font-size: 18px;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`;
+
+export const AttachmentRemoveButton = styled(AttachmentButton)`
+  background: rgba(255, 255, 255, 0.08);
+`;
+
+export const AttachmentPickerButton = styled(AttachmentButton)``;
+
+export const FileInput = styled.input`
+  display: none;
 `;
 
 export const Divider = styled.div`
@@ -164,6 +197,11 @@ export const SubmitButton = styled.button`
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 `;
 
 export const CancelButton = styled.button`
@@ -177,6 +215,11 @@ export const CancelButton = styled.button`
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 `;
 
 export const ModalOverlay = styled.div`
@@ -270,6 +313,11 @@ export const ModalSecondaryButton = styled.button`
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 `;
 
 export const ModalPrimaryButton = styled.button`
@@ -283,4 +331,9 @@ export const ModalPrimaryButton = styled.button`
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 `;

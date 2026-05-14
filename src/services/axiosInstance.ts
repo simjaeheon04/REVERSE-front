@@ -8,7 +8,9 @@ import {
 } from "../utils/tokenStorage";
 
 const DEFAULT_BASE_URL = "http://localhost:8080";
-const baseURL = import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL;
+const baseURL = import.meta.env.DEV
+  ? ""
+  : import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL;
 
 export const axiosInstance = axios.create({
   baseURL,

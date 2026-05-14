@@ -3,6 +3,7 @@ import { createGlobalStyle } from "styled-components";
 const GlobalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=Rubik+80s+Fade&display=swap');
   @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap');
 
   *, *::before, *::after {
     box-sizing: border-box;
@@ -20,6 +21,7 @@ const GlobalStyle = createGlobalStyle`
   body {
     overflow-x: hidden;
     background-color: #2C2F39;
+    font-family: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
     line-height: 1;
   }
 `;

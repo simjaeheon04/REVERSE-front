@@ -99,6 +99,23 @@ export const ImageItem = styled.img`
   border-radius: 8px;
 `;
 
+export const FileList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 28px;
+`;
+
+export const FileItem = styled.a`
+  width: fit-content;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+`;
+
 export const ActionBar = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -110,10 +127,11 @@ export const ActionBar = styled.div`
 export const LikeButton = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   min-width: 76px;
   height: 46px;
-  padding: 0 12px;
+  padding: 0 16px;
   border: none;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.9);
@@ -126,6 +144,31 @@ export const LikeButton = styled.button`
     cursor: default;
     opacity: 0.85;
   }
+`;
+
+export const DownloadButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 142px;
+  height: 46px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #7a5ab8;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(41, 29, 84, 0.22);
+`;
+
+export const ActionIcon = styled.img`
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
 `;
 
 export const CommentSection = styled.section`

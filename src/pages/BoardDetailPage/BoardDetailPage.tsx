@@ -1,6 +1,8 @@
 ﻿import { AxiosError } from "axios";
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import downloadIcon from "../../assets/icons/download.png";
+import heartIcon from "../../assets/icons/Heart.png";
 import uploadIcon from "../../assets/icons/upload.png";
 import Footer from "../../components/common/footer/Footer";
 import {
@@ -93,6 +95,19 @@ export default function BoardDetailPage() {
 
   const refreshBoardDetail = async () => {
     await Promise.all([loadPost(), loadComments()]);
+  };
+
+  const getFileName = (fileUrl: string) => {
+    const cleanUrl = fileUrl.split("?")[0] ?? fileUrl;
+    const fileName = cleanUrl.split("/").pop();
+
+    return fileName ? decodeURIComponent(fileName) : "첨부 파일";
+  };
+
+  const handleDownloadFiles = () => {
+    post?.imageUrls.forEach((fileUrl) => {
+      window.open(fileUrl, "_blank", "noopener,noreferrer");
+    });
   };
 
   const handleToggleLike = async () => {
@@ -270,21 +285,30 @@ export default function BoardDetailPage() {
                   <S.BodyText>{post.content}</S.BodyText>
 
                   {post.imageUrls?.length ? (
-                    <S.ImageList>
-                      {post.imageUrls.map((imageUrl) => (
-                        <S.ImageItem key={imageUrl} src={imageUrl} alt="게시글 이미지" />
+                    <S.FileList>
+                      {post.imageUrls.map((fileUrl) => (
+                        <S.FileItem key={fileUrl} href={fileUrl} target="_blank" rel="noreferrer">
+                          (파일) {getFileName(fileUrl)}
+                        </S.FileItem>
                       ))}
-                    </S.ImageList>
+                    </S.FileList>
                   ) : null}
                 </S.BodyBox>
 
                 <S.ActionBar>
+                  {post.imageUrls?.length ? (
+                    <S.DownloadButton type="button" onClick={handleDownloadFiles}>
+                      <S.ActionIcon src={downloadIcon} alt="" aria-hidden="true" />
+                      파일 다운로드
+                    </S.DownloadButton>
+                  ) : null}
                   <S.LikeButton
                     type="button"
                     onClick={() => void handleToggleLike()}
                     disabled={isLikeSubmitting}
                   >
-                    {isLikeSubmitting ? "처리 중..." : `좋아요 ${post.likeCount}`}
+                    <S.ActionIcon src={heartIcon} alt="" aria-hidden="true" />
+                    {isLikeSubmitting ? "..." : post.likeCount}
                   </S.LikeButton>
                 </S.ActionBar>
               </S.ContentCard>
