@@ -1,4 +1,4 @@
-import styled from "styled-components";
+﻿import styled from "styled-components";
 
 export const Page = styled.section`
   min-height: calc(100vh - 70px);
@@ -85,17 +85,18 @@ export const BodyText = styled.div`
   white-space: pre-wrap;
 `;
 
-export const AttachmentList = styled.div`
+export const ImageList = styled.div`
   margin-top: 22px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 `;
 
-export const AttachmentItem = styled.div`
-  color: #ffffff;
-  font-size: 15px;
-  line-height: 1.6;
+export const ImageItem = styled.img`
+  width: 100%;
+  max-height: 560px;
+  object-fit: cover;
+  border-radius: 8px;
 `;
 
 export const ActionBar = styled.div`
@@ -104,23 +105,6 @@ export const ActionBar = styled.div`
   align-items: center;
   gap: 10px;
   margin-top: 12px;
-`;
-
-export const DownloadLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 160px;
-  height: 46px;
-  padding: 0 18px;
-  border: 1px solid rgba(79, 79, 79, 0.26);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  color: #7a5ab8;
-  font-size: 14px;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 2px 6px rgba(15, 18, 28, 0.14);
 `;
 
 export const LikeButton = styled.button`
@@ -137,6 +121,11 @@ export const LikeButton = styled.button`
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.85;
+  }
 `;
 
 export const CommentSection = styled.section`
@@ -155,14 +144,29 @@ export const CommentHeader = styled.div`
 
 export const CommentComposer = styled.div`
   margin-top: 12px;
-  padding: 14px 12px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.88);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 8px;
+  padding: 15px 12px 7px;
+  border-radius: 10px;
+  background: #d9d9d9;
+  align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+`;
+
+export const ReplyComposer = styled(CommentComposer)`
+  margin-top: 12px;
+  padding: 0;
+  background: transparent;
 `;
 
 export const ComposerTop = styled.div`
+  position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   color: #686868;
   font-size: 13px;
@@ -176,37 +180,101 @@ export const ComposerAvatar = styled.div`
   background: linear-gradient(180deg, #8dd0ff 0%, #4b8dff 100%);
 `;
 
-export const ComposerInput = styled.textarea`
+export const ComposerName = styled.span`
+  position: absolute;
+  left: 42px;
+  top: 4px;
+  min-width: 120px;
+  color: #6a6a6a;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+`;
+
+export const ComposerInput = styled.textarea<{ $isMainComposer?: boolean }>`
+  display: block;
   width: 100%;
-  min-height: 104px;
-  margin-top: 12px;
-  padding: 14px;
+  height: ${({ $isMainComposer }) => ($isMainComposer ? "165px" : "132px")};
+  min-height: ${({ $isMainComposer }) => ($isMainComposer ? "165px" : "132px")};
+  max-height: ${({ $isMainComposer }) => ($isMainComposer ? "165px" : "132px")};
+  margin-top: ${({ $isMainComposer }) => ($isMainComposer ? "24px" : "0")};
+  padding: ${({ $isMainComposer }) => ($isMainComposer ? "12px 18px" : "12px 14px")};
   border: none;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.08);
-  color: #444444;
+  border-radius: 6px;
+  background: ${({ $isMainComposer }) =>
+    $isMainComposer ? "#bcbcbc" : "rgba(188, 188, 188, 0.82)"};
+  color: #ffffff;
   font-size: 14px;
-  resize: vertical;
+  resize: none;
   outline: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+  }
 `;
 
 export const ComposerActions = styled.div`
   display: flex;
   justify-content: flex-end;
-  margin-top: 10px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 0;
+  grid-column: 2 / 3;
+  justify-self: stretch;
+  align-self: end;
+  min-height: 36px;
 `;
 
 export const ComposerSubmitButton = styled.button`
-  min-width: 70px;
-  height: 26px;
-  padding: 0 10px;
-  border: none;
-  border-radius: 999px;
-  background: #f0ebff;
-  color: #7c5ac4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 86px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid rgba(79, 55, 138, 0.28);
+  border-radius: 14px;
+  background: #fbf8ff;
+  color: #4f378a;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(41, 29, 84, 0.22);
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+`;
+
+export const ComposerCancelButton = styled.button`
+  min-width: 66px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid rgba(79, 55, 138, 0.18);
+  border-radius: 12px;
+  background: #ffffff;
+  color: #4f378a;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 4px 10px rgba(41, 29, 84, 0.12);
+`;
+
+export const ButtonIcon = styled.img`
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  flex-shrink: 0;
 `;
 
 export const Divider = styled.div`
@@ -223,7 +291,7 @@ export const CommentList = styled.div`
 
 export const CommentItem = styled.div<{ $depth: number }>`
   padding: 16px 18px 16px ${({ $depth }) => 18 + $depth * 42}px;
-  background: rgba(255, 255, 255, 0.7);
+  background: ${({ $depth }) => ($depth > 0 ? "#b7b7b7" : "#a9a9ac")};
 `;
 
 export const CommentRow = styled.div`
@@ -245,6 +313,7 @@ export const CommentAvatar = styled.div<{ $depth: number }>`
 
 export const CommentContent = styled.div`
   min-width: 0;
+  width: 100%;
 `;
 
 export const CommentAuthor = styled.div`
@@ -265,6 +334,47 @@ export const CommentText = styled.p`
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;
+`;
+
+export const CommentActions = styled.div`
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+`;
+
+export const CommentActionButton = styled.button`
+  min-width: 66px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+`;
+
+export const ReplyMark = styled.span`
+  display: inline-flex;
+  align-items: center;
+  margin-right: 10px;
+  color: #585b63;
+  font-size: 28px;
+  line-height: 1;
+  transform: translateY(-2px);
+`;
+
+export const CommentEmptyText = styled.p`
+  margin: 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 14px;
+  line-height: 1.6;
 `;
 
 export const BackButton = styled.button`
