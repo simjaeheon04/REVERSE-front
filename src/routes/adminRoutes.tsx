@@ -1,4 +1,5 @@
 import AdminPage from "../pages/admin/AdminPage";
+import AuthManagePage from "../pages/AuthManagePage/AuthManagePage";
 import BoardManagePage from "../pages/BoardManagePage/BoardManagePage";
 import ClubIntroManagePage from "../pages/clubIntroManage/ClubIntroManagePage";
 import NoticeManagePage from "../pages/NoticeManagePage/NoticeManagePage";
@@ -39,5 +40,9 @@ export const adminRoutes = [
   {
     path: "/admin/board",
     element: <BoardManagePage />,
+  },
+  {
+    path: "/admin/auth",
+    element: <AuthManagePage />,
   }
 ];

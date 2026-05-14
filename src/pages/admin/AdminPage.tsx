@@ -38,19 +38,10 @@ const adminMenus = [
     path: "/admin/board",
   },
   {
-    title: "회원가입",
-    description: "회원가입 화면에서 이메일 인증과 가입 API를 확인합니다.",
-    path: "/signup",
-  },
-  {
-    title: "아이디 찾기",
-    description: "이름과 이메일 인증으로 아이디 찾기 API를 확인합니다.",
-    path: "/find-id",
-  },
-  {
-    title: "비밀번호 찾기",
-    description: "아이디와 이메일 인증으로 임시 비밀번호 발급 API를 확인합니다.",
-    path: "/find-password",
+    title: "인증 API 관리",
+    description:
+      "회원가입, 아이디 찾기, 비밀번호 찾기 API 요청과 응답을 한 화면에서 확인합니다.",
+    path: "/admin/auth",
   },
 ];
 
