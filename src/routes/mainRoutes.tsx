@@ -1,4 +1,5 @@
 import CalendarPage from "../pages/CalendarPage";
+import BoardPage from "../pages/BoardPage";
 import HomePage from "../pages/HomePage/HomePage";
 import NoticePage from "../pages/NoticePage";
 import RecruitApplyCompletePage from "../pages/RecruitApplyCompletePage/RecruitApplyCompletePage";
@@ -31,6 +32,10 @@ export const mainRoutes = [
   {
     path: "/calendar",
     element: <CalendarPage />,
+  },
+  {
+    path: "/board",
+    element: <BoardPage />,
   },
   {
     path: "/FindId", // 

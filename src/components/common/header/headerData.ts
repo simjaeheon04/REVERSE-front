@@ -63,10 +63,11 @@ export const headerMenus: HeaderMenuItem[] = [
   {
     key: "board",
     label: "게시판",
+    path: "/board",
     sections: [
       {
-        title: "자유 게시판",
-        items: [],
+        title: "자유게시판",
+        items: [{ label: "자유게시판", path: "/board" }],
       },
       {
         title: "대외활동 게시판",
