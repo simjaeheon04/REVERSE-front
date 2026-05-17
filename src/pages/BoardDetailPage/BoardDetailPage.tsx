@@ -104,9 +104,45 @@ export default function BoardDetailPage() {
     return fileName ? decodeURIComponent(fileName) : "첨부 파일";
   };
 
+  const downloadFile = async (fileUrl: string) => {
+    const fileName = getFileName(fileUrl);
+
+    try {
+      const response = await fetch(fileUrl);
+
+      if (!response.ok) {
+        throw new Error(`download failed: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      console.log("[board/detail] file download fallback", {
+        fileUrl,
+        error,
+      });
+
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = fileName;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+  };
+
   const handleDownloadFiles = () => {
     post?.imageUrls.forEach((fileUrl) => {
-      window.open(fileUrl, "_blank", "noopener,noreferrer");
+      void downloadFile(fileUrl);
     });
   };
 
@@ -287,7 +323,13 @@ export default function BoardDetailPage() {
                   {post.imageUrls?.length ? (
                     <S.FileList>
                       {post.imageUrls.map((fileUrl) => (
-                        <S.FileItem key={fileUrl} href={fileUrl} target="_blank" rel="noreferrer">
+                        <S.FileItem
+                          key={fileUrl}
+                          href={fileUrl}
+                          download={getFileName(fileUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
                           (파일) {getFileName(fileUrl)}
                         </S.FileItem>
                       ))}

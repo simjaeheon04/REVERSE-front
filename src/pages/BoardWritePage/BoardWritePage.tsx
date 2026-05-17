@@ -35,13 +35,24 @@ const normalizeAttachments = (attachments: string[]) => {
   return attachments.map((attachment) => attachment.trim()).filter(Boolean);
 };
 
+const getAttachmentName = (attachment: string) => {
+  try {
+    const url = new URL(attachment);
+    const pathname = decodeURIComponent(url.pathname);
+    return pathname.split("/").filter(Boolean).pop() ?? attachment;
+  } catch {
+    return attachment.split(/[\\/]/).filter(Boolean).pop() ?? attachment;
+  }
+};
+
 export default function BoardWritePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [attachments, setAttachments] = useState([""]);
+  const [attachmentDraft, setAttachmentDraft] = useState("");
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [modalType, setModalType] = useState<ModalType>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +78,7 @@ export default function BoardWritePage() {
         const result = await getBoardPostDetail(postId);
         setTitle(result.title ?? "");
         setContent(result.content ?? "");
-        setAttachments(result.imageUrls?.length ? result.imageUrls : [""]);
+        setAttachments(result.imageUrls ?? []);
       } catch (error) {
         if (error instanceof AxiosError && error.response?.status === 404) {
           setErrorMessage("수정할 게시글을 찾을 수 없습니다.");
@@ -113,14 +124,22 @@ export default function BoardWritePage() {
           content: content.trim(),
         });
       } else {
-        await createBoardPost(BOARD_ID, {
+        const attachmentList = normalizeAttachments([...attachments, attachmentDraft]);
+        const createPayload = {
           title: title.trim(),
           content: content.trim(),
           category: selectedCategory,
-          imageUrls: normalizeAttachments(attachments),
+          imageUrls: attachmentList,
           isPinned: false,
           isExternal: false,
+        };
+
+        console.log("[board/write] create payload", {
+          boardId: BOARD_ID,
+          payload: createPayload,
         });
+
+        await createBoardPost(BOARD_ID, createPayload);
       }
 
       navigate("/board/manage");
@@ -160,18 +179,19 @@ export default function BoardWritePage() {
     setModalType(null);
   };
 
-  const handleAttachmentChange = (index: number, value: string) => {
-    setAttachments((prev) =>
-      prev.map((attachment, attachmentIndex) =>
-        attachmentIndex === index ? value : attachment
-      )
-    );
+  const handleAddAttachmentUrl = () => {
+    const nextAttachment = attachmentDraft.trim();
+
+    if (!nextAttachment) {
+      return;
+    }
+
+    setAttachments((prev) => [...prev, nextAttachment]);
+    setAttachmentDraft("");
   };
 
   const handleRemoveAttachment = (index: number) => {
-    setAttachments((prev) =>
-      prev.length === 1 ? [""] : prev.filter((_, attachmentIndex) => attachmentIndex !== index)
-    );
+    setAttachments((prev) => prev.filter((_, attachmentIndex) => attachmentIndex !== index));
   };
 
   const handleOpenFilePicker = () => {
@@ -192,10 +212,7 @@ export default function BoardWritePage() {
         files.map((file) => uploadImageToR2(file, "board"))
       );
 
-      setAttachments((prev) => {
-        const current = normalizeAttachments(prev);
-        return [...current, ...uploadedUrls];
-      });
+      setAttachments((prev) => [...normalizeAttachments(prev), ...uploadedUrls]);
     } catch {
       setErrorMessage("파일 업로드에 실패했습니다.");
     } finally {
@@ -272,39 +289,52 @@ export default function BoardWritePage() {
 
             <S.Field>
               <S.Label htmlFor="board-attachment">파일 / Url</S.Label>
-              <S.AttachmentList>
-                {attachments.map((attachment, index) => (
-                  <S.AttachmentRow key={index}>
-                    <S.AttachmentInput
-                      id={index === 0 ? "board-attachment" : undefined}
-                      type="text"
-                      value={attachment}
-                      placeholder="첨부 파일 경로 또는 URL을 입력해 주세요."
-                      onChange={(event) => handleAttachmentChange(index, event.target.value)}
-                      disabled={isLoading || isUploading || isSubmitting}
-                    />
-                    {index === 0 ? (
-                      <S.AttachmentPickerButton
-                        type="button"
-                        aria-label="파일 선택"
-                        onClick={handleOpenFilePicker}
-                        disabled={isLoading || isUploading || isSubmitting}
-                      >
-                        {isUploading ? "..." : "+"}
-                      </S.AttachmentPickerButton>
-                    ) : (
+              <S.AttachmentRow>
+                <S.AttachmentInput
+                  id="board-attachment"
+                  type="text"
+                  value={attachmentDraft}
+                  placeholder="첨부 파일 경로 또는 URL을 입력해 주세요."
+                  onChange={(event) => setAttachmentDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleAddAttachmentUrl();
+                    }
+                  }}
+                  onBlur={handleAddAttachmentUrl}
+                  disabled={isLoading || isUploading || isSubmitting}
+                />
+                <S.AttachmentPickerButton
+                  type="button"
+                  aria-label="파일 선택"
+                  onClick={handleOpenFilePicker}
+                  disabled={isLoading || isUploading || isSubmitting}
+                >
+                  {isUploading ? "..." : "+"}
+                </S.AttachmentPickerButton>
+              </S.AttachmentRow>
+
+              {attachments.length > 0 ? (
+                <S.AttachmentList>
+                  {attachments.map((attachment, index) => (
+                    <S.AttachmentItem key={`${attachment}-${index}`}>
+                      <S.AttachmentName title={attachment}>
+                        {getAttachmentName(attachment)}
+                      </S.AttachmentName>
                       <S.AttachmentRemoveButton
                         type="button"
-                        aria-label="첨부 제거"
+                        aria-label="첨부 파일 제거"
                         onClick={() => handleRemoveAttachment(index)}
                         disabled={isLoading || isUploading || isSubmitting}
                       >
-                        -
+                        삭제
                       </S.AttachmentRemoveButton>
-                    )}
-                  </S.AttachmentRow>
-                ))}
-              </S.AttachmentList>
+                    </S.AttachmentItem>
+                  ))}
+                </S.AttachmentList>
+              ) : null}
+
               <S.FileInput
                 ref={fileInputRef}
                 type="file"

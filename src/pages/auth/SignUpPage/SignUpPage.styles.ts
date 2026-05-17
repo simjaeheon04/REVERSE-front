@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import loginBg from "../../../assets/images/rule-bg.png";
+import loginBg from "../../../assets/images/auth-bg.jpg";
 
 export const Page = styled.main`
   min-height: calc(100vh - 74px);

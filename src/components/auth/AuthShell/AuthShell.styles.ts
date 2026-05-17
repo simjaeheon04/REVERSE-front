@@ -26,14 +26,12 @@ export const Frame = styled.section`
       #8a84dd 75%,
       #ffffff 100%
     );
-
     -webkit-mask: linear-gradient(#fff 0 0) content-box,
       linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
-
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
   }
 
   @media (max-width: 768px) {
@@ -48,7 +46,6 @@ export const Frame = styled.section`
 
 export const Inner = styled.div`
   width: 100%;
-
   min-height: 520px;
   border-radius: 8px;
   padding: 20px 26px 30px;

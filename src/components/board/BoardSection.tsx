@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  getBoardPosts,
-  type BoardPostListItem,
-  type BoardSearchType,
-  type BoardType,
-} from "../../services/boardApi";
+import { getBoardPostList, type BoardPostListItem } from "../../services/boardApi";
 import * as S from "./BoardSection.styles";
 
 type BoardCategory = "전체" | "자유" | "대외활동" | "정보" | "교구/교재 나눔" | "질의응답";
@@ -21,42 +16,36 @@ const CATEGORIES: BoardCategory[] = [
 ];
 
 const SEARCH_FIELDS: SearchField[] = ["제목", "본문", "작성자"];
-const PAGE_SIZE = 6;
 
-const CATEGORY_TO_BOARD_TYPE: Record<Exclude<BoardCategory, "전체">, BoardType> = {
-  자유: "FREE",
-  대외활동: "ACTIVITY",
-  정보: "INFO",
-  "교구/교재 나눔": "TRADE",
-  질의응답: "QNA",
-};
-
-const BOARD_TYPE_TO_CATEGORY: Record<BoardType, Exclude<BoardCategory, "전체">> = {
+const CATEGORY_LABELS: Record<string, Exclude<BoardCategory, "전체">> = {
   FREE: "자유",
   ACTIVITY: "대외활동",
   INFO: "정보",
   TRADE: "교구/교재 나눔",
   QNA: "질의응답",
-};
-
-const SEARCH_FIELD_TO_TYPE: Record<SearchField, BoardSearchType> = {
-  제목: "TITLE",
-  본문: "CONTENT",
-  작성자: "AUTHOR",
+  자유: "자유",
+  대외활동: "대외활동",
+  정보: "정보",
+  "교구/교재 나눔": "교구/교재 나눔",
+  질의응답: "질의응답",
 };
 
 const AVATAR_COLORS = ["#8990a3", "#51a8ff", "#62c9e5", "#c8df3e", "#c69a58", "#ff6e57"];
 
 const getPostId = (post: BoardPostListItem) => post.postId || post.id;
 
-const getBoardType = (post: BoardPostListItem): BoardType => {
-  const type = post.boardType ?? post.category;
-  return type === "ACTIVITY" || type === "INFO" || type === "TRADE" || type === "QNA"
-    ? type
-    : "FREE";
+const normalizeCategory = (value?: string | null) => {
+  if (!value) {
+    return "";
+  }
+
+  const trimmed = value.trim();
+  return CATEGORY_LABELS[trimmed] ?? trimmed;
 };
 
-const getCategory = (post: BoardPostListItem) => BOARD_TYPE_TO_CATEGORY[getBoardType(post)] ?? "자유";
+const getPostCategory = (post: BoardPostListItem) => {
+  return normalizeCategory(typeof post.category === "string" ? post.category : post.boardType);
+};
 
 const getAuthor = (post: BoardPostListItem) =>
   post.author ?? post.authorName ?? post.writerName ?? post.nickname ?? post.userId ?? "익명 회원";
@@ -65,6 +54,24 @@ const formatDate = (date: string) => {
   if (!date) return "";
 
   return date.slice(0, 10).replaceAll("-", ".");
+};
+
+const matchesSearch = (post: BoardPostListItem, searchField: SearchField, keyword: string) => {
+  const normalizedKeyword = keyword.trim().toLowerCase();
+
+  if (!normalizedKeyword) {
+    return true;
+  }
+
+  if (searchField === "제목") {
+    return post.title.toLowerCase().includes(normalizedKeyword);
+  }
+
+  if (searchField === "본문") {
+    return (post.content ?? "").toLowerCase().includes(normalizedKeyword);
+  }
+
+  return getAuthor(post).toLowerCase().includes(normalizedKeyword);
 };
 
 export default function BoardSection() {
@@ -79,6 +86,15 @@ export default function BoardSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
+  const filteredPosts = useMemo(() => {
+    return posts.filter((post) => {
+      const category = getPostCategory(post);
+      const categoryMatched = activeCategory === "전체" || category === activeCategory;
+
+      return categoryMatched && matchesSearch(post, searchField, submittedKeyword);
+    });
+  }, [activeCategory, posts, searchField, submittedKeyword]);
+
   const pages = useMemo(() => {
     const visiblePages = Math.min(totalPages, 3);
     return Array.from({ length: visiblePages }, (_, index) => index + 1);
@@ -86,36 +102,19 @@ export default function BoardSection() {
 
   useEffect(() => {
     const fetchPosts = async () => {
-      const trimmedKeyword = submittedKeyword.trim();
-
-      if (trimmedKeyword && trimmedKeyword.length < 2) {
-        setPosts([]);
-        setTotalPages(1);
-        setStatusMessage("검색어는 2글자 이상 입력해 주세요.");
-        return;
-      }
-
       try {
         setIsLoading(true);
         setStatusMessage("");
 
-        const result = await getBoardPosts({
-          boardType:
-            activeCategory === "전체"
-              ? undefined
-              : CATEGORY_TO_BOARD_TYPE[activeCategory],
-          searchType: trimmedKeyword ? SEARCH_FIELD_TO_TYPE[searchField] : undefined,
-          keyword: trimmedKeyword || undefined,
-          page: currentPage,
-          size: PAGE_SIZE,
-        });
+        const result = await getBoardPostList(currentPage - 1);
 
-        setPosts(result.posts);
-        setTotalPages(Math.max(1, result.totalPages));
-        setStatusMessage(result.posts.length ? "" : "게시글이 없습니다.");
+        setPosts(result.content);
+        setTotalPages(Math.max(1, result.totalPages || 1));
+        setStatusMessage(result.content.length ? "" : "게시글이 없습니다.");
       } catch (error) {
         console.error("board posts fetch failed", error);
         setPosts([]);
+        setTotalPages(1);
         setStatusMessage("게시글 목록을 불러오지 못했습니다.");
       } finally {
         setIsLoading(false);
@@ -123,16 +122,14 @@ export default function BoardSection() {
     };
 
     void fetchPosts();
-  }, [activeCategory, currentPage, searchField, submittedKeyword]);
+  }, [currentPage]);
 
   const handleCategoryChange = (category: BoardCategory) => {
     setActiveCategory(category);
-    setCurrentPage(1);
   };
 
   const handleSearch = () => {
     setSubmittedKeyword(keyword);
-    setCurrentPage(1);
   };
 
   return (
@@ -200,37 +197,45 @@ export default function BoardSection() {
           <S.PostList>
             {isLoading ? <S.StatusText>게시글을 불러오는 중입니다.</S.StatusText> : null}
             {!isLoading && statusMessage ? <S.StatusText>{statusMessage}</S.StatusText> : null}
+            {!isLoading && !statusMessage && filteredPosts.length === 0 ? (
+              <S.StatusText>조건에 맞는 게시글이 없습니다.</S.StatusText>
+            ) : null}
 
             {!isLoading &&
-              posts.map((post, index) => (
-                <S.PostCard
-                  key={getPostId(post)}
-                  type="button"
-                  onClick={() => navigate(`/board/${getPostId(post)}`)}
-                >
-                  <S.PostInfo>
-                    <S.PostTitleRow>
-                      <S.PostTitle>{post.title}</S.PostTitle>
-                      <S.PostCategory>{getCategory(post)}</S.PostCategory>
-                    </S.PostTitleRow>
+              !statusMessage &&
+              filteredPosts.map((post, index) => {
+                const category = getPostCategory(post);
 
-                    <S.MetaRow>
-                      <S.Avatar $color={AVATAR_COLORS[index % AVATAR_COLORS.length]}>
-                        {getAuthor(post).slice(0, 1)}
-                      </S.Avatar>
-                      <S.MetaText>
-                        <span>{getAuthor(post)}</span>
-                        <span>{formatDate(post.createdAt)}</span>
-                      </S.MetaText>
-                    </S.MetaRow>
-                  </S.PostInfo>
+                return (
+                  <S.PostCard
+                    key={getPostId(post)}
+                    type="button"
+                    onClick={() => navigate(`/board/${getPostId(post)}`)}
+                  >
+                    <S.PostInfo>
+                      <S.PostTitleRow>
+                        <S.PostTitle>{post.title}</S.PostTitle>
+                        {category ? <S.PostCategory>{category}</S.PostCategory> : null}
+                      </S.PostTitleRow>
 
-                  <S.ApplyText>
-                    자세히 보기
-                    <S.Arrow aria-hidden="true" />
-                  </S.ApplyText>
-                </S.PostCard>
-              ))}
+                      <S.MetaRow>
+                        <S.Avatar $color={AVATAR_COLORS[index % AVATAR_COLORS.length]}>
+                          {getAuthor(post).slice(0, 1)}
+                        </S.Avatar>
+                        <S.MetaText>
+                          <span>{getAuthor(post)}</span>
+                          <span>{formatDate(post.createdAt)}</span>
+                        </S.MetaText>
+                      </S.MetaRow>
+                    </S.PostInfo>
+
+                    <S.ApplyText>
+                      자세히 보기
+                      <S.Arrow aria-hidden="true" />
+                    </S.ApplyText>
+                  </S.PostCard>
+                );
+              })}
           </S.PostList>
 
           <S.Pagination aria-label="게시판 페이지">

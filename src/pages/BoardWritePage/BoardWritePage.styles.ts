@@ -139,7 +139,31 @@ export const AttachmentRow = styled.div`
 export const AttachmentList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  margin-top: 12px;
+  max-width: 520px;
+`;
+
+export const AttachmentItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+`;
+
+export const AttachmentName = styled.span`
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const AttachmentButton = styled.button`
@@ -160,7 +184,13 @@ export const AttachmentButton = styled.button`
 `;
 
 export const AttachmentRemoveButton = styled(AttachmentButton)`
+  width: auto;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 4px;
   background: rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  font-weight: 700;
 `;
 
 export const AttachmentPickerButton = styled(AttachmentButton)``;

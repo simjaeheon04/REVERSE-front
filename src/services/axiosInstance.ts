@@ -20,10 +20,7 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use((config) => {
   const accessToken = getStoredAccessToken();
   const requestUrl = config.url ?? "";
-  const isAuthRequest =
-    requestUrl.includes("/api/auth/login") ||
-    requestUrl.includes("/api/auth/refresh") ||
-    requestUrl.includes("/api/auth/logout");
+  const isAuthRequest = requestUrl.includes("/api/auth/");
 
   if (accessToken && !isAuthRequest) {
     config.headers.Authorization = `Bearer ${accessToken}`;

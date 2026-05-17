@@ -253,9 +253,14 @@ export const getBoardPostList = async (page = 0): Promise<BoardPostListPage> => 
 
   const payload = unwrapApiData(response.data);
   const rawContent = Array.isArray(payload.content) ? payload.content : [];
+  const normalizedContent = rawContent.map(normalizeBoardPostListItem);
+
+  console.log("[board/list] raw response", response.data);
+  console.log("[board/list] raw content", rawContent);
+  console.log("[board/list] normalized content", normalizedContent);
 
   return {
-    content: rawContent.map(normalizeBoardPostListItem),
+    content: normalizedContent,
     totalPages: payload.totalPages ?? 0,
     totalElements: payload.totalElements ?? 0,
     number: payload.number ?? 0,
@@ -303,15 +308,23 @@ export const getMyBoardPosts = async (
   const response = await axiosInstance.get<
     ApiSuccessResponse<{
       content?: Array<{
+        id?: number;
         postId?: number;
         boardId?: number;
+        title?: string;
         postTitle?: string;
+        content?: string;
         postContents?: string;
         userId?: string;
+        createdAt?: string;
         createdDate?: string;
+        modifiedAt?: string | null;
         modifiedDate?: string | null;
+        commentCount?: number;
         postCommentCount?: number;
+        likeCount?: number;
         postLikeCount?: number;
+        category?: string;
         postCategory?: string;
         isPinned?: boolean;
         isModified?: boolean;
@@ -322,15 +335,23 @@ export const getMyBoardPosts = async (
       number?: number;
     }> | {
       content?: Array<{
+        id?: number;
         postId?: number;
         boardId?: number;
+        title?: string;
         postTitle?: string;
+        content?: string;
         postContents?: string;
         userId?: string;
+        createdAt?: string;
         createdDate?: string;
+        modifiedAt?: string | null;
         modifiedDate?: string | null;
+        commentCount?: number;
         postCommentCount?: number;
+        likeCount?: number;
         postLikeCount?: number;
+        category?: string;
         postCategory?: string;
         isPinned?: boolean;
         isModified?: boolean;
@@ -349,16 +370,16 @@ export const getMyBoardPosts = async (
 
   return {
     content: rawContent.map((post) => ({
-      id: post.postId ?? 0,
+      id: post.postId ?? post.id ?? 0,
       boardId: post.boardId ?? 0,
-      title: post.postTitle ?? "",
-      content: post.postContents ?? "",
+      title: post.postTitle ?? post.title ?? "",
+      content: post.postContents ?? post.content ?? "",
       userId: post.userId ?? "",
-      createdAt: post.createdDate ?? "",
-      modifiedAt: post.modifiedDate ?? null,
-      commentCount: post.postCommentCount ?? 0,
-      likeCount: post.postLikeCount ?? 0,
-      category: post.postCategory ?? "",
+      createdAt: post.createdDate ?? post.createdAt ?? "",
+      modifiedAt: post.modifiedDate ?? post.modifiedAt ?? null,
+      commentCount: post.postCommentCount ?? post.commentCount ?? 0,
+      likeCount: post.postLikeCount ?? post.likeCount ?? 0,
+      category: post.postCategory ?? post.category ?? "",
       isPinned: Boolean(post.isPinned),
       isModified: Boolean(post.isModified),
       isExternal: Boolean(post.isExternal),
@@ -376,7 +397,13 @@ export const getBoardPostDetail = async (
     `/api/posts/board/${postId}`
   );
 
-  return normalizeBoardPostDetail(unwrapApiData(response.data));
+  const payload = unwrapApiData(response.data);
+  const normalizedDetail = normalizeBoardPostDetail(payload);
+
+  console.log("[board/detail] raw response", response.data);
+  console.log("[board/detail] normalized", normalizedDetail);
+
+  return normalizedDetail;
 };
 
 export const getBoardComments = async (
