@@ -1,7 +1,8 @@
-﻿import { axiosInstance } from "./axiosInstance";
+import { axiosInstance } from "./axiosInstance";
 
 type ApiSuccessResponse<T> = {
-  success: boolean;
+  success?: boolean;
+  status?: string;
   data: T;
   message?: string | null;
 };
@@ -11,13 +12,16 @@ const unwrapApiData = <T>(payload: ApiSuccessResponse<T> | T): T => {
     payload &&
     typeof payload === "object" &&
     "data" in payload &&
-    "success" in payload
+    ("success" in payload || "status" in payload)
   ) {
     return (payload as ApiSuccessResponse<T>).data;
   }
 
   return payload as T;
 };
+
+export type BoardType = "FREE" | "ACTIVITY" | "INFO" | "TRADE" | "QNA";
+export type BoardSearchType = "TITLE" | "CONTENT" | "AUTHOR";
 
 export type BoardComment = {
   commentId: number;
@@ -38,8 +42,15 @@ export type BoardPostListItem = {
   postId: number;
   boardId: number | null;
   title: string;
+  content?: string;
   userId: string;
+  author?: string;
+  authorName?: string;
+  writerName?: string;
+  nickname?: string;
   createdAt: string;
+  boardType?: BoardType;
+  category?: BoardType | string;
   commentCount: number;
   likeCount: number;
 };
@@ -49,6 +60,20 @@ export type BoardPostListPage = {
   totalPages: number;
   totalElements: number;
   number: number;
+};
+
+export type BoardPostListParams = {
+  boardType?: BoardType;
+  searchType?: BoardSearchType;
+  keyword?: string;
+  page?: number;
+  size?: number;
+};
+
+export type BoardPostListResult = {
+  posts: BoardPostListItem[];
+  currentPage: number;
+  totalPages: number;
 };
 
 export type BoardMyStats = {
@@ -93,6 +118,12 @@ export type BoardPostCreatePayload = {
   isExternal: boolean;
 };
 
+export type BoardPostPayload = {
+  title: string;
+  content: string;
+  boardType: BoardType;
+};
+
 export type BoardPostMutationResult = {
   status?: string;
   message?: string;
@@ -111,7 +142,7 @@ export type BoardPostDetail = {
   imageUrls: string[];
 };
 
-type BoardPostDetailRaw = {
+type RawBoardPostListItem = {
   id?: number;
   postId?: number;
   boardId?: number;
@@ -120,14 +151,37 @@ type BoardPostDetailRaw = {
   content?: string;
   postContents?: string;
   userId?: string;
+  author?: string;
+  authorName?: string;
+  writerName?: string;
+  nickname?: string;
   createdAt?: string;
   createdDate?: string;
-  modifiedAt?: string | null;
-  modifiedDate?: string | null;
+  boardType?: BoardType;
+  category?: BoardType | string;
+  postCategory?: BoardType | string;
   commentCount?: number;
   postCommentCount?: number;
   likeCount?: number;
   postLikeCount?: number;
+};
+
+type RawBoardPostPage = {
+  content?: RawBoardPostListItem[];
+  posts?: RawBoardPostListItem[];
+  list?: RawBoardPostListItem[];
+  items?: RawBoardPostListItem[];
+  totalPages?: number;
+  totalPage?: number;
+  totalElements?: number;
+  number?: number;
+  currentPage?: number;
+  page?: number;
+};
+
+type BoardPostDetailRaw = RawBoardPostListItem & {
+  modifiedAt?: string | null;
+  modifiedDate?: string | null;
   imageUrls?: string[];
   fileUrls?: string[];
   attachmentUrls?: string[];
@@ -141,6 +195,24 @@ type BoardPostDetailRaw = {
       }
   >;
 };
+
+const normalizeBoardPostListItem = (post: RawBoardPostListItem): BoardPostListItem => ({
+  id: post.id ?? post.postId ?? 0,
+  postId: post.postId ?? post.id ?? 0,
+  boardId: post.boardId ?? null,
+  title: post.postTitle ?? post.title ?? "",
+  content: post.postContents ?? post.content,
+  userId: post.userId ?? "",
+  author: post.author,
+  authorName: post.authorName,
+  writerName: post.writerName,
+  nickname: post.nickname,
+  createdAt: post.createdDate ?? post.createdAt ?? "",
+  boardType: post.boardType,
+  category: post.postCategory ?? post.category,
+  commentCount: post.postCommentCount ?? post.commentCount ?? 0,
+  likeCount: post.postLikeCount ?? post.likeCount ?? 0,
+});
 
 const normalizeBoardPostDetail = (post: BoardPostDetailRaw): BoardPostDetail => {
   const attachmentUrls =
@@ -172,65 +244,47 @@ const normalizeBoardPostDetail = (post: BoardPostDetailRaw): BoardPostDetail => 
 };
 
 export const getBoardPostList = async (page = 0): Promise<BoardPostListPage> => {
-  const response = await axiosInstance.get<
-    ApiSuccessResponse<{
-      content?: Array<{
-        id?: number;
-        postId?: number;
-        boardId?: number;
-        title?: string;
-        postTitle?: string;
-        userId?: string;
-        createdAt?: string;
-        createdDate?: string;
-        commentCount?: number;
-        postCommentCount?: number;
-        likeCount?: number;
-        postLikeCount?: number;
-      }>;
-      totalPages?: number;
-      totalElements?: number;
-      number?: number;
-    }> | {
-      content?: Array<{
-        id?: number;
-        postId?: number;
-        boardId?: number;
-        title?: string;
-        postTitle?: string;
-        userId?: string;
-        createdAt?: string;
-        createdDate?: string;
-        commentCount?: number;
-        postCommentCount?: number;
-        likeCount?: number;
-        postLikeCount?: number;
-      }>;
-      totalPages?: number;
-      totalElements?: number;
-      number?: number;
+  const response = await axiosInstance.get<ApiSuccessResponse<RawBoardPostPage> | RawBoardPostPage>(
+    "/api/posts/board",
+    {
+      params: { page },
     }
-  >("/api/posts/board", {
-    params: { page },
-  });
+  );
 
   const payload = unwrapApiData(response.data);
   const rawContent = Array.isArray(payload.content) ? payload.content : [];
 
   return {
-    content: rawContent.map((post) => ({
-      id: post.id ?? post.postId ?? 0,
-      postId: post.postId ?? post.id ?? 0,
-      boardId: post.boardId ?? null,
-      title: post.postTitle ?? post.title ?? "",
-      userId: post.userId ?? "",
-      createdAt: post.createdDate ?? post.createdAt ?? "",
-      commentCount: post.postCommentCount ?? post.commentCount ?? 0,
-      likeCount: post.postLikeCount ?? post.likeCount ?? 0,
-    })),
+    content: rawContent.map(normalizeBoardPostListItem),
     totalPages: payload.totalPages ?? 0,
     totalElements: payload.totalElements ?? 0,
     number: payload.number ?? 0,
+  };
+};
+
+export const getBoardPosts = async (
+  params: BoardPostListParams = {}
+): Promise<BoardPostListResult> => {
+  const response = await axiosInstance.get<ApiSuccessResponse<RawBoardPostPage> | RawBoardPostPage>(
+    "/api/posts",
+    {
+      params: {
+        boardType: params.boardType,
+        searchType: params.searchType,
+        keyword: params.keyword,
+        page: params.page,
+        size: params.size,
+      },
+    }
+  );
+
+  const payload = unwrapApiData(response.data);
+  const rawPosts = payload.content ?? payload.posts ?? payload.list ?? payload.items ?? [];
+
+  return {
+    posts: rawPosts.map(normalizeBoardPostListItem),
+    currentPage: payload.currentPage ?? payload.page ?? payload.number ?? params.page ?? 1,
+    totalPages: payload.totalPages ?? payload.totalPage ?? 1,
   };
 };
 
@@ -286,12 +340,9 @@ export const getMyBoardPosts = async (
       totalElements?: number;
       number?: number;
     }
-  >(
-    "/api/board/my/posts",
-    {
-      params: { page, size },
-    }
-  );
+  >("/api/board/my/posts", {
+    params: { page, size },
+  });
 
   const payload = unwrapApiData(response.data);
   const rawContent = Array.isArray(payload.content) ? payload.content : [];
@@ -324,13 +375,8 @@ export const getBoardPostDetail = async (
   const response = await axiosInstance.get<ApiSuccessResponse<BoardPostDetailRaw> | BoardPostDetailRaw>(
     `/api/posts/board/${postId}`
   );
-  const payload = unwrapApiData(response.data);
-  const normalized = normalizeBoardPostDetail(payload);
 
-  console.log("[board/detail] raw response", response.data);
-  console.log("[board/detail] normalized", normalized);
-
-  return normalized;
+  return normalizeBoardPostDetail(unwrapApiData(response.data));
 };
 
 export const getBoardComments = async (
@@ -411,17 +457,38 @@ export const deleteBoardPost = async (
   return unwrapApiData(response.data);
 };
 
-export const createBoardPost = async (
+export async function createBoardPost(
+  payload: BoardPostPayload
+): Promise<ApiSuccessResponse<{ postId: number }>>;
+export async function createBoardPost(
   boardId: number | string,
   payload: BoardPostCreatePayload
-): Promise<BoardPostMutationResult> => {
+): Promise<BoardPostMutationResult>;
+export async function createBoardPost(
+  first: BoardPostPayload | number | string,
+  second?: BoardPostCreatePayload
+): Promise<ApiSuccessResponse<{ postId: number }> | BoardPostMutationResult> {
+  if (typeof first === "object") {
+    const response = await axiosInstance.post<ApiSuccessResponse<{ postId: number }>>(
+      "/api/posts",
+      first,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return response.data;
+  }
+
   const response = await axiosInstance.post<
     ApiSuccessResponse<BoardPostMutationResult> | BoardPostMutationResult
-  >(`/api/board/${boardId}`, payload, {
+  >(`/api/board/${first}`, second, {
     headers: {
       "Content-Type": "application/json",
     },
   });
 
   return unwrapApiData(response.data);
-};
+}

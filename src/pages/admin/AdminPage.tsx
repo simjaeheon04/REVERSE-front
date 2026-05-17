@@ -34,7 +34,8 @@ const adminMenus = [
   },
   {
     title: "모집공고 관리",
-    description: "모집공고 목록을 조회하고 공고 등록, 수정, 상태 변경, 삭제를 처리합니다.",
+    description:
+      "모집공고 목록을 조회하고 공고 등록, 수정, 상태 변경, 삭제를 처리합니다.",
     path: "/admin/recruit",
   },
 ];
@@ -58,7 +59,7 @@ export default function AdminPage() {
             <S.Card key={menu.path}>
               <S.CardTitle>{menu.title}</S.CardTitle>
               <S.CardText>{menu.description}</S.CardText>
-              <S.MoveButton type="button" onClick={() => navigate(menu.path)}>
+              <S.MoveButton type='button' onClick={() => navigate(menu.path)}>
                 이동하기
               </S.MoveButton>
             </S.Card>

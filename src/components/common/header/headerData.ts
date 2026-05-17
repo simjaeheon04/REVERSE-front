@@ -37,7 +37,7 @@ export const headerMenus: HeaderMenuItem[] = [
         ],
       },
       {
-        title: "출석 관리",
+        title: "관리",
         items: [{ label: "관리자 임시 페이지", path: "/admin" }],
       },
     ],
@@ -66,8 +66,8 @@ export const headerMenus: HeaderMenuItem[] = [
     path: "/board",
     sections: [
       {
-        title: "자유 게시판",
-        items: [{ label: "자유 게시판", path: "/board" }],
+        title: "자유게시판",
+        items: [{ label: "자유게시판", path: "/board" }],
       },
       {
         title: "대외활동 게시판",

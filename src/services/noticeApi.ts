@@ -40,6 +40,8 @@ export type NoticeDetail = {
   isPinned?: boolean;
 };
 
+export type Notice = NoticeDetail;
+
 export type NoticeListParams = {
   category?: string;
   page?: number;
@@ -52,6 +54,13 @@ export type NoticeUpsertPayload = {
   isExternal: boolean;
   category: string;
   imageUrls: string[];
+  noticeId?: number;
+};
+
+export type NoticePayload = {
+  title: string;
+  content: string;
+  isPinned: boolean;
   noticeId?: number;
 };
 
@@ -77,12 +86,11 @@ export const uploadNoticeImage = async (file: File): Promise<string> => {
 export const getNoticeList = async (
   params: NoticeListParams = {}
 ): Promise<NoticeListPage> => {
-  const category = params.category?.trim() || "전체";
   const response = await axiosInstance.get<ApiSuccessResponse<NoticeListPage>>(
     "/api/notices",
     {
       params: {
-        category,
+        category: params.category?.trim() || "전체",
         page: params.page ?? 0,
       },
     }
@@ -115,6 +123,22 @@ export const saveNotice = async (
   );
 
   return response.data.data;
+};
+
+export const createNotice = async (
+  payload: NoticePayload
+): Promise<ApiSuccessResponse<NoticeUpsertResult>> => {
+  const response = await axiosInstance.post<ApiSuccessResponse<NoticeUpsertResult>>(
+    "/api/posts/notices",
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
 };
 
 export const deleteNotice = async (
