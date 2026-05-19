@@ -1,11 +1,37 @@
+import { AxiosError } from "axios";
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
+import { applyStudy } from "../../services/studyApi";
 import { getAllStudyPosts } from "../StudyPage/studyStorage";
 import * as S from "./StudyApplyPage.styles";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 const AVAILABLE_TIMES = ["오후 5시", "오후 6시", "오후 7시", "오후 8시"];
+
+const getApplyErrorMessage = (error: unknown) => {
+  if (error instanceof AxiosError) {
+    const data = error.response?.data;
+
+    if (typeof data === "string" && data.trim()) {
+      return data;
+    }
+
+    if (data && typeof data === "object") {
+      const record = data as Record<string, unknown>;
+
+      if (typeof record.message === "string" && record.message.trim()) {
+        return record.message;
+      }
+    }
+  }
+
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  return "스터디 참여 신청에 실패했습니다.";
+};
 
 function StudyApplyInfo() {
   return (
@@ -71,6 +97,7 @@ function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: st
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [isAgreed, setIsAgreed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canSubmit = Boolean(weekday && selectedTimes.length > 0 && isAgreed);
 
@@ -80,7 +107,7 @@ function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: st
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!weekday || selectedTimes.length === 0) {
       setErrorMessage("요일과 시간은 필수 입력해야 합니다.");
       return;
@@ -91,8 +118,16 @@ function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: st
       return;
     }
 
-    setErrorMessage("");
-    navigate(`/study/${studyId}/apply/complete`);
+    try {
+      setIsSubmitting(true);
+      setErrorMessage("");
+      await applyStudy(studyId);
+      navigate(`/study/${studyId}/apply/complete`);
+    } catch (error) {
+      setErrorMessage(getApplyErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -162,8 +197,12 @@ function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: st
 
       {errorMessage ? <S.ErrorText>{errorMessage}</S.ErrorText> : null}
 
-      <S.SubmitButton type="button" disabled={!canSubmit} onClick={handleSubmit}>
-        제출
+      <S.SubmitButton
+        type="button"
+        disabled={!canSubmit || isSubmitting}
+        onClick={() => void handleSubmit()}
+      >
+        {isSubmitting ? "제출 중" : "제출"}
       </S.SubmitButton>
     </S.FormPanel>
   );

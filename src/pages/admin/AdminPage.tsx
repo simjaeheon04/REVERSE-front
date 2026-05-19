@@ -38,6 +38,12 @@ const adminMenus = [
       "모집공고 목록을 조회하고 공고 등록, 수정, 상태 변경, 삭제를 처리합니다.",
     path: "/admin/recruit",
   },
+  {
+    title: "스터디 관리",
+    description:
+      "스터디 모집, 게시글 자료, 참여 신청과 멤버 처리 기능을 관리합니다.",
+    path: "/admin/study",
+  },
 ];
 
 export default function AdminPage() {

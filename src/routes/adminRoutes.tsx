@@ -5,6 +5,7 @@ import NoticeManagePage from "../pages/noticeManage/NoticeManagePage";
 import OfficerManagePage from "../pages/officerManage/OfficerManagePage";
 import ProjectManagePage from "../pages/projectManage/ProjectManagePage";
 import RecruitManagePage from "../pages/recruitManage/RecruitManagePage";
+import StudyManagePage from "../pages/studyManage/StudyManagePage";
 import TermsManagePage from "../pages/termsManage/TermsManagePage";
 import AdminRouteGuard from "./AdminRouteGuard";
 
@@ -70,6 +71,14 @@ export const adminRoutes = [
     element: (
       <AdminRouteGuard>
         <RecruitManagePage />
+      </AdminRouteGuard>
+    ),
+  },
+  {
+    path: "/admin/study",
+    element: (
+      <AdminRouteGuard>
+        <StudyManagePage />
       </AdminRouteGuard>
     ),
   },

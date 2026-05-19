@@ -24,6 +24,10 @@ const writeCreatedStudies = (studies: StudyPost[]) => {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(studies));
 };
 
+export const getCreatedStudyPosts = (): StudyPost[] => {
+  return readCreatedStudies();
+};
+
 export const getAllStudyPosts = (): StudyPost[] => {
   return [...readCreatedStudies(), ...STUDY_POSTS];
 };
@@ -31,4 +35,12 @@ export const getAllStudyPosts = (): StudyPost[] => {
 export const createStudyPost = (study: StudyPost) => {
   const createdStudies = readCreatedStudies();
   writeCreatedStudies([study, ...createdStudies]);
+};
+
+export const deleteCreatedStudyPost = (studyId: number | string) => {
+  const createdStudies = readCreatedStudies();
+  const nextStudies = createdStudies.filter((study) => String(study.id) !== String(studyId));
+  writeCreatedStudies(nextStudies);
+
+  return nextStudies.length !== createdStudies.length;
 };

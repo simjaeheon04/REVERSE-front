@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import studyImage from "../../assets/images/project-study.jpg";
 import Footer from "../../components/common/footer/Footer";
-import { createStudyPost } from "../StudyPage/studyStorage";
+import { createStudyRecruitment } from "../../services/studyApi";
+import { createStudyPost as saveCreatedStudyPost } from "../StudyPage/studyStorage";
 import { STUDY_SEMESTERS, type StudyPost } from "../StudyPage/studyDummyData";
 import * as S from "./StudyWritePage.styles";
 
@@ -18,6 +19,48 @@ const INITIAL_CURRICULUM = [
   "6주차 내용을 입력하세요.",
   "7주차 내용을 입력하세요.",
 ];
+
+const getStudyIdFromResponse = (response: unknown) => {
+  if (!response || typeof response !== "object") {
+    return Date.now();
+  }
+
+  const record = response as Record<string, unknown>;
+
+  if (typeof record.studyId === "number") {
+    return record.studyId;
+  }
+
+  if (typeof record.id === "number") {
+    return record.id;
+  }
+
+  return Date.now();
+};
+
+const buildStudyContent = (data: {
+  introduction: string;
+  goal: string;
+  language: string;
+  stack: string;
+  schedule: string;
+  place: string;
+  notes: string;
+  curriculum: string[];
+}) =>
+  [
+    data.introduction,
+    `활동 목표: ${data.goal}`,
+    `사용 언어: ${data.language}`,
+    `기술 스택: ${data.stack}`,
+    `진행 요일 및 시간: ${data.schedule}`,
+    `진행 장소 및 방법: ${data.place}`,
+    `유의사항: ${data.notes}`,
+    "curriculum",
+    ...data.curriculum.map((item, index) => `${index + 1}주차: ${item}`),
+  ]
+    .filter(Boolean)
+    .join("\n");
 
 export default function StudyWritePage() {
   const navigate = useNavigate();
@@ -35,6 +78,7 @@ export default function StudyWritePage() {
   const [notes, setNotes] = useState("");
   const [curriculum, setCurriculum] = useState(INITIAL_CURRICULUM);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const updateCurriculum = (index: number, value: string) => {
     setCurriculum((prev) =>
@@ -46,7 +90,7 @@ export default function StudyWritePage() {
     setCurriculum((prev) => [...prev, `${prev.length + 1}주차 내용을 입력하세요.`]);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!title.trim() || !leader.trim()) {
@@ -54,33 +98,62 @@ export default function StudyWritePage() {
       return;
     }
 
-    const studyPost: StudyPost = {
-      id: Date.now(),
-      semester,
-      status: "모집중",
-      title: title.trim(),
-      summary: introduction.trim() || "새로 등록된 스터디입니다.",
-      imageUrl: studyImage,
-      leader: leader.trim(),
-      introduction: introduction.trim() || "활동 소개가 입력되지 않았습니다.",
-      goal: goal.trim() || "활동 목표가 입력되지 않았습니다.",
-      memberCount: Number(memberCount) || 1,
-      schedule: `${weekday} ${time}`,
-      place: place.trim() || "진행 장소 및 방법이 입력되지 않았습니다.",
-      notes: notes.trim() || "유의사항이 입력되지 않았습니다.",
-      language: language.trim() || "미정",
-      stack: stack
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      curriculum: curriculum.map((item, index) => ({
-        week: `${index + 1}주차`,
-        title: item.trim() || `${index + 1}주차 내용을 입력하세요.`,
-      })),
-    };
+    try {
+      setIsSubmitting(true);
+      setErrorMessage("");
 
-    createStudyPost(studyPost);
-    navigate("/study");
+      const schedule = `${weekday} ${time}`;
+      const response = await createStudyRecruitment({
+        title: title.trim(),
+        content: buildStudyContent({
+          introduction: introduction.trim(),
+          goal: goal.trim(),
+          language: language.trim(),
+          stack: stack.trim(),
+          schedule,
+          place: place.trim(),
+          notes: notes.trim(),
+          curriculum,
+        }),
+        maxMembers: Number(memberCount) || 1,
+      });
+
+      const studyPost: StudyPost = {
+        id: getStudyIdFromResponse(response),
+        semester,
+        status: "모집중",
+        title: title.trim(),
+        summary: introduction.trim() || "새로 등록된 스터디입니다.",
+        imageUrl: studyImage,
+        leader: leader.trim(),
+        introduction: introduction.trim() || "활동 소개가 입력되지 않았습니다.",
+        goal: goal.trim() || "활동 목표가 입력되지 않았습니다.",
+        memberCount: Number(memberCount) || 1,
+        schedule,
+        place: place.trim() || "진행 장소 및 방법이 입력되지 않았습니다.",
+        notes: notes.trim() || "유의사항이 입력되지 않았습니다.",
+        language: language.trim() || "미정",
+        stack: stack
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        curriculum: curriculum.map((item, index) => ({
+          week: `${index + 1}주차`,
+          title: item.trim() || `${index + 1}주차 내용을 입력하세요.`,
+        })),
+      };
+
+      saveCreatedStudyPost(studyPost);
+      navigate("/study");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : "스터디 생성에 실패했습니다."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -245,7 +318,9 @@ export default function StudyWritePage() {
             {errorMessage ? <S.ErrorText>{errorMessage}</S.ErrorText> : null}
 
             <S.ActionRow>
-              <S.SubmitButton type="submit">게시하기</S.SubmitButton>
+              <S.SubmitButton type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "게시 중" : "게시하기"}
+              </S.SubmitButton>
               <S.CancelButton type="button" onClick={() => navigate("/study")}>
                 작성 취소
               </S.CancelButton>
