@@ -4,6 +4,7 @@ import Footer from "../../components/common/footer/Footer";
 import { STUDY_POSTS } from "../StudyPage/studyDummyData";
 import * as S from "./StudyApplyPage.styles";
 
+const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 const AVAILABLE_TIMES = ["오후 5시", "오후 6시", "오후 7시", "오후 8시"];
 
 function StudyApplyInfo() {
@@ -65,22 +66,22 @@ function StudyApplyInfo() {
 
 function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: string }) {
   const navigate = useNavigate();
-  const [availableDate, setAvailableDate] = useState("");
-  const [availableTime, setAvailableTime] = useState("");
-  const [email, setEmail] = useState("");
+  const [weekday, setWeekday] = useState(WEEKDAYS[0]);
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [isAgreed, setIsAgreed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const canSubmit = Boolean(availableDate && availableTime && email.trim() && isAgreed);
+  const canSubmit = Boolean(weekday && selectedTimes.length > 0 && isAgreed);
+
+  const toggleTime = (time: string) => {
+    setSelectedTimes((prev) =>
+      prev.includes(time) ? prev.filter((item) => item !== time) : [...prev, time]
+    );
+  };
 
   const handleSubmit = () => {
-    if (!availableDate || !availableTime) {
+    if (!weekday || selectedTimes.length === 0) {
       setErrorMessage("요일과 시간은 필수 입력해야 합니다.");
-      return;
-    }
-
-    if (!email.trim()) {
-      setErrorMessage("이메일 입력은 필수 입니다.");
       return;
     }
 
@@ -98,40 +99,37 @@ function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: st
       <S.FormTitle>{studyName}</S.FormTitle>
 
       <S.FieldGroup>
-        <S.Label htmlFor="study-available-date">가능 일자</S.Label>
-        <S.DateInput
-          id="study-available-date"
-          type="date"
-          value={availableDate}
-          onChange={(event) => setAvailableDate(event.target.value)}
-        />
-      </S.FieldGroup>
-
-      <S.FieldGroup>
-        <S.Label htmlFor="study-available-time">가능 시간</S.Label>
+        <S.Label htmlFor="study-weekday">가능 요일</S.Label>
         <S.Select
-          id="study-available-time"
-          value={availableTime}
-          onChange={(event) => setAvailableTime(event.target.value)}
+          id="study-weekday"
+          value={weekday}
+          onChange={(event) => setWeekday(event.target.value)}
         >
-          <option value="">선택</option>
-          {AVAILABLE_TIMES.map((time) => (
-            <option key={time} value={time}>
-              {time}
+          {WEEKDAYS.map((day) => (
+            <option key={day} value={day}>
+              {day}
             </option>
           ))}
         </S.Select>
       </S.FieldGroup>
 
       <S.FieldGroup>
-        <S.Label htmlFor="study-email">이메일</S.Label>
-        <S.EmailInput
-          id="study-email"
-          type="email"
-          value={email}
-          placeholder="example@reverse.com"
-          onChange={(event) => setEmail(event.target.value)}
-        />
+        <S.Label>가능 시간</S.Label>
+        <S.TimeBox>
+          <S.TimeHeader type="button" aria-hidden="true">
+            ⌄
+          </S.TimeHeader>
+          {AVAILABLE_TIMES.map((time) => (
+            <S.TimeOption key={time}>
+              <input
+                type="checkbox"
+                checked={selectedTimes.includes(time)}
+                onChange={() => toggleTime(time)}
+              />
+              <span>{time}</span>
+            </S.TimeOption>
+          ))}
+        </S.TimeBox>
       </S.FieldGroup>
 
       <S.AgreementRow>
