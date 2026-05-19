@@ -11,6 +11,7 @@ export default function StudyPage() {
   const [semester, setSemester] = useState(STUDY_SEMESTERS[0]);
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [isSemesterOpen, setIsSemesterOpen] = useState(false);
 
   const filteredStudies = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -35,6 +36,7 @@ export default function StudyPage() {
   const handleSemesterChange = (value: string) => {
     setSemester(value);
     setCurrentPage(1);
+    setIsSemesterOpen(false);
   };
 
   const handleKeywordChange = (value: string) => {
@@ -53,17 +55,28 @@ export default function StudyPage() {
 
           <S.ControlRow>
             <S.SelectWrap>
-              <S.SemesterSelect
-                value={semester}
-                onChange={(event) => handleSemesterChange(event.target.value)}
+              <S.SemesterButton
+                type="button"
                 aria-label="분기 선택"
+                aria-expanded={isSemesterOpen}
+                onClick={() => setIsSemesterOpen((prev) => !prev)}
               >
-                {STUDY_SEMESTERS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </S.SemesterSelect>
+                {semester}
+              </S.SemesterButton>
+
+              {isSemesterOpen ? (
+                <S.SemesterMenu>
+                  {STUDY_SEMESTERS.filter((option) => option !== semester).map((option) => (
+                    <S.SemesterOption
+                      key={option}
+                      type="button"
+                      onClick={() => handleSemesterChange(option)}
+                    >
+                      {option}
+                    </S.SemesterOption>
+                  ))}
+                </S.SemesterMenu>
+              ) : null}
             </S.SelectWrap>
 
             <S.SearchBox>

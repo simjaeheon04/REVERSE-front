@@ -18,7 +18,7 @@ export const Title = styled.h1`
   margin: 0 0 28px;
   color: #cfd4f4;
   font-family: "Jersey 25", "Noto Sans KR", sans-serif;
-  font-size: clamp(48px, 7vw, 78px);
+  font-size: clamp(58px, 8vw, 96px);
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
@@ -55,8 +55,9 @@ export const SideColumn = styled.aside`
 
 export const SectionTitle = styled.h2`
   position: relative;
+  z-index: 1;
   width: fit-content;
-  margin: 0 0 12px;
+  margin: 0 0 -2px;
   color: #ffffff;
   font-family: "Jersey 25", "Noto Sans KR", sans-serif;
   font-size: 34px;
@@ -69,15 +70,16 @@ export const SectionTitle = styled.h2`
     position: absolute;
     left: 0;
     right: -24px;
-    bottom: -8px;
+    bottom: -4px;
     height: 5px;
     background: rgba(255, 255, 255, 0.8);
   }
 `;
 
 export const InfoBox = styled.div`
+  position: relative;
   min-height: 420px;
-  padding: 38px 34px;
+  padding: 42px 34px 38px;
   border: 2px solid rgba(255, 255, 255, 0.68);
   border-radius: 4px;
   background: rgba(130, 135, 146, 0.42);
@@ -114,8 +116,9 @@ export const InfoValue = styled.div`
 `;
 
 export const CurriculumBox = styled.div`
+  position: relative;
   min-height: 290px;
-  padding: 36px 34px;
+  padding: 42px 34px 36px;
   border: 2px solid rgba(255, 255, 255, 0.68);
   border-radius: 4px;
   background: rgba(130, 135, 146, 0.42);
@@ -139,8 +142,9 @@ export const Week = styled.strong`
 `;
 
 export const SideBox = styled.div`
+  position: relative;
   min-height: 94px;
-  padding: 20px;
+  padding: 24px 20px 20px;
   border: 2px solid rgba(255, 255, 255, 0.68);
   border-radius: 4px;
   background: rgba(130, 135, 146, 0.28);

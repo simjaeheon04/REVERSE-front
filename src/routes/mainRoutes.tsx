@@ -12,6 +12,8 @@ import ProjectPage from "../pages/ProjectPage/ProjectPage";
 import RecruitApplyCompletePage from "../pages/RecruitApplyCompletePage/RecruitApplyCompletePage";
 import RecruitApplyPage from "../pages/RecruitApplyPage/RecruitApplyPage";
 import RecruitPage from "../pages/RecruitPage/RecruitPage";
+import StudyApplyCompletePage from "../pages/StudyApplyCompletePage/StudyApplyCompletePage";
+import StudyApplyPage from "../pages/StudyApplyPage/StudyApplyPage";
 import StudyDetailPage from "../pages/StudyDetailPage/StudyDetailPage";
 import StudyPage from "../pages/StudyPage/StudyPage";
 
@@ -63,6 +65,14 @@ export const mainRoutes = [
   {
     path: "/study/:studyId",
     element: <StudyDetailPage />,
+  },
+  {
+    path: "/study/:studyId/apply",
+    element: <StudyApplyPage />,
+  },
+  {
+    path: "/study/:studyId/apply/complete",
+    element: <StudyApplyCompletePage />,
   },
   {
     path: "/recruit/apply",

@@ -53,9 +53,10 @@ export const ControlRow = styled.div`
 export const SelectWrap = styled.div`
   position: relative;
   width: 126px;
+  z-index: 5;
 `;
 
-export const SemesterSelect = styled.select`
+export const SemesterButton = styled.button`
   width: 100%;
   height: 38px;
   padding: 0 16px;
@@ -66,11 +67,41 @@ export const SemesterSelect = styled.select`
   font-size: 13px;
   font-weight: 700;
   outline: none;
-  appearance: none;
+  cursor: pointer;
+`;
+
+export const SemesterMenu = styled.div`
+  position: absolute;
+  top: 43px;
+  left: 50%;
+  width: 112px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  background: rgba(226, 228, 235, 0.92);
+  transform: translateX(-50%);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+`;
+
+export const SemesterOption = styled.button`
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-bottom: 1px solid rgba(62, 66, 78, 0.14);
+  background: transparent;
+  color: #575c68;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: left;
   cursor: pointer;
 
-  option {
-    color: #262a33;
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.48);
   }
 `;
 
@@ -176,9 +207,11 @@ export const StudyInfo = styled.div`
 export const StudyTitle = styled.h2`
   margin: 0;
   color: #ffffff;
-  font-size: 14px;
-  font-weight: 800;
+  font-family: "Jersey 25", "Noto Sans KR", sans-serif;
+  font-size: 20px;
+  font-weight: 400;
   line-height: 1.2;
+  letter-spacing: 0;
 `;
 
 export const StudySummary = styled.p`
