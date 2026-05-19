@@ -27,7 +27,7 @@ export const headerMenus: HeaderMenuItem[] = [
     sections: [
       {
         title: "스터디",
-        items: [{ label: "스터디 소개", path: "/recruit" }],
+        items: [{ label: "스터디 소개", path: "/study" }],
       },
       {
         title: "프로젝트",
