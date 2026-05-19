@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
-import { STUDY_POSTS } from "../StudyPage/studyDummyData";
+import { getAllStudyPosts } from "../StudyPage/studyStorage";
 import * as S from "./StudyApplyPage.styles";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -173,7 +173,7 @@ export default function StudyApplyPage() {
   const navigate = useNavigate();
   const { studyId } = useParams();
   const study = useMemo(
-    () => STUDY_POSTS.find((item) => String(item.id) === studyId),
+    () => getAllStudyPosts().find((item) => String(item.id) === studyId),
     [studyId]
   );
 

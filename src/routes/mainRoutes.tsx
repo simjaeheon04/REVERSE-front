@@ -16,6 +16,7 @@ import StudyApplyCompletePage from "../pages/StudyApplyCompletePage/StudyApplyCo
 import StudyApplyPage from "../pages/StudyApplyPage/StudyApplyPage";
 import StudyDetailPage from "../pages/StudyDetailPage/StudyDetailPage";
 import StudyPage from "../pages/StudyPage/StudyPage";
+import StudyWritePage from "../pages/StudyWritePage/StudyWritePage";
 
 export const mainRoutes = [
   {
@@ -61,6 +62,10 @@ export const mainRoutes = [
   {
     path: "/study",
     element: <StudyPage />,
+  },
+  {
+    path: "/study/write",
+    element: <StudyWritePage />,
   },
   {
     path: "/study/:studyId",

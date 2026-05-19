@@ -1,22 +1,28 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
-import { STUDY_POSTS, STUDY_SEMESTERS } from "./studyDummyData";
+import { STUDY_SEMESTERS, type StudyPost } from "./studyDummyData";
+import { getAllStudyPosts } from "./studyStorage";
 import * as S from "./StudyPage.styles";
 
 const PAGE_SIZE = 6;
 
 export default function StudyPage() {
   const navigate = useNavigate();
+  const [studies, setStudies] = useState<StudyPost[]>([]);
   const [semester, setSemester] = useState(STUDY_SEMESTERS[0]);
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isSemesterOpen, setIsSemesterOpen] = useState(false);
 
+  useEffect(() => {
+    setStudies(getAllStudyPosts());
+  }, []);
+
   const filteredStudies = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return STUDY_POSTS.filter((study) => {
+    return studies.filter((study) => {
       const matchesSemester = study.semester === semester;
       const matchesKeyword =
         !normalizedKeyword ||
@@ -25,7 +31,7 @@ export default function StudyPage() {
 
       return matchesSemester && matchesKeyword;
     });
-  }, [keyword, semester]);
+  }, [keyword, semester, studies]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStudies.length / PAGE_SIZE));
   const pagedStudies = filteredStudies.slice(

@@ -110,16 +110,17 @@ export const WeekdayButton = styled.button`
 `;
 export const WeekdayMenuWrap = styled.div`
   position: absolute;
-  top: 2px;
-  left: 345px;
+  top: 70px;
+  left: 0;
   width: 92px;
   z-index: 10;
 
   @media (max-width: 1100px) {
-    left: 142px;
+    left: 0;
   }
 `;
 export const WeekdayMenuLabel = styled.div`
+  display: none;
   margin-bottom: 9px;
   color: rgba(255, 255, 255, 0.55);
   font-size: 12px;
@@ -184,8 +185,8 @@ export const SubmitButton = styled(Base.SubmitButton)`
   margin-top: 62px;
 `;
 export const DeviceImage = styled(Base.DeviceImage)`
-  left: max(70px, calc((100vw - 1240px) / 2 + 72px));
-  bottom: -4px;
+  left: max(48px, calc((100vw - 1240px) / 2 + 48px));
+  bottom: -38px;
   width: 335px;
 
   @media (max-width: 1100px) {
