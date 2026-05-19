@@ -67,6 +67,7 @@ function StudyApplyInfo() {
 function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: string }) {
   const navigate = useNavigate();
   const [weekday, setWeekday] = useState(WEEKDAYS[0]);
+  const [isWeekdayOpen, setIsWeekdayOpen] = useState(false);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [isAgreed, setIsAgreed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -98,20 +99,37 @@ function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: st
     <S.FormPanel aria-label="REVERSE 스터디 신청서">
       <S.FormTitle>{studyName}</S.FormTitle>
 
-      <S.FieldGroup>
+      <S.WeekdayField>
         <S.Label htmlFor="study-weekday">가능 요일</S.Label>
-        <S.Select
+        <S.WeekdayButton
           id="study-weekday"
-          value={weekday}
-          onChange={(event) => setWeekday(event.target.value)}
+          type="button"
+          aria-expanded={isWeekdayOpen}
+          onClick={() => setIsWeekdayOpen((prev) => !prev)}
         >
-          {WEEKDAYS.map((day) => (
-            <option key={day} value={day}>
-              {day}
-            </option>
-          ))}
-        </S.Select>
-      </S.FieldGroup>
+          {weekday}
+        </S.WeekdayButton>
+
+        {isWeekdayOpen ? (
+          <S.WeekdayMenuWrap>
+            <S.WeekdayMenuLabel>요일 선택</S.WeekdayMenuLabel>
+            <S.WeekdayMenu>
+              {WEEKDAYS.map((day) => (
+                <S.WeekdayOption
+                  key={day}
+                  type="button"
+                  onClick={() => {
+                    setWeekday(day);
+                    setIsWeekdayOpen(false);
+                  }}
+                >
+                  {day}
+                </S.WeekdayOption>
+              ))}
+            </S.WeekdayMenu>
+          </S.WeekdayMenuWrap>
+        ) : null}
+      </S.WeekdayField>
 
       <S.FieldGroup>
         <S.Label>가능 시간</S.Label>
