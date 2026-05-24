@@ -188,6 +188,32 @@ export const Select = styled.select`
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.22);
 `;
 
+export const Input = styled.input`
+  width: 220px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(230, 235, 245, 0.66);
+  outline: none;
+  background: rgba(48, 53, 66, 0.58);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.42);
+  }
+
+  &:focus {
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+  }
+
+  &[type="date"] {
+    color-scheme: dark;
+  }
+`;
+
 export const TimeBox = styled.div`
   width: 220px;
   min-height: 146px;
@@ -197,53 +223,134 @@ export const TimeBox = styled.div`
   box-sizing: border-box;
 `;
 
-export const TimeOption = styled.label`
-  display: flex;
-  align-items: center;
-  min-height: 28px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.26);
-  color: rgba(255, 255, 255, 0.74);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
+export const TimeControl = styled.div`
+  position: relative;
+  width: 220px;
+  height: 40px;
+  border: 1px solid rgba(230, 235, 245, 0.66);
+  background: rgba(48, 53, 66, 0.58);
+  box-sizing: border-box;
 
-  input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  &:has(input:checked) {
-    color: #ffffff;
-    font-weight: 800;
+  &:focus-within {
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
   }
 `;
 
-export const AgreementRow = styled.label`
+export const TimeSelectButton = styled.button`
+  width: 100%;
+  height: 100%;
+  padding: 0 42px 0 14px;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+`;
+
+export const TimeArrowButton = styled.button`
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 38px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-left: 1px solid rgba(230, 235, 245, 0.22);
+  background: transparent;
+  cursor: pointer;
+`;
+
+export const TimeArrow = styled.span`
+  display: block;
+  width: 0;
+  height: 0;
+  margin: 0 auto;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid rgba(255, 255, 255, 0.86);
+`;
+
+export const TimeMenu = styled.div`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: -1px;
+  right: -1px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px 10px;
+  border: 1px solid rgba(230, 235, 245, 0.66);
+  background: rgba(45, 50, 64, 0.98);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+`;
+
+export const TimeOption = styled.button<{ $active: boolean }>`
+  min-height: 30px;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.26);
+  background: transparent;
+  color: ${({ $active }) => ($active ? "#ffffff" : "rgba(255, 255, 255, 0.74)")};
+  font-size: 12px;
+  font-weight: ${({ $active }) => ($active ? 800 : 500)};
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    color: #ffffff;
+  }
+`;
+
+export const AgreementRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 16px;
   margin-top: 18px;
   color: rgba(255, 255, 255, 0.82);
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
+  white-space: nowrap;
+`;
+
+export const AgreementCheck = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
   cursor: pointer;
 
   input {
+    flex: 0 0 auto;
     width: 13px;
     height: 13px;
     accent-color: #ffffff;
   }
+
+  span {
+    white-space: nowrap;
+  }
 `;
 
 export const DetailButton = styled.button`
+  flex: 0 0 auto;
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.62);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
+`;
+
+export const FormMessage = styled.p`
+  margin: 16px 0 0;
+  color: #ffb5b5;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
 `;
 
 export const SubmitButton = styled.button`

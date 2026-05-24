@@ -1,37 +1,60 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import fallbackProjectImage from "../../assets/images/project-main.jpg";
 import Footer from "../../components/common/footer/Footer";
-import { PROJECT_POSTS } from "./projectDummyData";
+import {
+  getProjects,
+  type ProjectListItem,
+  type ProjectStatus,
+} from "../../services/projectAPI";
 import * as S from "./ProjectPage.styles";
 
-const SEMESTER_OPTIONS = ["2026-1학기", "2025-2학기", "2025-1학기"];
+const STATUS_OPTIONS: Array<{ label: string; value: ProjectStatus }> = [
+  { label: "진행중", value: "ACTIVE" },
+];
 const PAGE_SIZE = 6;
+
+const getProjectImage = (project: ProjectListItem) =>
+  project.photoUrl?.trim() || fallbackProjectImage;
 
 export default function ProjectPage() {
   const navigate = useNavigate();
-  const [semester, setSemester] = useState(SEMESTER_OPTIONS[0]);
+  const [status, setStatus] = useState<ProjectStatus>(STATUS_OPTIONS[0].value);
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [projects, setProjects] = useState<ProjectListItem[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const filteredProjects = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase();
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
 
-    return PROJECT_POSTS.filter((project) => {
-      const matchesSemester = project.semester === semester;
-      const matchesKeyword =
-        !normalizedKeyword ||
-        project.title.toLowerCase().includes(normalizedKeyword) ||
-        project.description.toLowerCase().includes(normalizedKeyword);
+        const result = await getProjects({
+          keyword,
+          status,
+          page: currentPage - 1,
+          size: PAGE_SIZE,
+        });
 
-      return matchesSemester && matchesKeyword;
-    });
-  }, [keyword, semester]);
+        setProjects(result.content);
+        setTotalPages(Math.max(1, result.totalPages || 1));
+      } catch (error) {
+        console.error("[project] list fetch failed", error);
+        setProjects([]);
+        setTotalPages(1);
+        setErrorMessage("프로젝트 목록을 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PAGE_SIZE));
-  const pagedProjects = filteredProjects.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
+    void fetchProjects();
+  }, [currentPage, keyword, status]);
+
   const visiblePages = useMemo(() => {
     if (totalPages <= 5) {
       return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -40,8 +63,8 @@ export default function ProjectPage() {
     return [1, 2, 3, "dots" as const, totalPages - 1, totalPages];
   }, [totalPages]);
 
-  const handleSemesterChange = (value: string) => {
-    setSemester(value);
+  const handleStatusChange = (value: ProjectStatus) => {
+    setStatus(value);
     setCurrentPage(1);
   };
 
@@ -61,13 +84,13 @@ export default function ProjectPage() {
 
           <S.ControlRow>
             <S.SemesterSelect
-              value={semester}
-              onChange={(event) => handleSemesterChange(event.target.value)}
-              aria-label="학기 선택"
+              value={status}
+              onChange={(event) => handleStatusChange(event.target.value)}
+              aria-label="프로젝트 상태 선택"
             >
-              {SEMESTER_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </S.SemesterSelect>
@@ -85,18 +108,27 @@ export default function ProjectPage() {
 
           <S.Divider />
 
-          {pagedProjects.length > 0 ? (
+          {isLoading ? (
+            <S.EmptyState>
+              <S.EmptyText>프로젝트를 불러오는 중입니다.</S.EmptyText>
+            </S.EmptyState>
+          ) : errorMessage ? (
+            <S.EmptyState>
+              <S.EmptyIcon aria-hidden="true">[아이콘]</S.EmptyIcon>
+              <S.EmptyText>{errorMessage}</S.EmptyText>
+            </S.EmptyState>
+          ) : projects.length > 0 ? (
             <>
               <S.ProjectGrid>
-                {pagedProjects.map((project) => (
+                {projects.map((project) => (
                   <S.ProjectCard
-                    key={project.id}
+                    key={project.projectId}
                     type="button"
-                    onClick={() => navigate(`/project/${project.id}`)}
+                    onClick={() => navigate(`/project/${project.projectId}`)}
                   >
-                    <S.ProjectImage src={project.imageUrl} alt="" />
+                    <S.ProjectImage src={getProjectImage(project)} alt="" />
                     <S.ProjectInfo>
-                      <S.ProjectTitle>{project.title}</S.ProjectTitle>
+                      <S.ProjectTitle>{project.projectName}</S.ProjectTitle>
                       <S.ProjectRule />
                       <S.ProjectDescription>{project.description}</S.ProjectDescription>
                     </S.ProjectInfo>
