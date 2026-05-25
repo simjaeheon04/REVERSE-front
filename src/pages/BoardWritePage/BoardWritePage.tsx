@@ -7,7 +7,7 @@ import {
   getBoardPostDetail,
   updateBoardPost,
 } from "../../services/boardApi";
-import { uploadImageToR2 } from "../../services/uploadApi";
+import { uploadBoardFile } from "../../services/uploadApi";
 import * as S from "./BoardWritePage.styles";
 
 const BOARD_ID = 2;
@@ -209,7 +209,7 @@ export default function BoardWritePage() {
       setIsUploading(true);
       setErrorMessage("");
       const uploadedUrls = await Promise.all(
-        files.map((file) => uploadImageToR2(file, "board"))
+        files.map((file) => uploadBoardFile(file))
       );
 
       setAttachments((prev) => [...normalizeAttachments(prev), ...uploadedUrls]);

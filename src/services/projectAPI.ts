@@ -34,6 +34,18 @@ type ApiProjectPage = {
   last?: boolean;
 };
 
+type ApiProjectPageResponse =
+  | ApiProjectPage
+  | {
+      projects?: ApiProjectPage;
+      currentUserId?: string | null;
+    };
+
+const isWrappedProjectPageResponse = (
+  payload: ApiProjectPageResponse
+): payload is { projects?: ApiProjectPage; currentUserId?: string | null } =>
+  "projects" in payload || "currentUserId" in payload;
+
 export type ProjectStatus = "ACTIVE" | "INACTIVE" | "CLOSED" | string;
 
 export type ProjectSchedule = {
@@ -75,14 +87,47 @@ export type ProjectListPage = {
 
 export type ProjectApplyPayload = {
   email: string;
-  availableDate: string;
-  availableTime: string;
   privacyAgreement: boolean;
 };
 
 type ProjectApplyResponse = {
   success: boolean;
   message: string;
+};
+
+export type ProjectCreateSchedule = {
+  dayOfWeek: number;
+  meetTime: string;
+};
+
+export type ProjectCreatePayload = {
+  projectName: string;
+  description: string;
+  goal: string;
+  location: string;
+  notice: string;
+  status: ProjectStatus;
+  schedules: ProjectCreateSchedule[];
+};
+
+type ProjectCreateResponse = {
+  success: boolean;
+  projectId: number;
+  message: string;
+};
+
+export type ProjectUpdatePayload = ProjectCreatePayload & {
+  leaderName: string;
+};
+
+type ProjectMutationResponse = {
+  success: boolean;
+  message: string;
+  projectId?: number;
+};
+
+export type ProjectManagementList = ProjectListPage & {
+  currentUserId: string | null;
 };
 
 const normalizeProject = (project: ApiProjectPost): ProjectListItem => ({
@@ -109,16 +154,34 @@ const normalizeProject = (project: ApiProjectPost): ProjectListItem => ({
 export const getProjects = async (
   params: ProjectListParams = {}
 ): Promise<ProjectListPage> => {
-  const response = await axiosInstance.get<ApiProjectPage>("/api/projects", {
-    params: {
-      keyword: params.keyword?.trim() || undefined,
-      status: params.status,
-      page: params.page ?? 0,
-      size: params.size ?? 6,
-    },
+  const requestParams = {
+    keyword: params.keyword?.trim() || undefined,
+    status: params.status,
+    page: params.page ?? 0,
+    size: params.size ?? 6,
+  };
+
+  console.log("[project/list] request", {
+    url: "/api/projects",
+    params: requestParams,
   });
 
-  const payload = response.data;
+  const response = await axiosInstance.get<ApiProjectPageResponse>("/api/projects", {
+    params: requestParams,
+  });
+
+  const responsePayload = response.data;
+  const payload: ApiProjectPage = isWrappedProjectPageResponse(responsePayload)
+    ? responsePayload.projects ?? {}
+    : responsePayload;
+
+  console.log("[project/list] response", {
+    raw: responsePayload,
+    normalized: payload,
+    normalizedContentLength: Array.isArray(payload.content)
+      ? payload.content.length
+      : 0,
+  });
 
   return {
     content: Array.isArray(payload.content) ? payload.content.map(normalizeProject) : [],
@@ -127,6 +190,52 @@ export const getProjects = async (
     totalPages: payload.totalPages ?? 0,
     totalElements: payload.totalElements ?? 0,
     last: Boolean(payload.last),
+  };
+};
+
+export const getMyProjects = async (
+  params: ProjectListParams = {}
+): Promise<ProjectManagementList> => {
+  const response = await axiosInstance.get<ApiProjectPageResponse>("/api/projects", {
+    params: {
+      keyword: params.keyword?.trim() || undefined,
+      status: params.status,
+      page: params.page ?? 0,
+      size: params.size ?? 50,
+    },
+    headers: {
+      "X-Require-Auth": "true",
+    },
+  });
+
+  const responsePayload = response.data;
+  const isWrapped = isWrappedProjectPageResponse(responsePayload);
+  const payload: ApiProjectPage = isWrapped
+    ? responsePayload.projects ?? {}
+    : responsePayload;
+  const currentUserId = isWrapped ? responsePayload.currentUserId ?? null : null;
+  const content = Array.isArray(payload.content)
+    ? payload.content.map(normalizeProject)
+    : [];
+  const myContent = currentUserId
+    ? content.filter((project) => project.leaderId === currentUserId)
+    : [];
+
+  console.log("[project/manage] response", {
+    currentUserId,
+    totalContentLength: content.length,
+    myContentLength: myContent.length,
+    raw: responsePayload,
+  });
+
+  return {
+    content: myContent,
+    pageNumber: payload.pageable?.pageNumber ?? params.page ?? 0,
+    pageSize: payload.pageable?.pageSize ?? params.size ?? 50,
+    totalPages: payload.totalPages ?? 0,
+    totalElements: myContent.length,
+    last: Boolean(payload.last),
+    currentUserId,
   };
 };
 
@@ -150,6 +259,49 @@ export const applyProject = async (
         "Content-Type": "application/json",
       },
     }
+  );
+
+  return response.data;
+};
+
+export const createProjectPost = async (
+  payload: ProjectCreatePayload
+): Promise<ProjectCreateResponse> => {
+  const response = await axiosInstance.post<ProjectCreateResponse>(
+    "/api/projects",
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const updateProjectPost = async (
+  projectId: number | string,
+  payload: ProjectUpdatePayload
+): Promise<ProjectMutationResponse> => {
+  const response = await axiosInstance.put<ProjectMutationResponse>(
+    `/api/projects/${projectId}`,
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const deleteProjectPost = async (
+  projectId: number | string
+): Promise<ProjectMutationResponse> => {
+  const response = await axiosInstance.delete<ProjectMutationResponse>(
+    `/api/projects/${projectId}`
   );
 
   return response.data;

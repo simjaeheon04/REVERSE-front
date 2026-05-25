@@ -13,6 +13,7 @@ export type NoticeCategory = (typeof NOTICE_CATEGORIES)[number] | string;
 
 export type NoticeListItem = {
   id: number;
+  postId?: number;
   title: string;
   createdAt: string;
   userId: string;
@@ -28,8 +29,18 @@ export type NoticeListPage = {
   size: number;
 };
 
+type RawNoticeListItem = Partial<NoticeListItem> & {
+  postId?: number;
+  isExternal?: boolean | string | number;
+};
+
+type RawNoticeListPage = Omit<NoticeListPage, "content"> & {
+  content: RawNoticeListItem[];
+};
+
 export type NoticeDetail = {
   id: number;
+  postId?: number;
   title: string;
   content: string;
   createdAt: string;
@@ -40,6 +51,23 @@ export type NoticeDetail = {
   isPinned?: boolean;
 };
 
+type RawNoticeDetail = Partial<NoticeDetail> & {
+  postId?: number;
+  isExternal?: boolean | string | number;
+};
+
+const normalizeBoolean = (value: unknown) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return value.toLowerCase() === "true";
+  }
+
+  return Boolean(value);
+};
+
 export type Notice = NoticeDetail;
 
 export type NoticeListParams = {
@@ -48,28 +76,28 @@ export type NoticeListParams = {
 };
 
 export type NoticeUpsertPayload = {
+  postId?: number;
   title: string;
   content: string;
   isPinned: boolean;
   isExternal: boolean;
   category: string;
   imageUrls: string[];
-  noticeId?: number;
 };
 
 export type NoticePayload = {
+  postId?: number;
   title: string;
   content: string;
   isPinned: boolean;
-  noticeId?: number;
 };
 
 export type NoticeUpsertResult = {
-  noticeId: number;
+  postId: number;
 };
 
 export type NoticeDeleteResult = {
-  noticeId: number;
+  postId: number;
 };
 
 export const uploadNoticeImage = async (file: File): Promise<string> => {
@@ -86,32 +114,86 @@ export const uploadNoticeImage = async (file: File): Promise<string> => {
 export const getNoticeList = async (
   params: NoticeListParams = {}
 ): Promise<NoticeListPage> => {
-  const response = await axiosInstance.get<ApiSuccessResponse<NoticeListPage>>(
+  const requestParams = {
+    category: params.category?.trim() || "전체",
+    page: params.page ?? 0,
+  };
+
+  console.log("[notice/list] request", {
+    url: "/api/notices",
+    params: requestParams,
+  });
+
+  const response = await axiosInstance.get<ApiSuccessResponse<RawNoticeListPage>>(
     "/api/notices",
     {
-      params: {
-        category: params.category?.trim() || "전체",
-        page: params.page ?? 0,
-      },
+      params: requestParams,
     }
   );
 
-  return response.data.data;
+  console.log("[notice/list] response", response.data);
+
+  return {
+    ...response.data.data,
+    content: response.data.data.content.map((notice) => ({
+      id: notice.id ?? notice.postId ?? 0,
+      postId: notice.postId ?? notice.id,
+      title: notice.title ?? "",
+      createdAt: notice.createdAt ?? "",
+      userId: notice.userId ?? "",
+      category: notice.category ?? "",
+      isExternal: normalizeBoolean(notice.isExternal),
+    })),
+  };
 };
 
 export const getNoticeDetail = async (
-  noticeId: number | string
+  noticeId: number | string,
+  options: { requiresAuth?: boolean } = {}
 ): Promise<NoticeDetail> => {
-  const response = await axiosInstance.get<ApiSuccessResponse<NoticeDetail>>(
-    `/api/notices/${noticeId}`
+  console.log("[notice/detail] request", {
+    url: `/api/notices/${noticeId}`,
+    noticeId,
+    requiresAuth: Boolean(options.requiresAuth),
+  });
+
+  const response = await axiosInstance.get<ApiSuccessResponse<RawNoticeDetail>>(
+    `/api/notices/${noticeId}`,
+    {
+      headers: options.requiresAuth
+        ? {
+            "X-Require-Auth": "true",
+          }
+        : undefined,
+    }
   );
 
-  return response.data.data;
+  console.log("[notice/detail] response", response.data);
+
+  const notice = response.data.data;
+
+  return {
+    id: notice.id ?? notice.postId ?? Number(noticeId),
+    postId: notice.postId ?? notice.id,
+    title: notice.title ?? "",
+    content: notice.content ?? "",
+    createdAt: notice.createdAt ?? "",
+    userId: notice.userId ?? "",
+    category: notice.category ?? "",
+    isExternal: normalizeBoolean(notice.isExternal),
+    imageUrls: Array.isArray(notice.imageUrls) ? notice.imageUrls : [],
+    isPinned: notice.isPinned,
+  };
 };
 
 export const saveNotice = async (
   payload: NoticeUpsertPayload
 ): Promise<NoticeUpsertResult> => {
+  console.log("[notice/save] request", {
+    url: "/api/posts/notices",
+    payload,
+  });
+
   const response = await axiosInstance.post<ApiSuccessResponse<NoticeUpsertResult>>(
     "/api/posts/notices",
     payload,
@@ -121,6 +203,8 @@ export const saveNotice = async (
       },
     }
   );
+
+  console.log("[notice/save] response", response.data);
 
   return response.data.data;
 };

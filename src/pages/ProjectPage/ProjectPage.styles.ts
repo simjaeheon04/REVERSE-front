@@ -278,3 +278,8 @@ export const WriteButton = styled.button`
     bottom: 18px;
   }
 `;
+
+export const ManageButton = styled(WriteButton)`
+  right: 64px;
+  width: 72px;
+`;

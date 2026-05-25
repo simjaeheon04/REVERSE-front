@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import fallbackProjectImage from "../../assets/images/project-main.jpg";
 import Footer from "../../components/common/footer/Footer";
@@ -9,9 +10,11 @@ import {
 } from "../../services/projectAPI";
 import * as S from "./ProjectPage.styles";
 
-const STATUS_OPTIONS: Array<{ label: string; value: ProjectStatus }> = [
+const STATUS_OPTIONS: Array<{ label: string; value: ProjectStatus | "" }> = [
+  { label: "전체", value: "" },
   { label: "진행중", value: "ACTIVE" },
 ];
+
 const PAGE_SIZE = 6;
 
 const getProjectImage = (project: ProjectListItem) =>
@@ -19,7 +22,7 @@ const getProjectImage = (project: ProjectListItem) =>
 
 export default function ProjectPage() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<ProjectStatus>(STATUS_OPTIONS[0].value);
+  const [status, setStatus] = useState<ProjectStatus | "">("");
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
@@ -35,7 +38,7 @@ export default function ProjectPage() {
 
         const result = await getProjects({
           keyword,
-          status,
+          status: status || undefined,
           page: currentPage - 1,
           size: PAGE_SIZE,
         });
@@ -43,7 +46,16 @@ export default function ProjectPage() {
         setProjects(result.content);
         setTotalPages(Math.max(1, result.totalPages || 1));
       } catch (error) {
-        console.error("[project] list fetch failed", error);
+        if (error instanceof AxiosError) {
+          console.error("[project/list] failed", {
+            status: error.response?.status,
+            data: error.response?.data,
+            url: error.config?.url,
+            params: error.config?.params,
+          });
+        } else {
+          console.error("[project/list] failed", error);
+        }
         setProjects([]);
         setTotalPages(1);
         setErrorMessage("프로젝트 목록을 불러오지 못했습니다.");
@@ -63,7 +75,7 @@ export default function ProjectPage() {
     return [1, 2, 3, "dots" as const, totalPages - 1, totalPages];
   }, [totalPages]);
 
-  const handleStatusChange = (value: ProjectStatus) => {
+  const handleStatusChange = (value: ProjectStatus | "") => {
     setStatus(value);
     setCurrentPage(1);
   };
@@ -89,7 +101,7 @@ export default function ProjectPage() {
               aria-label="프로젝트 상태 선택"
             >
               {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
+                <option key={option.value || "all"} value={option.value}>
                   {option.label}
                 </option>
               ))}
@@ -99,10 +111,10 @@ export default function ProjectPage() {
               <S.SearchInput
                 value={keyword}
                 onChange={(event) => handleKeywordChange(event.target.value)}
-                placeholder="프로젝트 제목을 검색해 보세요!"
+                placeholder="프로젝트 제목을 검색해 보세요"
                 aria-label="프로젝트 검색어"
               />
-              <S.SearchIconText aria-hidden="true">[아이콘]</S.SearchIconText>
+              <S.SearchIconText aria-hidden="true">검색</S.SearchIconText>
             </S.SearchBox>
           </S.ControlRow>
 
@@ -114,7 +126,6 @@ export default function ProjectPage() {
             </S.EmptyState>
           ) : errorMessage ? (
             <S.EmptyState>
-              <S.EmptyIcon aria-hidden="true">[아이콘]</S.EmptyIcon>
               <S.EmptyText>{errorMessage}</S.EmptyText>
             </S.EmptyState>
           ) : projects.length > 0 ? (
@@ -142,7 +153,6 @@ export default function ProjectPage() {
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 >
-                  <span aria-hidden="true">←</span>
                   Previous
                 </S.PageNavButton>
 
@@ -167,20 +177,29 @@ export default function ProjectPage() {
                   onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                 >
                   Next
-                  <span aria-hidden="true">→</span>
                 </S.PageNavButton>
               </S.Pagination>
             </>
           ) : (
             <S.EmptyState>
-              <S.EmptyIcon aria-hidden="true">[아이콘]</S.EmptyIcon>
               <S.EmptyText>검색 결과가 없습니다.</S.EmptyText>
             </S.EmptyState>
           )}
 
-          <S.WriteButton type="button" aria-label="프로젝트 작성">
-            [아이콘]
+          <S.WriteButton
+            type="button"
+            aria-label="프로젝트 모집 게시글 작성"
+            onClick={() => navigate("/project/write")}
+          >
+            작성
           </S.WriteButton>
+          <S.ManageButton
+            type="button"
+            aria-label="내 프로젝트 관리"
+            onClick={() => navigate("/project/manage")}
+          >
+            관리
+          </S.ManageButton>
         </S.Inner>
       </S.Page>
       <Footer />

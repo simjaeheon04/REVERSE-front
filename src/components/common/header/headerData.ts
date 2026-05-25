@@ -56,7 +56,7 @@ export const headerMenus: HeaderMenuItem[] = [
       },
       {
         title: "교류",
-        items: [],
+        items: [{ label: "투표", path: "/vote" }],
       },
     ],
   },

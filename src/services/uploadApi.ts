@@ -14,3 +14,15 @@ export const uploadImageToR2 = async (
 
   return response.data;
 };
+
+export const uploadBoardFile = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axiosInstance.post<string>(
+    "/api/posts/board/file",
+    formData
+  );
+
+  return response.data;
+};

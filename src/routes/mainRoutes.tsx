@@ -8,10 +8,16 @@ import PostManagementPage from "../pages/PostManagementPage/PostManagementPage";
 import ProjectApplyCompletePage from "../pages/ProjectApplyCompletePage/ProjectApplyCompletePage";
 import ProjectApplyPage from "../pages/ProjectApplyPage/ProjectApplyPage";
 import ProjectDetailPage from "../pages/ProjectDetailPage/ProjectDetailPage";
+import ProjectManagementPage from "../pages/ProjectManagementPage/ProjectManagementPage";
 import ProjectPage from "../pages/ProjectPage/ProjectPage";
+import ProjectWritePage from "../pages/ProjectWritePage/ProjectWritePage";
 import RecruitApplyCompletePage from "../pages/RecruitApplyCompletePage/RecruitApplyCompletePage";
 import RecruitApplyPage from "../pages/RecruitApplyPage/RecruitApplyPage";
 import RecruitPage from "../pages/RecruitPage/RecruitPage";
+import VoteDetailPage from "../pages/VoteDetailPage";
+import VotePage from "../pages/VotePage";
+import VoteStatusPage from "../pages/VoteStatusPage";
+import VoteWritePage from "../pages/VoteWritePage";
 
 export const mainRoutes = [
   {
@@ -25,6 +31,14 @@ export const mainRoutes = [
   {
     path: "/project",
     element: <ProjectPage />,
+  },
+  {
+    path: "/project/write",
+    element: <ProjectWritePage />,
+  },
+  {
+    path: "/project/manage",
+    element: <ProjectManagementPage />,
   },
   {
     path: "/project/:projectId",
@@ -65,6 +79,22 @@ export const mainRoutes = [
   {
     path: "/calendar",
     element: <CalendarPage />,
+  },
+  {
+    path: "/vote",
+    element: <VotePage />,
+  },
+  {
+    path: "/vote/write",
+    element: <VoteWritePage />,
+  },
+  {
+    path: "/vote/:voteId/status",
+    element: <VoteStatusPage />,
+  },
+  {
+    path: "/vote/:voteId",
+    element: <VoteDetailPage />,
   },
   {
     path: "/board",

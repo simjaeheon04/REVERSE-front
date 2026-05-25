@@ -51,7 +51,7 @@ export default function NoticeManagePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
 
-  const isEditMode = useMemo(() => Boolean(form.noticeId), [form.noticeId]);
+  const isEditMode = useMemo(() => Boolean(form.postId), [form.postId]);
 
   const loadNotices = async (page = currentPage) => {
     try {
@@ -158,7 +158,7 @@ export default function NoticeManagePage() {
 
       setSelectedNotice(detail);
       setForm({
-        noticeId: detail.id,
+        postId: detail.id,
         title: detail.title,
         content: detail.content,
         isPinned: detail.isPinned ?? false,
@@ -185,12 +185,16 @@ export default function NoticeManagePage() {
     try {
       setIsSaving(true);
       setSaveMessage("");
-      console.log("[notice/manage] save payload", form);
+      console.log("[notice/manage] submit", {
+        mode: form.postId ? "edit" : "create",
+        payload: form,
+      });
 
       const result = await saveNotice(form);
+      console.log("[notice/manage] save result", result);
       setSaveResult(result);
       setSaveMessage(
-        form.noticeId
+        form.postId
           ? "공지사항이 수정되었습니다."
           : "공지사항이 등록되었습니다."
       );
@@ -205,7 +209,7 @@ export default function NoticeManagePage() {
       }
 
       setSaveResult(null);
-      setSaveMessage("공지사항 저장에 실패했습니다.");
+      setSaveMessage("공지사항 저장에 실패했습니다. 콘솔 로그를 확인해 주세요.");
     } finally {
       setIsSaving(false);
     }
@@ -222,7 +226,7 @@ export default function NoticeManagePage() {
       setDeleteMessage("");
       await deleteNotice(deleteId.trim());
       setDeleteMessage("공지사항이 삭제되었습니다.");
-      if (form.noticeId === Number(deleteId.trim())) {
+      if (form.postId === Number(deleteId.trim())) {
         handleReset();
       }
       setDeleteId("");
@@ -355,9 +359,9 @@ export default function NoticeManagePage() {
               </S.InlineFields>
 
               <S.Field>
-                <S.FieldLabel>noticeId</S.FieldLabel>
+                <S.FieldLabel>postId</S.FieldLabel>
                 <S.Input
-                  value={form.noticeId ?? ""}
+                  value={form.postId ?? ""}
                   readOnly
                   placeholder='수정 모드에서 자동 입력됩니다.'
                 />
