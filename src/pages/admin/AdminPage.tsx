@@ -38,6 +38,12 @@ const adminMenus = [
       "모집공고 목록을 조회하고 공고 등록, 수정, 상태 변경, 삭제를 처리합니다.",
     path: "/admin/recruit",
   },
+  {
+    title: "모집 지원자 관리",
+    description:
+      "지원서 조회, 상태 변경, 면접 배정, 엑셀 다운로드와 상세 페이지/슬롯 설정을 처리합니다.",
+    path: "/admin/recruit-applications",
+  },
 ];
 
 export default function AdminPage() {

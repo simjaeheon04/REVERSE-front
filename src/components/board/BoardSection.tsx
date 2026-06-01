@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getBoardPostList, type BoardPostListItem } from "../../services/boardApi";
+import { getMultiBoardPosts, type BoardPostListItem } from "../../services/boardApi";
 import * as S from "./BoardSection.styles";
 
+const BOARD_ID = 2;
 type BoardCategory = "전체" | "자유" | "대외활동" | "정보" | "교구/교재 나눔" | "질의응답";
 type SearchField = "제목" | "본문" | "작성자";
 
@@ -106,7 +107,9 @@ export default function BoardSection() {
         setIsLoading(true);
         setStatusMessage("");
 
-        const result = await getBoardPostList(currentPage - 1);
+        const result = await getMultiBoardPosts(BOARD_ID, {
+          page: currentPage - 1,
+        });
 
         setPosts(result.content);
         setTotalPages(Math.max(1, result.totalPages || 1));

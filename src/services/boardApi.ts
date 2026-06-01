@@ -65,6 +65,8 @@ export type BoardPostListPage = {
 export type BoardPostListParams = {
   boardType?: BoardType;
   searchType?: BoardSearchType;
+  category?: string;
+  type?: string;
   keyword?: string;
   page?: number;
   size?: number;
@@ -406,6 +408,33 @@ export const getBoardPostDetail = async (
   return normalizedDetail;
 };
 
+export const getMultiBoardPosts = async (
+  boardId: number | string,
+  params: BoardPostListParams = {}
+): Promise<BoardPostListPage> => {
+  const response = await axiosInstance.get<ApiSuccessResponse<RawBoardPostPage> | RawBoardPostPage>(
+    `/api/board/${boardId}`,
+    {
+      params: {
+        category: params.category,
+        type: params.type,
+        keyword: params.keyword,
+        page: params.page,
+      },
+    }
+  );
+
+  const payload = unwrapApiData(response.data);
+  const rawContent = payload.content ?? payload.posts ?? payload.list ?? payload.items ?? [];
+
+  return {
+    content: rawContent.map(normalizeBoardPostListItem),
+    totalPages: payload.totalPages ?? payload.totalPage ?? 0,
+    totalElements: payload.totalElements ?? rawContent.length,
+    number: payload.number ?? payload.currentPage ?? payload.page ?? params.page ?? 0,
+  };
+};
+
 export const getBoardComments = async (
   postId: number | string
 ): Promise<BoardComment[]> => {
@@ -449,6 +478,31 @@ export const createBoardReply = async (
   );
 
   return response.data.data;
+};
+
+export const updateBoardComment = async (
+  commentId: number | string,
+  payload: BoardCommentPayload
+): Promise<BoardComment | BoardPostMutationResult> => {
+  const response = await axiosInstance.put<
+    ApiSuccessResponse<BoardComment | BoardPostMutationResult> | BoardComment | BoardPostMutationResult
+  >(`/api/posts/board/comments/${commentId}`, payload, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  return unwrapApiData(response.data);
+};
+
+export const deleteBoardComment = async (
+  commentId: number | string
+): Promise<BoardPostMutationResult> => {
+  const response = await axiosInstance.delete<
+    ApiSuccessResponse<BoardPostMutationResult> | BoardPostMutationResult
+  >(`/api/posts/board/comments/${commentId}`);
+
+  return unwrapApiData(response.data);
 };
 
 export const toggleBoardLike = async (postId: number | string): Promise<boolean> => {

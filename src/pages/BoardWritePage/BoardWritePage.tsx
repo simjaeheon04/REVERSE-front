@@ -212,6 +212,8 @@ export default function BoardWritePage() {
         files.map((file) => uploadBoardFile(file))
       );
 
+      console.log("[board/write] uploaded file urls", uploadedUrls);
+
       setAttachments((prev) => [...normalizeAttachments(prev), ...uploadedUrls]);
     } catch {
       setErrorMessage("파일 업로드에 실패했습니다.");

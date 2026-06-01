@@ -12,10 +12,12 @@ export type RecruitmentItem = {
 };
 
 export type RecruitmentPayload = {
+  roleId?: number;
   title: string;
   description: string;
   applyStartDate: string;
   applyEndDate: string;
+  isActive?: boolean;
   updatedBy: string;
 };
 
@@ -33,6 +35,62 @@ export type RecruitApplicationPayload = {
   email: string;
   termsAgreed: boolean;
   applyFields: string[];
+};
+
+export type RecruitApplicationStatus = "PENDING" | "PASS" | "FAIL";
+
+export type RecruitAdminApplicationListParams = {
+  recruitmentId: number;
+  roleId: number;
+  name?: string;
+  status?: RecruitApplicationStatus | "";
+};
+
+export type RecruitAdminApplicationStatusPayload = {
+  roleId: number;
+  applicationId: number;
+  status: RecruitApplicationStatus;
+};
+
+export type RecruitAdminPagePayload = {
+  roleId: number;
+  adminId?: string;
+  heroYear?: string;
+  heroTitle?: string;
+  heroSubTitle?: string;
+  heroBtnText?: string;
+  heroBgUrl?: string;
+  intros?: Array<{ contents: string; sortOrder?: number }>;
+  cards?: Array<{
+    applyField: string;
+    cardTitle: string;
+    cardSubTitle?: string;
+    cardDesc?: string;
+    imageUrl?: string;
+    sortOrder?: number;
+  }>;
+  galleries?: Array<{
+    imageUrl: string;
+    imageDesc?: string;
+    tag?: string;
+    sortOrder?: number;
+  }>;
+  contacts?: Array<{
+    contactType: string;
+    label: string;
+    value: string;
+    subValue?: string;
+    sortOrder?: number;
+  }>;
+};
+
+export type RecruitAdminSlotsPayload = {
+  roleId: number;
+  adminId?: string;
+  slots: Array<{
+    slotDate: string;
+    capacity: number;
+  }>;
 };
 
 type RecruitmentApiRecord = Partial<RecruitmentItem> & {
@@ -117,7 +175,7 @@ export const createRecruitment = async (
   payload: RecruitmentPayload
 ): Promise<RecruitmentItem> => {
   const response = await axiosInstance.post(
-    "/api/recruit",
+    "/api/recruit/admin",
     normalizeRecruitmentPayload(payload),
     {
       headers: {
@@ -136,7 +194,7 @@ export const updateRecruitment = async (
   payload: RecruitmentPayload
 ): Promise<RecruitmentItem> => {
   const response = await axiosInstance.put(
-    `/api/recruit/${id}`,
+    `/api/recruit/admin/${id}`,
     normalizeRecruitmentPayload(payload),
     {
       headers: {
@@ -153,8 +211,12 @@ export const updateRecruitment = async (
 export const getRecruitmentRequestPreview = (payload: RecruitmentPayload) =>
   normalizeRecruitmentPayload(payload);
 
-export const deleteRecruitment = async (id: number | string): Promise<string> => {
-  const response = await axiosInstance.delete(`/api/recruit/${id}`, {
+export const deleteRecruitment = async (
+  id: number | string,
+  roleId?: number
+): Promise<string> => {
+  const response = await axiosInstance.delete(`/api/recruit/admin/${id}`, {
+    params: roleId ? { roleId } : undefined,
     responseType: "text",
   });
 
@@ -196,10 +258,115 @@ export const submitRecruitApplication = async (
 export const subscribeRecruitNotification = async (
   email: string
 ): Promise<string> => {
-  const response = await axiosInstance.post("/api/recruit/notify", undefined, {
-    params: { email },
+  const response = await axiosInstance.post("/api/recruit/subscribe", { email }, {
+    headers: {
+      "Content-Type": "application/json",
+    },
     responseType: "text",
   });
+
+  return response.data;
+};
+
+export const getRecruitAdminApplications = async (
+  params: RecruitAdminApplicationListParams
+) => {
+  const response = await axiosInstance.get("/api/recruit/admin/applications", {
+    params,
+  });
+
+  return response.data;
+};
+
+export const getRecruitAdminApplicationDetail = async (
+  applicationId: number | string,
+  roleId: number
+) => {
+  const response = await axiosInstance.get(
+    `/api/recruit/admin/applications/${applicationId}`,
+    {
+      params: { roleId },
+    }
+  );
+
+  return response.data;
+};
+
+export const updateRecruitAdminApplicationStatus = async (
+  payload: RecruitAdminApplicationStatusPayload
+) => {
+  const response = await axiosInstance.patch(
+    "/api/recruit/admin/applications/status",
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const assignRecruitAdminInterviews = async (roleId: number) => {
+  const response = await axiosInstance.post(
+    "/api/recruit/admin/applications/interview",
+    { roleId },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const downloadRecruitAdminApplicationsExcel = async (
+  recruitmentId: number,
+  roleId: number
+): Promise<Blob> => {
+  const response = await axiosInstance.get(
+    "/api/recruit/admin/applications/excel",
+    {
+      params: { recruitmentId, roleId },
+      responseType: "blob",
+    }
+  );
+
+  return response.data;
+};
+
+export const updateRecruitAdminPage = async (
+  recruitmentId: number | string,
+  payload: RecruitAdminPagePayload
+) => {
+  const response = await axiosInstance.patch(
+    `/api/recruit/admin/${recruitmentId}/page`,
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
+};
+
+export const updateRecruitAdminSlots = async (
+  recruitmentId: number | string,
+  payload: RecruitAdminSlotsPayload
+) => {
+  const response = await axiosInstance.post(
+    `/api/recruit/admin/${recruitmentId}/slots`,
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   return response.data;
 };

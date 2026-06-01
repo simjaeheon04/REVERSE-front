@@ -4,6 +4,7 @@ import ClubIntroManagePage from "../pages/clubIntroManage/ClubIntroManagePage";
 import NoticeManagePage from "../pages/noticeManage/NoticeManagePage";
 import OfficerManagePage from "../pages/officerManage/OfficerManagePage";
 import ProjectManagePage from "../pages/projectManage/ProjectManagePage";
+import RecruitApplicationManagePage from "../pages/recruitApplicationManage/RecruitApplicationManagePage";
 import RecruitManagePage from "../pages/recruitManage/RecruitManagePage";
 import TermsManagePage from "../pages/termsManage/TermsManagePage";
 import AdminRouteGuard from "./AdminRouteGuard";
@@ -70,6 +71,14 @@ export const adminRoutes = [
     element: (
       <AdminRouteGuard>
         <RecruitManagePage />
+      </AdminRouteGuard>
+    ),
+  },
+  {
+    path: "/admin/recruit-applications",
+    element: (
+      <AdminRouteGuard>
+        <RecruitApplicationManagePage />
       </AdminRouteGuard>
     ),
   },

@@ -8,9 +8,11 @@ import Footer from "../../components/common/footer/Footer";
 import {
   createBoardComment,
   createBoardReply,
+  deleteBoardComment,
   getBoardComments,
   getBoardPostDetail,
   toggleBoardLike,
+  updateBoardComment,
   type BoardComment,
   type BoardPostDetail,
 } from "../../services/boardApi";
@@ -28,7 +30,9 @@ export default function BoardDetailPage() {
   const [isLikeSubmitting, setIsLikeSubmitting] = useState(false);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [activeReplyCommentId, setActiveReplyCommentId] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [replyDrafts, setReplyDrafts] = useState<Record<number, string>>({});
+  const [editDrafts, setEditDrafts] = useState<Record<number, string>>({});
   const [commentDraft, setCommentDraft] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [commentMessage, setCommentMessage] = useState("");
@@ -222,9 +226,56 @@ export default function BoardDetailPage() {
     }
   };
 
+  const handleStartEditComment = (comment: BoardComment) => {
+    setEditingCommentId(comment.commentId);
+    setActiveReplyCommentId(null);
+    setEditDrafts((prev) => ({
+      ...prev,
+      [comment.commentId]: comment.commentDetail,
+    }));
+  };
+
+  const handleUpdateComment = async (commentId: number) => {
+    const editDraft = editDrafts[commentId] ?? "";
+
+    if (!editDraft.trim()) {
+      setCommentMessage("수정할 댓글 내용을 입력해 주세요.");
+      return;
+    }
+
+    try {
+      setIsCommentSubmitting(true);
+      setCommentMessage("");
+      await updateBoardComment(commentId, {
+        commentDetail: editDraft.trim(),
+      });
+      setEditingCommentId(null);
+      await refreshBoardDetail();
+    } catch {
+      setCommentMessage("댓글 수정에 실패했습니다.");
+    } finally {
+      setIsCommentSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      setIsCommentSubmitting(true);
+      setCommentMessage("");
+      await deleteBoardComment(commentId);
+      await refreshBoardDetail();
+    } catch {
+      setCommentMessage("댓글 삭제에 실패했습니다.");
+    } finally {
+      setIsCommentSubmitting(false);
+    }
+  };
+
   const renderCommentList = (items: BoardComment[], depth = 0): ReactNode => {
     return items.map((comment) => {
       const replyDraft = replyDrafts[comment.commentId] ?? "";
+      const editDraft = editDrafts[comment.commentId] ?? comment.commentDetail;
+      const canManageComment = currentUserId && comment.userId === currentUserId;
 
       return (
         <Fragment key={comment.commentId}>
@@ -235,7 +286,38 @@ export default function BoardDetailPage() {
               <S.CommentContent>
                 <S.CommentAuthor>{comment.userId}</S.CommentAuthor>
                 <S.CommentDate>{comment.modifiedAt ?? comment.createdAt}</S.CommentDate>
-                <S.CommentText>{comment.commentDetail}</S.CommentText>
+                {editingCommentId === comment.commentId ? (
+                  <S.ReplyComposer>
+                    <S.ComposerInput
+                      value={editDraft}
+                      onChange={(event) =>
+                        setEditDrafts((prev) => ({
+                          ...prev,
+                          [comment.commentId]: event.target.value,
+                        }))
+                      }
+                      placeholder="댓글을 수정해 주세요."
+                    />
+                    <S.ComposerActions>
+                      <S.ComposerCancelButton
+                        type="button"
+                        onClick={() => setEditingCommentId(null)}
+                        disabled={isCommentSubmitting}
+                      >
+                        취소
+                      </S.ComposerCancelButton>
+                      <S.ComposerSubmitButton
+                        type="button"
+                        onClick={() => void handleUpdateComment(comment.commentId)}
+                        disabled={isCommentSubmitting}
+                      >
+                        수정
+                      </S.ComposerSubmitButton>
+                    </S.ComposerActions>
+                  </S.ReplyComposer>
+                ) : (
+                  <S.CommentText>{comment.commentDetail}</S.CommentText>
+                )}
                 <S.CommentActions>
                   <S.CommentActionButton
                     type="button"
@@ -248,6 +330,24 @@ export default function BoardDetailPage() {
                   >
                     답글
                   </S.CommentActionButton>
+                  {canManageComment ? (
+                    <>
+                      <S.CommentActionButton
+                        type="button"
+                        onClick={() => handleStartEditComment(comment)}
+                        disabled={isCommentSubmitting}
+                      >
+                        수정
+                      </S.CommentActionButton>
+                      <S.CommentActionButton
+                        type="button"
+                        onClick={() => void handleDeleteComment(comment.commentId)}
+                        disabled={isCommentSubmitting}
+                      >
+                        삭제
+                      </S.CommentActionButton>
+                    </>
+                  ) : null}
                 </S.CommentActions>
 
                 {activeReplyCommentId === comment.commentId ? (
