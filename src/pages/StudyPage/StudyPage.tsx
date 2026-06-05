@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
 import { STUDY_SEMESTERS, type StudyPost } from "./studyDummyData";
@@ -9,15 +9,11 @@ const PAGE_SIZE = 6;
 
 export default function StudyPage() {
   const navigate = useNavigate();
-  const [studies, setStudies] = useState<StudyPost[]>([]);
+  const [studies] = useState<StudyPost[]>(() => getAllStudyPosts());
   const [semester, setSemester] = useState(STUDY_SEMESTERS[0]);
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isSemesterOpen, setIsSemesterOpen] = useState(false);
-
-  useEffect(() => {
-    setStudies(getAllStudyPosts());
-  }, []);
 
   const filteredStudies = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
