@@ -3,6 +3,10 @@ import BoardWritePage from "../pages/BoardWritePage/BoardWritePage";
 import CalendarPage from "../pages/CalendarPage";
 import BoardPage from "../pages/BoardPage";
 import HomePage from "../pages/HomePage/HomePage";
+import MyPage from "../pages/MyPage/MyPage";
+import MyProjectManagePage from "../pages/MyActivityManagePage/MyProjectManagePage";
+import MyStudyManagePage from "../pages/MyActivityManagePage/MyStudyManagePage";
+import MyVoteManagePage from "../pages/MyActivityManagePage/MyVoteManagePage";
 import NoticePage from "../pages/NoticePage";
 import PostManagementPage from "../pages/PostManagementPage/PostManagementPage";
 import ProjectApplyCompletePage from "../pages/ProjectApplyCompletePage/ProjectApplyCompletePage";
@@ -17,6 +21,7 @@ import StudyApplyPage from "../pages/StudyApplyPage/StudyApplyPage";
 import StudyDetailPage from "../pages/StudyDetailPage/StudyDetailPage";
 import StudyPage from "../pages/StudyPage/StudyPage";
 import StudyWritePage from "../pages/StudyWritePage/StudyWritePage";
+import AuthRouteGuard from "./AuthRouteGuard";
 
 export const mainRoutes = [
   {
@@ -49,7 +54,11 @@ export const mainRoutes = [
   },
   {
     path: "/board/manage",
-    element: <PostManagementPage />,
+    element: (
+      <AuthRouteGuard>
+        <PostManagementPage />
+      </AuthRouteGuard>
+    ),
   },
   {
     path: "/board/write",
@@ -62,6 +71,38 @@ export const mainRoutes = [
   {
     path: "/study",
     element: <StudyPage />,
+  },
+  {
+    path: "/mypage",
+    element: (
+      <AuthRouteGuard>
+        <MyPage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/mypage/votes",
+    element: (
+      <AuthRouteGuard>
+        <MyVoteManagePage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/mypage/projects",
+    element: (
+      <AuthRouteGuard>
+        <MyProjectManagePage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/mypage/studies",
+    element: (
+      <AuthRouteGuard>
+        <MyStudyManagePage />
+      </AuthRouteGuard>
+    ),
   },
   {
     path: "/study/write",

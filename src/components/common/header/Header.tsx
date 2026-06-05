@@ -10,9 +10,11 @@ export default function Header({
   menus,
   logo = "REVERSE",
   loginText = "LOGIN",
+  myPageText,
   loginDisabled = false,
   canAccessAdmin = false,
   onLogoClick,
+  onMyPageClick,
   onLoginClick,
 }: HeaderProps) {
   const navigate = useNavigate();
@@ -128,13 +130,20 @@ export default function Header({
             )}
           </S.NavArea>
 
-          <S.LoginButton
-            type="button"
-            onClick={onLoginClick}
-            disabled={loginDisabled}
-          >
-            {loginText}
-          </S.LoginButton>
+          <S.AuthButtonGroup>
+            {myPageText ? (
+              <S.LoginButton type="button" onClick={onMyPageClick}>
+                {myPageText}
+              </S.LoginButton>
+            ) : null}
+            <S.LoginButton
+              type="button"
+              onClick={onLoginClick}
+              disabled={loginDisabled}
+            >
+              {loginText}
+            </S.LoginButton>
+          </S.AuthButtonGroup>
         </S.RightArea>
       </S.Container>
     </S.Wrapper>
