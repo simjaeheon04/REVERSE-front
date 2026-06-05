@@ -223,6 +223,13 @@ export const SmallButton = styled.button`
   cursor: pointer;
 `;
 
+export const StatusText = styled.p<{ $error?: boolean }>`
+  margin: 14px 0 0;
+  color: ${({ $error }) => ($error ? "#ffb1b1" : "#b9ffd8")};
+  font-size: 13px;
+  line-height: 1.5;
+`;
+
 export const ActivityCard = styled.aside`
   padding: 36px 26px 30px;
   border: 1px solid rgba(255, 255, 255, 0.82);

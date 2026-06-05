@@ -44,6 +44,12 @@ const adminMenus = [
       "스터디 모집, 게시글 자료, 참여 신청과 멤버 처리 기능을 관리합니다.",
     path: "/admin/study",
   },
+  {
+    title: "마이페이지 관리",
+    description:
+      "회원 마이페이지 조회, 자기소개 수정, 프로필 사진 수정 API를 확인합니다.",
+    path: "/admin/mypage",
+  },
 ];
 
 export default function AdminPage() {

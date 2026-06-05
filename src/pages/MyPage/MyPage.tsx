@@ -1,11 +1,14 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
+import {
+  getMyPageProfile,
+  updateMyPageIntroduce,
+  updateMyPagePhoto,
+  type MyPageProfile,
+} from "../../services/userApi";
 import { useAuthStore } from "../../stores/authStore";
 import * as S from "./MyPage.styles";
-
-const INTRO_STORAGE_KEY = "reverse.myPage.introduction";
-const PROFILE_IMAGE_STORAGE_KEY = "reverse.myPage.profileImage";
 
 const activityItems = [
   { label: "투표", icon: "□", path: "/mypage/votes" },
@@ -14,34 +17,56 @@ const activityItems = [
   { label: "스터디", icon: "▥", path: "/mypage/studies" },
 ];
 
-const getStoredValue = (key: string, fallback: string) => {
-  if (typeof window === "undefined") {
-    return fallback;
-  }
-
-  return window.localStorage.getItem(key) ?? fallback;
-};
-
 export default function MyPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const userId = useAuthStore((state) => state.userId);
   const userName = useAuthStore((state) => state.userName);
   const roleName = useAuthStore((state) => state.roleName);
-  const [profileImage, setProfileImage] = useState(() =>
-    getStoredValue(PROFILE_IMAGE_STORAGE_KEY, "")
-  );
-  const [introduction, setIntroduction] = useState(() =>
-    getStoredValue(INTRO_STORAGE_KEY, "나의 소개를 입력해 주세요.")
-  );
+  const [profile, setProfile] = useState<MyPageProfile | null>(null);
+  const [profileImage, setProfileImage] = useState("");
+  const [introduction, setIntroduction] = useState("나의 소개를 입력해 주세요.");
   const [draftIntroduction, setDraftIntroduction] = useState(introduction);
   const [isEditing, setIsEditing] = useState(false);
+  const [message, setMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const displayName = userName || userId || "REVERSE";
-  const displayRole = roleName === "ADMIN" || roleName === "SUPER_ADMIN" ? "임원" : "부원";
-  const displayEmail = userId ? `${userId}@reverse.local` : "등록된 이메일 정보가 없습니다.";
+  const displayName = profile?.userName || userName || userId || "REVERSE";
+  const displayRole =
+    (profile?.roleName || roleName) === "ADMIN" || (profile?.roleName || roleName) === "SUPER_ADMIN"
+      ? "임원"
+      : "부원";
+  const displayEmail = profile?.userEmail || "등록된 이메일 정보가 없습니다.";
+  const displayMbti = profile?.userMbti || "미등록";
 
-  const handleProfileImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    const loadProfile = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+        const result = await getMyPageProfile(userId);
+        const nextIntroduction = result.userIntroduce || "나의 소개를 입력해 주세요.";
+        setProfile(result);
+        setProfileImage(result.userPhotoUrl ?? "");
+        setIntroduction(nextIntroduction);
+        setDraftIntroduction(nextIntroduction);
+      } catch {
+        setErrorMessage("마이페이지 정보를 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadProfile();
+  }, [userId]);
+
+  const handleProfileImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -53,13 +78,18 @@ export default function MyPage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      setProfileImage(result);
-      window.localStorage.setItem(PROFILE_IMAGE_STORAGE_KEY, result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsSaving(true);
+      setMessage("");
+      setErrorMessage("");
+      const result = await updateMyPagePhoto(file);
+      setProfileImage(result.attachedUrl ?? "");
+      setMessage("프로필 사진이 성공적으로 변경되었습니다.");
+    } catch {
+      setErrorMessage("사진 변경에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleStartEdit = () => {
@@ -67,11 +97,23 @@ export default function MyPage() {
     setIsEditing(true);
   };
 
-  const handleSaveIntroduction = () => {
+  const handleSaveIntroduction = async () => {
     const nextValue = draftIntroduction.trim() || "나의 소개를 입력해 주세요.";
-    setIntroduction(nextValue);
-    window.localStorage.setItem(INTRO_STORAGE_KEY, nextValue);
-    setIsEditing(false);
+
+    try {
+      setIsSaving(true);
+      setMessage("");
+      setErrorMessage("");
+      await updateMyPageIntroduce({ userIntroduce: nextValue });
+      setIntroduction(nextValue);
+      setProfile((prev) => (prev ? { ...prev, userIntroduce: nextValue } : prev));
+      setIsEditing(false);
+      setMessage("자기소개가 성공적으로 수정되었습니다.");
+    } catch {
+      setErrorMessage("저장에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelIntroduction = () => {
@@ -118,7 +160,7 @@ export default function MyPage() {
                 <S.InfoList>
                   <div>
                     <S.InfoLabel>ID</S.InfoLabel>
-                    <S.InfoValue>{userId ?? "로그인 정보 없음"}</S.InfoValue>
+                    <S.InfoValue>{profile?.userId ?? userId ?? "로그인 정보 없음"}</S.InfoValue>
                   </div>
                   <div>
                     <S.InfoLabel>Mail</S.InfoLabel>
@@ -126,7 +168,7 @@ export default function MyPage() {
                   </div>
                   <div>
                     <S.InfoLabel>MBTI</S.InfoLabel>
-                    <S.InfoValue>ESTJ</S.InfoValue>
+                    <S.InfoValue>{displayMbti}</S.InfoValue>
                   </div>
                 </S.InfoList>
 
@@ -148,10 +190,18 @@ export default function MyPage() {
                         placeholder="나의 소개를 입력해 주세요."
                       />
                       <S.EditActions>
-                        <S.SmallButton type="button" onClick={handleSaveIntroduction}>
+                        <S.SmallButton
+                          type="button"
+                          onClick={() => void handleSaveIntroduction()}
+                          disabled={isSaving}
+                        >
                           확인
                         </S.SmallButton>
-                        <S.SmallButton type="button" onClick={handleCancelIntroduction}>
+                        <S.SmallButton
+                          type="button"
+                          onClick={handleCancelIntroduction}
+                          disabled={isSaving}
+                        >
                           취소
                         </S.SmallButton>
                       </S.EditActions>
@@ -159,6 +209,9 @@ export default function MyPage() {
                   ) : (
                     <S.IntroText>{introduction}</S.IntroText>
                   )}
+                  {isLoading ? <S.StatusText>마이페이지 정보를 불러오는 중입니다.</S.StatusText> : null}
+                  {message ? <S.StatusText>{message}</S.StatusText> : null}
+                  {errorMessage ? <S.StatusText $error>{errorMessage}</S.StatusText> : null}
                 </S.IntroBox>
               </S.ProfileBody>
             </S.ProfileCard>

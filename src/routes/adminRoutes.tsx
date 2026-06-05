@@ -1,6 +1,7 @@
 import AdminPage from "../pages/admin/AdminPage";
 import CalendarManagePage from "../pages/calendarManage/CalendarManagePage";
 import ClubIntroManagePage from "../pages/clubIntroManage/ClubIntroManagePage";
+import MyPageManagePage from "../pages/myPageManage/MyPageManagePage";
 import NoticeManagePage from "../pages/noticeManage/NoticeManagePage";
 import OfficerManagePage from "../pages/officerManage/OfficerManagePage";
 import ProjectManagePage from "../pages/projectManage/ProjectManagePage";
@@ -79,6 +80,14 @@ export const adminRoutes = [
     element: (
       <AdminRouteGuard>
         <StudyManagePage />
+      </AdminRouteGuard>
+    ),
+  },
+  {
+    path: "/admin/mypage",
+    element: (
+      <AdminRouteGuard>
+        <MyPageManagePage />
       </AdminRouteGuard>
     ),
   },
