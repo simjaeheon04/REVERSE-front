@@ -29,6 +29,7 @@ export default function ItIssuePage() {
 
   const handleOpenSource = (sourceUrl: string) => {
     if (!sourceUrl) {
+      window.alert("연결된 원문 링크가 없습니다.");
       return;
     }
 
@@ -60,7 +61,7 @@ export default function ItIssuePage() {
                         type="button"
                         onClick={() => handleOpenSource(issue.sourceUrl)}
                       >
-                        Apply Now
+                        {issue.sourceUrl ? "Apply Now" : issue.status ?? "open"}
                         <span aria-hidden="true">›</span>
                       </S.LinkButton>
                     </S.CardFooter>

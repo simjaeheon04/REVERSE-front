@@ -50,6 +50,11 @@ const adminMenus = [
       "회원 마이페이지 조회, 자기소개 수정, 프로필 사진 수정 API를 확인합니다.",
     path: "/admin/mypage",
   },
+  {
+    title: "IT 이슈 관리",
+    description: "IT 이슈 목록을 조회하고 생성, 수정, 삭제를 처리합니다.",
+    path: "/admin/it-issue",
+  },
 ];
 
 export default function AdminPage() {
