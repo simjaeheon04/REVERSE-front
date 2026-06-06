@@ -1,81 +1,57 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { getVoteDetail, type VoteDetail } from "../../services/voteApi";
 import * as S from "./VoteStatusSection.styles";
-
-type VoteMember = {
-  id: number;
-  name: string;
-  tone: string;
-};
-
-type VoteStatusOption = {
-  id: number;
-  label: string;
-  members: VoteMember[];
-};
-
-type VoteStatus = {
-  id: number;
-  title: string;
-  isAnonymous: boolean;
-  options: VoteStatusOption[];
-};
-
-const VOTE_STATUS_LIST: VoteStatus[] = [
-  {
-    id: 1,
-    title: "투표 제목",
-    isAnonymous: true,
-    options: [
-      { id: 1, label: "항목1", members: [] },
-      { id: 2, label: "항목2", members: [] },
-      {
-        id: 3,
-        label: "항목3",
-        members: [
-          { id: 1, name: "최우석", tone: "#4da2e8" },
-          { id: 2, name: "마시연", tone: "#73c6c8" },
-          { id: 3, name: "박수야", tone: "#c8a46a" },
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: "OT 최종 인원 조사",
-    isAnonymous: false,
-    options: [
-      {
-        id: 1,
-        label: "참여",
-        members: [
-          { id: 1, name: "최우석", tone: "#4da2e8" },
-          { id: 2, name: "마시연", tone: "#73c6c8" },
-        ],
-      },
-      { id: 2, label: "불참", members: [] },
-      {
-        id: 3,
-        label: "미정",
-        members: [{ id: 3, name: "박수야", tone: "#c8a46a" }],
-      },
-    ],
-  },
-];
-
-const getInitial = (name: string) => name.trim().charAt(0) || "?";
 
 export default function VoteStatusSection() {
   const navigate = useNavigate();
   const { voteId } = useParams();
+  const parsedVoteId = Number(voteId);
+  const [vote, setVote] = useState<VoteDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const voteStatus = useMemo(() => {
-    const parsedVoteId = Number(voteId);
-    return (
-      VOTE_STATUS_LIST.find((item) => item.id === parsedVoteId) ??
-      VOTE_STATUS_LIST[0]
-    );
-  }, [voteId]);
+  useEffect(() => {
+    let ignore = false;
+
+    const loadVoteStatus = async () => {
+      if (!Number.isFinite(parsedVoteId)) {
+        setErrorMessage("잘못된 투표 주소입니다.");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const result = await getVoteDetail(parsedVoteId);
+        if (!ignore) {
+          setVote(result);
+        }
+      } catch (error) {
+        console.error("[vote/status] failed", error);
+        if (!ignore) {
+          setErrorMessage("투표 현황을 불러오지 못했습니다.");
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadVoteStatus();
+
+    return () => {
+      ignore = true;
+    };
+  }, [parsedVoteId]);
+
+  const totalVoteCount = useMemo(
+    () => vote?.options.reduce((sum, option) => sum + option.voteCount, 0) ?? 0,
+    [vote]
+  );
 
   return (
     <S.Page>
@@ -90,38 +66,41 @@ export default function VoteStatusSection() {
             <S.CloseButton
               type="button"
               aria-label="닫기"
-              onClick={() => navigate(`/vote/${voteStatus.id}`)}
+              onClick={() => navigate(`/vote/${parsedVoteId}`)}
             >
               x
             </S.CloseButton>
 
-            <S.VoteTitle>{voteStatus.title}</S.VoteTitle>
-            <S.Underline />
+            {isLoading ? (
+              <S.StateMessage>투표 현황을 불러오는 중입니다.</S.StateMessage>
+            ) : errorMessage || !vote ? (
+              <S.StateMessage>{errorMessage || "투표 현황이 없습니다."}</S.StateMessage>
+            ) : (
+              <>
+                <S.VoteTitle>{vote.title}</S.VoteTitle>
+                <S.Underline />
 
-            <S.ResultList>
-              {voteStatus.options.map((option) => (
-                <S.ResultRow key={option.id}>
-                  <S.OptionPill>{option.label}</S.OptionPill>
-                  <S.Count>{option.members.length}명</S.Count>
-                  <S.Members>
-                    {option.members.length === 0 ? (
-                      <S.EmptyText>투표한 멤버가 없습니다.</S.EmptyText>
-                    ) : voteStatus.isAnonymous ? (
-                      <S.AnonymousText>익명</S.AnonymousText>
-                    ) : (
-                      option.members.map((member) => (
-                        <S.Member key={member.id}>
-                          <S.Avatar $tone={member.tone}>
-                            {getInitial(member.name)}
-                          </S.Avatar>
-                          {member.name}
-                        </S.Member>
-                      ))
-                    )}
-                  </S.Members>
-                </S.ResultRow>
-              ))}
-            </S.ResultList>
+                <S.ResultList>
+                  {vote.options.map((option) => {
+                    const percent =
+                      totalVoteCount > 0
+                        ? Math.round((option.voteCount / totalVoteCount) * 100)
+                        : 0;
+
+                    return (
+                      <S.ResultRow key={option.optionId}>
+                        <S.OptionPill>{option.optionText}</S.OptionPill>
+                        <S.Count>{option.voteCount}표</S.Count>
+                        <S.ResultBarTrack>
+                          <S.ResultBar $percent={percent} />
+                          <S.PercentText>{percent}%</S.PercentText>
+                        </S.ResultBarTrack>
+                      </S.ResultRow>
+                    );
+                  })}
+                </S.ResultList>
+              </>
+            )}
           </S.PanelInner>
         </S.Panel>
       </S.Inner>

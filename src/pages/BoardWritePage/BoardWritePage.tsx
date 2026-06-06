@@ -4,15 +4,21 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
 import {
   createBoardPost,
+  getAdminBoards,
   getBoardPostDetail,
+  getMultiBoardPosts,
   updateBoardPost,
+  type AdminBoard,
 } from "../../services/boardApi";
 import { uploadBoardFile } from "../../services/uploadApi";
 import * as S from "./BoardWritePage.styles";
 
 const BOARD_ID = 2;
 
-const BOARD_CATEGORIES = ["전체", "자유", "대외활동", "교구/교재 나눔", "질의응답"];
+type CategoryOption = {
+  boardId: number;
+  label: string;
+};
 
 type ModalType = "submit" | "cancel" | null;
 
@@ -53,7 +59,8 @@ export default function BoardWritePage() {
   const [content, setContent] = useState("");
   const [attachmentDraft, setAttachmentDraft] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryOption | null>(null);
   const [modalType, setModalType] = useState<ModalType>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -65,6 +72,50 @@ export default function BoardWritePage() {
   const isEditMode = mode === "edit";
   const parsedPostId = rawPostId ? Number(rawPostId) : NaN;
   const postId = Number.isFinite(parsedPostId) ? parsedPostId : null;
+
+  useEffect(() => {
+    if (isEditMode) {
+      return;
+    }
+
+    const loadCategories = async () => {
+      try {
+        const boards = await getAdminBoards();
+        const realCategories = boards.map((board: AdminBoard) => ({
+          boardId: board.boardId,
+          label: board.boardName,
+        }));
+
+        setCategories(realCategories);
+        setSelectedCategory((prev) => prev ?? realCategories[0] ?? null);
+      } catch (error) {
+        console.warn("[board/write] admin category load failed, using board posts", error);
+
+        try {
+          const result = await getMultiBoardPosts(BOARD_ID, { page: 0 });
+          const realCategories = Array.from(
+            new Set(
+              result.content
+                .map((post) => (typeof post.category === "string" ? post.category.trim() : ""))
+                .filter(Boolean)
+            )
+          ).map((category) => ({
+            boardId: BOARD_ID,
+            label: category,
+          }));
+
+          setCategories(realCategories);
+          setSelectedCategory((prev) => prev ?? realCategories[0] ?? null);
+        } catch (fallbackError) {
+          console.error("[board/write] category fallback load failed", fallbackError);
+          setCategories([]);
+          setSelectedCategory(null);
+        }
+      }
+    };
+
+    void loadCategories();
+  }, [isEditMode]);
 
   useEffect(() => {
     const loadPost = async () => {
@@ -124,22 +175,23 @@ export default function BoardWritePage() {
           content: content.trim(),
         });
       } else {
+        const targetBoardId = selectedCategory?.boardId ?? BOARD_ID;
         const attachmentList = normalizeAttachments([...attachments, attachmentDraft]);
         const createPayload = {
           title: title.trim(),
           content: content.trim(),
-          category: selectedCategory,
+          category: selectedCategory?.label ?? "",
           imageUrls: attachmentList,
           isPinned: false,
           isExternal: false,
         };
 
         console.log("[board/write] create payload", {
-          boardId: BOARD_ID,
+          boardId: targetBoardId,
           payload: createPayload,
         });
 
-        await createBoardPost(BOARD_ID, createPayload);
+        await createBoardPost(targetBoardId, createPayload);
       }
 
       navigate("/board/manage");
@@ -264,17 +316,21 @@ export default function BoardWritePage() {
             <S.Field>
               <S.Label>카테고리 선택*</S.Label>
               <S.CategoryRow>
-                {BOARD_CATEGORIES.map((category) => (
-                  <S.CategoryButton
-                    key={category}
-                    type="button"
-                    $active={selectedCategory === category}
-                    onClick={() => setSelectedCategory(category)}
-                    disabled={isLoading || isSubmitting}
-                  >
-                    {category}
-                  </S.CategoryButton>
-                ))}
+                {categories.length > 0 ? (
+                  categories.map((category) => (
+                    <S.CategoryButton
+                      key={`${category.boardId}-${category.label}`}
+                      type="button"
+                      $active={selectedCategory?.boardId === category.boardId}
+                      onClick={() => setSelectedCategory(category)}
+                      disabled={isLoading || isSubmitting}
+                    >
+                      {category.label}
+                    </S.CategoryButton>
+                  ))
+                ) : (
+                  <S.ErrorText>사용 가능한 카테고리가 없습니다.</S.ErrorText>
+                )}
               </S.CategoryRow>
             </S.Field>
 

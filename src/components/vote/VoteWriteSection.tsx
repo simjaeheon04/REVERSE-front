@@ -1,31 +1,73 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createVote } from "../../services/voteApi";
 import * as S from "./VoteWriteSection.styles";
 
 const WEEKDAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const YEARS = [2025, 2026, 2027];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+const YEARS = [2026, 2027, 2028];
 const KOREAN_WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 const formatDate = (date: Date | null) => {
   if (!date) {
-    return "선택 안함";
+    return "마감일 없음";
   }
 
-  return `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}. (${KOREAN_WEEKDAYS[date.getDay()]})`;
+  return `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()}. (${
+    KOREAN_WEEKDAYS[date.getDay()]
+  })`;
+};
+
+const toDeadlineDateTime = (date: Date | null, time: string) => {
+  if (!date) {
+    return undefined;
+  }
+
+  const [hour = "23", minute = "59"] = time.split(":");
+  const deadline = new Date(date);
+  deadline.setHours(Number(hour), Number(minute), 0, 0);
+
+  const yyyy = deadline.getFullYear();
+  const mm = String(deadline.getMonth() + 1).padStart(2, "0");
+  const dd = String(deadline.getDate()).padStart(2, "0");
+  const hh = String(deadline.getHours()).padStart(2, "0");
+  const mi = String(deadline.getMinutes()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}:00`;
+};
+
+const getToday = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
 };
 
 export default function VoteWriteSection() {
   const navigate = useNavigate();
-  const [options, setOptions] = useState(["", "", ""]);
-  const [allowMultiple, setAllowMultiple] = useState(true);
-  const [isAnonymous, setIsAnonymous] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    new Date(2026, 4, 22)
-  );
-  const [calendarMonth, setCalendarMonth] = useState(4);
-  const [calendarYear, setCalendarYear] = useState(2026);
+  const today = useMemo(() => getToday(), []);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [options, setOptions] = useState(["", ""]);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(today);
+  const [deadlineTime, setDeadlineTime] = useState("23:59");
+  const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
+  const [calendarYear, setCalendarYear] = useState(today.getFullYear());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const calendarDays = useMemo(() => {
     const firstDay = new Date(calendarYear, calendarMonth, 1).getDay();
@@ -69,7 +111,7 @@ export default function VoteWriteSection() {
   };
 
   const handleRemoveOption = (index: number) => {
-    if (options.length <= 1) {
+    if (options.length <= 2) {
       return;
     }
 
@@ -95,11 +137,44 @@ export default function VoteWriteSection() {
     setCalendarMonth(next.getMonth());
   };
 
+  const handleSubmit = async () => {
+    const cleanOptions = options.map((option) => option.trim()).filter(Boolean);
+
+    if (!title.trim()) {
+      alert("투표 제목을 입력해 주세요.");
+      return;
+    }
+
+    if (cleanOptions.length < 2) {
+      alert("투표 항목은 최소 2개 이상 입력해 주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await createVote({
+        title: title.trim(),
+        content: content.trim() || undefined,
+        deadline: toDeadlineDateTime(selectedDate, deadlineTime),
+        isMultiple: allowMultiple,
+        options: cleanOptions,
+      });
+
+      alert(result.message || "투표가 등록되었습니다.");
+      navigate(result.voteId ? `/vote/${result.voteId}` : "/vote");
+    } catch (error) {
+      console.error("[vote/write] submit failed", error);
+      alert("투표 등록에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <S.Page>
       <S.Inner>
         <S.Header>
-          <S.Title>투표 글 작성하기</S.Title>
+          <S.Title>투표 작성하기</S.Title>
           <S.Rule />
         </S.Header>
 
@@ -107,9 +182,23 @@ export default function VoteWriteSection() {
           <S.PanelInner>
             <S.SectionTitle>
               <S.VoteIcon aria-hidden="true" />
-              투표 제목 입력
+              투표 내용 입력
             </S.SectionTitle>
             <S.TitleUnderline />
+
+            <S.FieldGroup>
+              <S.TitleInput
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                maxLength={100}
+                placeholder="투표 제목을 입력해 주세요."
+              />
+              <S.ContentInput
+                value={content}
+                onChange={(event) => setContent(event.target.value)}
+                placeholder="투표 설명을 입력해 주세요. (선택)"
+              />
+            </S.FieldGroup>
 
             <S.OptionList>
               {options.map((option, index) => (
@@ -117,12 +206,13 @@ export default function VoteWriteSection() {
                   <S.OptionInput
                     value={option}
                     onChange={(event) => handleOptionChange(index, event.target.value)}
-                    placeholder="항목 입력"
+                    placeholder={`항목 ${index + 1}`}
                   />
                   <S.RemoveButton
                     type="button"
                     aria-label="항목 삭제"
                     onClick={() => handleRemoveOption(index)}
+                    disabled={options.length <= 2}
                   >
                     x
                   </S.RemoveButton>
@@ -141,15 +231,7 @@ export default function VoteWriteSection() {
                   checked={allowMultiple}
                   onChange={(event) => setAllowMultiple(event.target.checked)}
                 />
-                복수선택
-              </S.CheckLabel>
-              <S.CheckLabel>
-                <input
-                  type="checkbox"
-                  checked={isAnonymous}
-                  onChange={(event) => setIsAnonymous(event.target.checked)}
-                />
-                익명투표
+                복수 선택 허용
               </S.CheckLabel>
             </S.CheckGroup>
           </S.PanelInner>
@@ -157,10 +239,17 @@ export default function VoteWriteSection() {
 
         <S.DatePanel>
           <S.DateLabel>투표 종료 시간 설정</S.DateLabel>
-          <S.DateTrigger type="button" onClick={handleToggleCalendar}>
-            <S.ClockIcon aria-hidden="true" />
-            {formatDate(selectedDate)}
-          </S.DateTrigger>
+          <S.DateControls>
+            <S.DateTrigger type="button" onClick={handleToggleCalendar}>
+              <S.ClockIcon aria-hidden="true" />
+              {formatDate(selectedDate)}
+            </S.DateTrigger>
+            <S.TimeInput
+              type="time"
+              value={deadlineTime}
+              onChange={(event) => setDeadlineTime(event.target.value)}
+            />
+          </S.DateControls>
 
           {isCalendarOpen ? (
             <S.CalendarPopup>
@@ -208,6 +297,9 @@ export default function VoteWriteSection() {
                   <S.CalendarWeekday key={weekday}>{weekday}</S.CalendarWeekday>
                 ))}
                 {calendarDays.map((cell) => {
+                  const cellDate = new Date(cell.date);
+                  cellDate.setHours(0, 0, 0, 0);
+                  const isPast = cellDate < today;
                   const isSelected =
                     selectedDate?.getFullYear() === cell.date.getFullYear() &&
                     selectedDate?.getMonth() === cell.date.getMonth() &&
@@ -219,7 +311,11 @@ export default function VoteWriteSection() {
                       type="button"
                       $selected={isSelected}
                       $muted={cell.muted}
+                      disabled={isPast}
                       onClick={() => {
+                        if (isPast) {
+                          return;
+                        }
                         setSelectedDate(cell.date);
                         setIsCalendarOpen(false);
                       }}
@@ -237,14 +333,16 @@ export default function VoteWriteSection() {
                   setIsCalendarOpen(false);
                 }}
               >
-                선택 안함
+                마감일 없음
               </S.CalendarUnsetButton>
             </S.CalendarPopup>
           ) : null}
         </S.DatePanel>
 
         <S.Actions>
-          <S.ActionButton type="button">완료</S.ActionButton>
+          <S.ActionButton type="button" onClick={handleSubmit} disabled={isSubmitting}>
+            완료
+          </S.ActionButton>
           <S.ActionButton type="button" onClick={() => navigate("/vote")}>
             취소
           </S.ActionButton>

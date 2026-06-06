@@ -82,6 +82,51 @@ export const TitleUnderline = styled.div`
   background: rgba(255, 255, 255, 0.72);
 `;
 
+export const FieldGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 22px;
+`;
+
+export const TitleInput = styled.input`
+  width: 100%;
+  height: 58px;
+  padding: 0 24px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 6px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.62);
+  }
+`;
+
+export const ContentInput = styled.textarea`
+  width: 100%;
+  min-height: 100px;
+  padding: 18px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 6px;
+  outline: none;
+  resize: vertical;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.62);
+  }
+`;
+
 export const OptionList = styled.div`
   display: flex;
   flex-direction: column;
@@ -120,6 +165,11 @@ export const RemoveButton = styled.button`
   color: #ffffff;
   font-size: 18px;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+  }
 `;
 
 export const AddButton = styled.button`
@@ -182,6 +232,25 @@ export const DateTrigger = styled.button`
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+`;
+
+export const DateControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+`;
+
+export const TimeInput = styled.input`
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.82);
+  color: #252832;
+  font-size: 14px;
+  font-weight: 700;
 `;
 
 export const ClockIcon = styled.span`
@@ -281,6 +350,11 @@ export const CalendarDay = styled.button<{ $selected?: boolean; $muted?: boolean
     $selected ? "#ffffff" : $muted ? "rgba(37, 40, 50, 0.18)" : "#252832"};
   font-size: 16px;
   cursor: pointer;
+
+  &:disabled {
+    color: rgba(37, 40, 50, 0.16);
+    cursor: not-allowed;
+  }
 `;
 
 export const CalendarUnsetButton = styled.button`
@@ -312,4 +386,9 @@ export const ActionButton = styled.button`
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
 `;

@@ -1,58 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMultiBoardPosts, type BoardPostListItem } from "../../services/boardApi";
+import {
+  getAdminBoards,
+  getAllBoardPosts,
+  getMultiBoardPosts,
+  type AdminBoard,
+  type BoardPostDetail,
+  type BoardPostListItem,
+} from "../../services/boardApi";
 import * as S from "./BoardSection.styles";
 
-const BOARD_ID = 2;
-type BoardCategory = "전체" | "자유" | "대외활동" | "정보" | "교구/교재 나눔" | "질의응답";
 type SearchField = "제목" | "본문" | "작성자";
 
-const CATEGORIES: BoardCategory[] = [
-  "전체",
-  "자유",
-  "대외활동",
-  "정보",
-  "교구/교재 나눔",
-  "질의응답",
-];
-
 const SEARCH_FIELDS: SearchField[] = ["제목", "본문", "작성자"];
-
-const CATEGORY_LABELS: Record<string, Exclude<BoardCategory, "전체">> = {
-  FREE: "자유",
-  ACTIVITY: "대외활동",
-  INFO: "정보",
-  TRADE: "교구/교재 나눔",
-  QNA: "질의응답",
-  자유: "자유",
-  대외활동: "대외활동",
-  정보: "정보",
-  "교구/교재 나눔": "교구/교재 나눔",
-  질의응답: "질의응답",
-};
-
 const AVATAR_COLORS = ["#8990a3", "#51a8ff", "#62c9e5", "#c8df3e", "#c69a58", "#ff6e57"];
 
 const getPostId = (post: BoardPostListItem) => post.postId || post.id;
-
-const normalizeCategory = (value?: string | null) => {
-  if (!value) {
-    return "";
-  }
-
-  const trimmed = value.trim();
-  return CATEGORY_LABELS[trimmed] ?? trimmed;
-};
-
-const getPostCategory = (post: BoardPostListItem) => {
-  return normalizeCategory(typeof post.category === "string" ? post.category : post.boardType);
-};
 
 const getAuthor = (post: BoardPostListItem) =>
   post.author ?? post.authorName ?? post.writerName ?? post.nickname ?? post.userId ?? "익명 회원";
 
 const formatDate = (date: string) => {
-  if (!date) return "";
+  if (!date) {
+    return "";
+  }
 
   return date.slice(0, 10).replaceAll("-", ".");
 };
@@ -75,26 +46,67 @@ const matchesSearch = (post: BoardPostListItem, searchField: SearchField, keywor
   return getAuthor(post).toLowerCase().includes(normalizedKeyword);
 };
 
+const getPostCategory = (post: BoardPostListItem, boards: AdminBoard[]) => {
+  const matchedBoard = boards.find((board) => board.boardId === post.boardId);
+
+  if (matchedBoard) {
+    return matchedBoard.boardName;
+  }
+
+  if (typeof post.category === "string" && post.category.trim()) {
+    return post.category.trim();
+  }
+
+  return post.boardType ?? "";
+};
+
+const getFallbackBoardsFromPosts = (posts: BoardPostListItem[]): AdminBoard[] => {
+  const boardMap = new Map<number, AdminBoard>();
+
+  posts.forEach((post) => {
+    if (!post.boardId || boardMap.has(post.boardId)) {
+      return;
+    }
+
+    boardMap.set(post.boardId, {
+      boardId: post.boardId,
+      boardName: getPostCategory(post, []),
+      boardDescription: "",
+    });
+  });
+
+  return Array.from(boardMap.values()).filter((board) => board.boardName);
+};
+
+const toBoardPostDetailFallback = (post: BoardPostListItem): BoardPostDetail => ({
+  id: getPostId(post),
+  title: post.title,
+  content: post.content ?? "",
+  userId: getAuthor(post),
+  createdAt: post.createdAt,
+  modifiedAt: null,
+  commentCount: post.commentCount,
+  likeCount: post.likeCount,
+  imageUrls: post.imageUrls,
+});
+
 export default function BoardSection() {
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState<BoardCategory>("전체");
+  const [boards, setBoards] = useState<AdminBoard[]>([]);
+  const [activeBoardId, setActiveBoardId] = useState<number | null>(null);
   const [searchField, setSearchField] = useState<SearchField>("제목");
   const [keyword, setKeyword] = useState("");
   const [submittedKeyword, setSubmittedKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [posts, setPosts] = useState<BoardPostListItem[]>([]);
+  const [isLoadingBoards, setIsLoadingBoards] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
   const filteredPosts = useMemo(() => {
-    return posts.filter((post) => {
-      const category = getPostCategory(post);
-      const categoryMatched = activeCategory === "전체" || category === activeCategory;
-
-      return categoryMatched && matchesSearch(post, searchField, submittedKeyword);
-    });
-  }, [activeCategory, posts, searchField, submittedKeyword]);
+    return posts.filter((post) => matchesSearch(post, searchField, submittedKeyword));
+  }, [posts, searchField, submittedKeyword]);
 
   const pages = useMemo(() => {
     const visiblePages = Math.min(totalPages, 3);
@@ -102,18 +114,40 @@ export default function BoardSection() {
   }, [totalPages]);
 
   useEffect(() => {
+    const fetchBoards = async () => {
+      try {
+        setIsLoadingBoards(true);
+        const result = await getAdminBoards();
+        setBoards(result);
+      } catch (error) {
+        console.warn("[board] admin board list failed, fallback will use post list", error);
+        setBoards([]);
+      } finally {
+        setIsLoadingBoards(false);
+      }
+    };
+
+    void fetchBoards();
+  }, []);
+
+  useEffect(() => {
     const fetchPosts = async () => {
       try {
         setIsLoading(true);
         setStatusMessage("");
 
-        const result = await getMultiBoardPosts(BOARD_ID, {
-          page: currentPage - 1,
-        });
+        const result =
+          activeBoardId === null
+            ? await getAllBoardPosts(currentPage - 1)
+            : await getMultiBoardPosts(activeBoardId, { page: currentPage - 1 });
 
         setPosts(result.content);
         setTotalPages(Math.max(1, result.totalPages || 1));
         setStatusMessage(result.content.length ? "" : "게시글이 없습니다.");
+
+        if (activeBoardId === null) {
+          setBoards((prev) => (prev.length ? prev : getFallbackBoardsFromPosts(result.content)));
+        }
       } catch (error) {
         console.error("board posts fetch failed", error);
         setPosts([]);
@@ -125,10 +159,11 @@ export default function BoardSection() {
     };
 
     void fetchPosts();
-  }, [currentPage]);
+  }, [activeBoardId, currentPage]);
 
-  const handleCategoryChange = (category: BoardCategory) => {
-    setActiveCategory(category);
+  const handleBoardChange = (boardId: number | null) => {
+    setActiveBoardId(boardId);
+    setCurrentPage(1);
   };
 
   const handleSearch = () => {
@@ -153,16 +188,27 @@ export default function BoardSection() {
         <S.Inner>
           <S.Toolbar>
             <S.CategoryList aria-label="게시판 카테고리">
-              {CATEGORIES.map((category) => (
-                <S.CategoryButton
-                  key={category}
-                  type="button"
-                  $active={activeCategory === category}
-                  onClick={() => handleCategoryChange(category)}
-                >
-                  {category}
-                </S.CategoryButton>
-              ))}
+              <S.CategoryButton
+                type="button"
+                $active={activeBoardId === null}
+                onClick={() => handleBoardChange(null)}
+              >
+                전체
+              </S.CategoryButton>
+              {isLoadingBoards ? (
+                <S.StatusText>게시판을 불러오는 중입니다.</S.StatusText>
+              ) : (
+                boards.map((board) => (
+                  <S.CategoryButton
+                    key={board.boardId}
+                    type="button"
+                    $active={activeBoardId === board.boardId}
+                    onClick={() => handleBoardChange(board.boardId)}
+                  >
+                    {board.boardName}
+                  </S.CategoryButton>
+                ))
+              )}
             </S.CategoryList>
 
             <S.SearchArea>
@@ -207,13 +253,19 @@ export default function BoardSection() {
             {!isLoading &&
               !statusMessage &&
               filteredPosts.map((post, index) => {
-                const category = getPostCategory(post);
+                const category = getPostCategory(post, boards);
 
                 return (
                   <S.PostCard
                     key={getPostId(post)}
                     type="button"
-                    onClick={() => navigate(`/board/${getPostId(post)}`)}
+                    onClick={() =>
+                      navigate(`/board/${getPostId(post)}?boardId=${post.boardId ?? ""}`, {
+                        state: {
+                          boardPostFallback: toBoardPostDetailFallback(post),
+                        },
+                      })
+                    }
                   >
                     <S.PostInfo>
                       <S.PostTitleRow>

@@ -53,6 +53,7 @@ export type BoardPostListItem = {
   category?: BoardType | string;
   commentCount: number;
   likeCount: number;
+  imageUrls: string[];
 };
 
 export type BoardPostListPage = {
@@ -128,8 +129,20 @@ export type BoardPostPayload = {
 
 export type BoardPostMutationResult = {
   status?: string;
+  success?: boolean;
   message?: string;
   postId?: number;
+};
+
+export type AdminBoard = {
+  boardId: number;
+  boardName: string;
+  boardDescription: string;
+};
+
+export type AdminBoardPayload = {
+  boardName: string;
+  boardDescription: string;
 };
 
 export type BoardPostDetail = {
@@ -147,7 +160,12 @@ export type BoardPostDetail = {
 type RawBoardPostListItem = {
   id?: number;
   postId?: number;
+  boardPostId?: number;
+  postID?: number;
+  post_id?: number;
   boardId?: number;
+  boardID?: number;
+  board_id?: number;
   title?: string;
   postTitle?: string;
   content?: string;
@@ -166,6 +184,9 @@ type RawBoardPostListItem = {
   postCommentCount?: number;
   likeCount?: number;
   postLikeCount?: number;
+  imageUrls?: string[];
+  fileUrls?: string[];
+  attachmentUrls?: string[];
 };
 
 type RawBoardPostPage = {
@@ -198,23 +219,34 @@ type BoardPostDetailRaw = RawBoardPostListItem & {
   >;
 };
 
-const normalizeBoardPostListItem = (post: RawBoardPostListItem): BoardPostListItem => ({
-  id: post.id ?? post.postId ?? 0,
-  postId: post.postId ?? post.id ?? 0,
-  boardId: post.boardId ?? null,
-  title: post.postTitle ?? post.title ?? "",
-  content: post.postContents ?? post.content,
-  userId: post.userId ?? "",
-  author: post.author,
-  authorName: post.authorName,
-  writerName: post.writerName,
-  nickname: post.nickname,
-  createdAt: post.createdDate ?? post.createdAt ?? "",
-  boardType: post.boardType,
-  category: post.postCategory ?? post.category,
-  commentCount: post.postCommentCount ?? post.commentCount ?? 0,
-  likeCount: post.postLikeCount ?? post.likeCount ?? 0,
-});
+const getRawPostId = (post: RawBoardPostListItem) =>
+  post.postId ?? post.boardPostId ?? post.postID ?? post.post_id ?? post.id ?? 0;
+
+const normalizeBoardPostListItem = (
+  post: RawBoardPostListItem,
+  fallbackBoardId: number | null = null
+): BoardPostListItem => {
+  const normalizedPostId = getRawPostId(post);
+
+  return {
+    id: normalizedPostId,
+    postId: normalizedPostId,
+    boardId: post.boardId ?? post.boardID ?? post.board_id ?? fallbackBoardId,
+    title: post.postTitle ?? post.title ?? "",
+    content: post.postContents ?? post.content,
+    userId: post.userId ?? "",
+    author: post.author,
+    authorName: post.authorName,
+    writerName: post.writerName,
+    nickname: post.nickname,
+    createdAt: post.createdDate ?? post.createdAt ?? "",
+    boardType: post.boardType,
+    category: post.postCategory ?? post.category,
+    commentCount: post.postCommentCount ?? post.commentCount ?? 0,
+    likeCount: post.postLikeCount ?? post.likeCount ?? 0,
+    imageUrls: post.imageUrls ?? post.fileUrls ?? post.attachmentUrls ?? [],
+  };
+};
 
 const normalizeBoardPostDetail = (post: BoardPostDetailRaw): BoardPostDetail => {
   const attachmentUrls =
@@ -412,6 +444,7 @@ export const getMultiBoardPosts = async (
   boardId: number | string,
   params: BoardPostListParams = {}
 ): Promise<BoardPostListPage> => {
+  const normalizedBoardId = Number(boardId);
   const response = await axiosInstance.get<ApiSuccessResponse<RawBoardPostPage> | RawBoardPostPage>(
     `/api/board/${boardId}`,
     {
@@ -428,7 +461,9 @@ export const getMultiBoardPosts = async (
   const rawContent = payload.content ?? payload.posts ?? payload.list ?? payload.items ?? [];
 
   return {
-    content: rawContent.map(normalizeBoardPostListItem),
+    content: rawContent.map((post) =>
+      normalizeBoardPostListItem(post, Number.isFinite(normalizedBoardId) ? normalizedBoardId : null)
+    ),
     totalPages: payload.totalPages ?? payload.totalPage ?? 0,
     totalElements: payload.totalElements ?? rawContent.length,
     number: payload.number ?? payload.currentPage ?? payload.page ?? params.page ?? 0,
@@ -536,6 +571,139 @@ export const deleteBoardPost = async (
   >(`/api/board/post/${postId}`);
 
   return unwrapApiData(response.data);
+};
+
+type RawAdminBoard = {
+  id?: number;
+  boardId?: number;
+  name?: string;
+  boardName?: string;
+  description?: string;
+  boardDescription?: string;
+};
+
+const normalizeAdminBoard = (board: RawAdminBoard): AdminBoard => ({
+  boardId: board.boardId ?? board.id ?? 0,
+  boardName: board.boardName ?? board.name ?? "",
+  boardDescription: board.boardDescription ?? board.description ?? "",
+});
+
+export const deleteAdminPost = async (
+  postId: number | string
+): Promise<BoardPostMutationResult> => {
+  const response = await axiosInstance.delete<ApiSuccessResponse<null>>(
+    `/api/admin/posts/${postId}`
+  );
+
+  if ("data" in response.data && ("success" in response.data || "status" in response.data)) {
+    return {
+      success: response.data.success,
+      status: response.data.status,
+      message: response.data.message ?? undefined,
+    };
+  }
+
+  return {
+    message: undefined,
+  };
+};
+
+export const getAdminBoards = async (): Promise<AdminBoard[]> => {
+  const response = await axiosInstance.get<ApiSuccessResponse<RawAdminBoard[]> | RawAdminBoard[]>(
+    "/api/admin/boards"
+  );
+
+  const payload = unwrapApiData(response.data);
+  return Array.isArray(payload)
+    ? payload.map(normalizeAdminBoard).filter((board) => board.boardId && board.boardName)
+    : [];
+};
+
+export const getAvailableBoards = async (): Promise<AdminBoard[]> => {
+  try {
+    return await getAdminBoards();
+  } catch (error) {
+    console.warn("[board] admin board list unavailable, falling back to post list", error);
+  }
+
+  const postPage = await getBoardPostList(0);
+  const boardMap = new Map<number, AdminBoard>();
+
+  postPage.content.forEach((post) => {
+    if (!post.boardId || boardMap.has(post.boardId)) {
+      return;
+    }
+
+    const boardName =
+      typeof post.category === "string" && post.category.trim()
+        ? post.category
+        : post.boardType ?? `게시판 ${post.boardId}`;
+
+    boardMap.set(post.boardId, {
+      boardId: post.boardId,
+      boardName,
+      boardDescription: "",
+    });
+  });
+
+  return Array.from(boardMap.values());
+};
+
+export const getAllBoardPosts = async (page = 0): Promise<BoardPostListPage> => {
+  try {
+    const boards = await getAdminBoards();
+
+    if (!boards.length) {
+      return await getBoardPostList(page);
+    }
+
+    const pages = await Promise.all(
+      boards.map((board) => getMultiBoardPosts(board.boardId, { page }))
+    );
+    const content = pages
+      .flatMap((postPage) => postPage.content)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+    return {
+      content,
+      totalPages: Math.max(...pages.map((postPage) => postPage.totalPages), 1),
+      totalElements: pages.reduce((sum, postPage) => sum + postPage.totalElements, 0),
+      number: page,
+    };
+  } catch (error) {
+    console.warn("[board] all board aggregate failed, falling back to board list", error);
+    return getBoardPostList(page);
+  }
+};
+
+export const createAdminBoard = async (
+  payload: AdminBoardPayload
+): Promise<AdminBoard> => {
+  const response = await axiosInstance.post<ApiSuccessResponse<RawAdminBoard> | RawAdminBoard>(
+    "/api/admin/boards",
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return normalizeAdminBoard(unwrapApiData(response.data));
+};
+
+export const deleteAdminBoard = async (
+  boardId: number | string
+): Promise<BoardPostMutationResult> => {
+  const response = await axiosInstance.delete<ApiSuccessResponse<null>>(
+    `/api/admin/boards/${boardId}`
+  );
+
+  return {
+    success: response.data.success,
+    status: response.data.status,
+    message: response.data.message ?? undefined,
+  };
 };
 
 export async function createBoardPost(

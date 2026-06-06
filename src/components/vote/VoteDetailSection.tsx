@@ -1,78 +1,120 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  cancelVote,
+  getVoteDetail,
+  submitVote,
+  type VoteDetail,
+} from "../../services/voteApi";
 import * as S from "./VoteDetailSection.styles";
 
-type VoteDetail = {
-  id: number;
-  title: string;
-  authorName: string;
-  daysLeft: number;
-  participantCount: number;
-  options: string[];
-  isAuthor: boolean;
-  hasVoted: boolean;
+const getDaysLeftText = (deadline: string | null) => {
+  if (!deadline) {
+    return "마감일이 설정되지 않은 투표입니다.";
+  }
+
+  const deadlineDate = new Date(deadline);
+  if (Number.isNaN(deadlineDate.getTime())) {
+    return `투표 마감일: ${deadline.replace("T", " ")}`;
+  }
+
+  const formattedDeadline = new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(deadlineDate);
+  return `마감일: ${formattedDeadline}`;
 };
 
-const VOTE_DETAILS: VoteDetail[] = [
-  {
-    id: 1,
-    title: "투표 제목",
-    authorName: "투표 글 작성자 이름",
-    daysLeft: 3,
-    participantCount: 3,
-    options: ["항목1", "항목2", "항목3"],
-    isAuthor: false,
-    hasVoted: true,
-  },
-  {
-    id: 2,
-    title: "OT 최종 인원 조사",
-    authorName: "투표 글 작성자 이름",
-    daysLeft: 1,
-    participantCount: 3,
-    options: ["참여", "불참", "미정"],
-    isAuthor: true,
-    hasVoted: true,
-  },
-];
+const getTotalVoteCount = (vote: VoteDetail) =>
+  vote.options.reduce((sum, option) => sum + option.voteCount, 0);
 
 export default function VoteDetailSection() {
   const navigate = useNavigate();
   const { voteId } = useParams();
-  const [selectedOption, setSelectedOption] = useState(0);
+  const parsedVoteId = Number(voteId);
+  const [vote, setVote] = useState<VoteDetail | null>(null);
+  const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const vote = useMemo(() => {
-    const parsedVoteId = Number(voteId);
-    return (
-      VOTE_DETAILS.find((item) => item.id === parsedVoteId) ?? VOTE_DETAILS[0]
-    );
-  }, [voteId]);
+  const totalVoteCount = useMemo(
+    () => (vote ? getTotalVoteCount(vote) : 0),
+    [vote]
+  );
 
-  const handleSubmit = () => {
-    console.log("[vote/detail] submit", {
-      voteId: vote.id,
-      selectedOption: vote.options[selectedOption],
-      isAuthor: vote.isAuthor,
-    });
+  const loadVoteDetail = async () => {
+    if (!Number.isFinite(parsedVoteId)) {
+      setErrorMessage("잘못된 투표 주소입니다.");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const result = await getVoteDetail(parsedVoteId);
+      setVote(result);
+      setSelectedOptionId(result.myVotedOptionId);
+    } catch (error) {
+      console.error("[vote/detail] failed", error);
+      setErrorMessage("투표 상세 정보를 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCompleteVote = () => {
-    console.log("[vote/detail] complete", {
-      voteId: vote.id,
-    });
+  useEffect(() => {
+    void loadVoteDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsedVoteId]);
+
+  const handleSubmit = async () => {
+    if (!vote || selectedOptionId === null) {
+      alert("투표 항목을 선택해 주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await submitVote(vote.voteId, selectedOptionId);
+      alert(result.message || "투표가 완료되었습니다.");
+      await loadVoteDetail();
+    } catch (error) {
+      console.error("[vote/detail] submit failed", error);
+      alert("투표 처리에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleCloseVote = () => {
-    console.log("[vote/detail] close", {
-      voteId: vote.id,
-    });
+  const handleCancelVote = async () => {
+    if (!vote) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await cancelVote(vote.voteId);
+      alert(result.message || "투표가 취소되었습니다.");
+      await loadVoteDetail();
+    } catch (error) {
+      console.error("[vote/detail] cancel failed", error);
+      alert("투표 취소에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <S.Page>
       <S.Inner>
         <S.Header>
-          <S.Title>투표 글 상세보기</S.Title>
+          <S.Title>투표 상세보기</S.Title>
           <S.Rule />
         </S.Header>
 
@@ -86,57 +128,76 @@ export default function VoteDetailSection() {
               x
             </S.CloseButton>
 
-            <S.AlertBar>
-              <S.BellIcon aria-hidden="true" />
-              투표가 {vote.daysLeft}일 후에 종료됩니다.
-            </S.AlertBar>
+            {isLoading ? (
+              <S.StateMessage>투표 정보를 불러오는 중입니다.</S.StateMessage>
+            ) : errorMessage || !vote ? (
+              <S.StateMessage>{errorMessage || "투표 정보가 없습니다."}</S.StateMessage>
+            ) : (
+              <>
+                <S.AlertBar>
+                  <S.BellIcon aria-hidden="true" />
+                  {getDaysLeftText(vote.deadline)}
+                </S.AlertBar>
 
-            <S.MetaRow>
-              <S.VoteTitle>{vote.title}</S.VoteTitle>
-              <S.Author>{vote.authorName}</S.Author>
-            </S.MetaRow>
-            <S.Underline />
+                <S.MetaRow>
+                  <S.VoteTitle>{vote.title}</S.VoteTitle>
+                  <S.Author>{vote.userId}</S.Author>
+                </S.MetaRow>
+                {vote.content ? <S.Content>{vote.content}</S.Content> : null}
+                <S.Underline />
 
-            <S.OptionList>
-              {vote.options.map((option, index) => (
-                <S.OptionButton
-                  key={option}
-                  type="button"
-                  $selected={selectedOption === index}
-                  onClick={() => setSelectedOption(index)}
-                >
-                  <S.CheckCircle $selected={selectedOption === index} />
-                  {option}
-                </S.OptionButton>
-              ))}
-            </S.OptionList>
+                <S.OptionList>
+                  {vote.options.map((option) => {
+                    const isSelected = selectedOptionId === option.optionId;
+                    const isMyVote = vote.myVotedOptionId === option.optionId;
 
-            <S.FooterActions>
-              {vote.isAuthor ? (
-                <S.AuthorActions>
-                  <S.ActionButton type="button" onClick={handleCloseVote}>
-                    투표 종료
-                  </S.ActionButton>
-                  <S.ActionButton type="button" onClick={handleCompleteVote}>
-                    투표 완료
-                  </S.ActionButton>
-                </S.AuthorActions>
-              ) : vote.hasVoted ? (
-                <S.CompletedMessage>이미 완료된 투표입니다.</S.CompletedMessage>
-              ) : (
-                <S.SubmitButton type="button" onClick={handleSubmit}>
-                  투표하기
-                </S.SubmitButton>
-              )}
+                    return (
+                      <S.OptionButton
+                        key={option.optionId}
+                        type="button"
+                        $selected={isSelected}
+                        disabled={vote.isClosed || vote.myVotedOptionId !== null}
+                        onClick={() => setSelectedOptionId(option.optionId)}
+                      >
+                        <S.CheckCircle $selected={isSelected || isMyVote} />
+                        <S.OptionText>{option.optionText}</S.OptionText>
+                        <S.OptionCount>{option.voteCount}표</S.OptionCount>
+                      </S.OptionButton>
+                    );
+                  })}
+                </S.OptionList>
 
-              <S.ParticipantButton
-                type="button"
-                onClick={() => navigate(`/vote/${vote.id}/status`)}
-              >
-                {vote.participantCount}명 참여
-                <S.ParticipantArrow aria-hidden="true" />
-              </S.ParticipantButton>
-            </S.FooterActions>
+                <S.FooterActions>
+                  {vote.isClosed ? (
+                    <S.CompletedMessage>마감된 투표입니다.</S.CompletedMessage>
+                  ) : vote.myVotedOptionId !== null ? (
+                    <S.ActionButton
+                      type="button"
+                      onClick={handleCancelVote}
+                      disabled={isSubmitting}
+                    >
+                      투표 취소
+                    </S.ActionButton>
+                  ) : (
+                    <S.SubmitButton
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting || selectedOptionId === null}
+                    >
+                      투표하기
+                    </S.SubmitButton>
+                  )}
+
+                  <S.ParticipantButton
+                    type="button"
+                    onClick={() => navigate(`/vote/${vote.voteId}/status`)}
+                  >
+                    {totalVoteCount}명 참여
+                    <S.ParticipantArrow aria-hidden="true" />
+                  </S.ParticipantButton>
+                </S.FooterActions>
+              </>
+            )}
           </S.PanelInner>
         </S.Panel>
       </S.Inner>

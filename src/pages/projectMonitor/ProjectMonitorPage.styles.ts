@@ -1,4 +1,4 @@
-﻿import styled from "styled-components";
+import styled from "styled-components";
 
 export const Page = styled.main`
   min-height: calc(100vh - 120px);
@@ -61,6 +61,18 @@ export const Card = styled.section`
   border-radius: 24px;
   background: rgba(14, 18, 28, 0.84);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+`;
+
+export const Toolbar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  @media (max-width: 720px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 `;
 
 export const CardTitle = styled.h2`
@@ -165,6 +177,11 @@ export const DangerButton = styled.button`
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
 `;
 
 export const StatusText = styled.p<{ $error?: boolean }>`
@@ -237,4 +254,119 @@ export const CodeBlock = styled.pre`
   font-size: 13px;
   line-height: 1.55;
   overflow-x: auto;
+`;
+
+export const ProjectTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 18px;
+
+  th,
+  td {
+    padding: 16px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: left;
+    vertical-align: middle;
+    font-size: 14px;
+  }
+
+  th {
+    color: rgba(238, 242, 255, 0.72);
+    background: rgba(255, 255, 255, 0.06);
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  td {
+    color: rgba(238, 242, 255, 0.9);
+    background: rgba(13, 18, 32, 0.42);
+  }
+
+  @media (max-width: 900px) {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+`;
+
+export const ProjectName = styled.strong`
+  display: block;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+`;
+
+export const ProjectDescription = styled.span`
+  display: block;
+  max-width: 320px;
+  margin-top: 6px;
+  color: rgba(238, 242, 255, 0.56);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const StatusBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(140, 156, 255, 0.14);
+  color: #b9c4ff;
+  font-size: 12px;
+  font-weight: 800;
+`;
+
+export const ActionGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  ${SecondaryButton},
+  ${DangerButton} {
+    min-width: 62px;
+    padding: 10px 12px;
+  }
+`;
+
+export const Pagination = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+`;
+
+export const PageGroup = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+export const PageDots = styled.span`
+  color: rgba(238, 242, 255, 0.54);
+  font-size: 13px;
+`;
+
+export const PageButton = styled.button<{ $active: boolean }>`
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: ${({ $active }) => ($active ? "#8b9cff" : "#171d2b")};
+  color: ${({ $active }) => ($active ? "#0f1428" : "#eef2ff")};
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
 `;

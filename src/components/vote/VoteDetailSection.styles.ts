@@ -129,6 +129,13 @@ export const Author = styled.span`
   font-weight: 700;
 `;
 
+export const Content = styled.p`
+  margin: 0 8px 18px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  line-height: 1.6;
+`;
+
 export const Underline = styled.div`
   height: 3px;
   margin: 0 0 20px;
@@ -157,6 +164,22 @@ export const OptionButton = styled.button<{ $selected: boolean }>`
   font-weight: 700;
   text-align: left;
   cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
+`;
+
+export const OptionText = styled.span`
+  min-width: 0;
+  flex: 1;
+`;
+
+export const OptionCount = styled.span`
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
 `;
 
 export const CheckCircle = styled.span<{ $selected: boolean }>`
@@ -192,6 +215,11 @@ export const SubmitButton = styled.button`
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
 `;
 
 export const FooterActions = styled.div`
@@ -223,6 +251,11 @@ export const ActionButton = styled.button`
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
 `;
 
 export const CompletedMessage = styled.div`
@@ -268,4 +301,14 @@ export const ParticipantArrow = styled.span`
   border-top: 2px solid #ffffff;
   border-right: 2px solid #ffffff;
   transform: rotate(45deg);
+`;
+
+export const StateMessage = styled.div`
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  font-weight: 800;
 `;

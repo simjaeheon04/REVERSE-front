@@ -1,6 +1,6 @@
 ﻿import { AxiosError } from "axios";
 import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import downloadIcon from "../../assets/icons/download.png";
 import heartIcon from "../../assets/icons/Heart.png";
 import uploadIcon from "../../assets/icons/upload.png";
@@ -10,6 +10,7 @@ import {
   createBoardReply,
   deleteBoardComment,
   getBoardComments,
+  getMultiBoardPosts,
   getBoardPostDetail,
   toggleBoardLike,
   updateBoardComment,
@@ -19,9 +20,15 @@ import {
 import { useAuthStore } from "../../stores/authStore";
 import * as S from "./BoardDetailPage.styles";
 
+type BoardDetailLocationState = {
+  boardPostFallback?: BoardPostDetail;
+};
+
 export default function BoardDetailPage() {
   const navigate = useNavigate();
   const { postId } = useParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const currentUserId = useAuthStore((state) => state.userId);
   const [post, setPost] = useState<BoardPostDetail | null>(null);
   const [comments, setComments] = useState<BoardComment[]>([]);
@@ -46,6 +53,50 @@ export default function BoardDetailPage() {
     return parsed;
   }, [postId]);
 
+  const boardIdParam = searchParams.get("boardId");
+  const fallbackPost = (location.state as BoardDetailLocationState | null)?.boardPostFallback;
+
+  const loadFallbackPost = useCallback(async () => {
+    if (parsedPostId === null) {
+      return null;
+    }
+
+    if (fallbackPost?.id === parsedPostId) {
+      return fallbackPost;
+    }
+
+    const parsedBoardId = boardIdParam ? Number(boardIdParam) : NaN;
+    if (!Number.isFinite(parsedBoardId)) {
+      return null;
+    }
+
+    const result = await getMultiBoardPosts(parsedBoardId, { page: 0 });
+    const matchedPost = result.content.find(
+      (item) => item.postId === parsedPostId || item.id === parsedPostId
+    );
+
+    if (!matchedPost) {
+      return null;
+    }
+
+    return {
+      id: matchedPost.postId || matchedPost.id,
+      title: matchedPost.title,
+      content: matchedPost.content ?? "",
+      userId:
+        matchedPost.author ??
+        matchedPost.authorName ??
+        matchedPost.writerName ??
+        matchedPost.nickname ??
+        matchedPost.userId,
+      createdAt: matchedPost.createdAt,
+      modifiedAt: null,
+      commentCount: matchedPost.commentCount,
+      likeCount: matchedPost.likeCount,
+      imageUrls: matchedPost.imageUrls,
+    } satisfies BoardPostDetail;
+  }, [boardIdParam, fallbackPost, parsedPostId]);
+
   const loadPost = useCallback(async () => {
     if (parsedPostId === null) {
       setPost(null);
@@ -59,17 +110,25 @@ export default function BoardDetailPage() {
       const result = await getBoardPostDetail(parsedPostId);
       setPost(result);
     } catch (error) {
-      setPost(null);
+      const fallback = await loadFallbackPost();
+
+      if (fallback) {
+        setPost(fallback);
+        setErrorMessage("");
+        return;
+      }
 
       if (error instanceof AxiosError && error.response?.status === 404) {
+        setPost(null);
         setErrorMessage("해당 게시글을 찾을 수 없습니다.");
       } else {
+        setPost(null);
         setErrorMessage("게시글 상세 정보를 불러오지 못했습니다.");
       }
     } finally {
       setIsLoading(false);
     }
-  }, [parsedPostId]);
+  }, [loadFallbackPost, parsedPostId]);
 
   const loadComments = useCallback(async () => {
     if (parsedPostId === null) {

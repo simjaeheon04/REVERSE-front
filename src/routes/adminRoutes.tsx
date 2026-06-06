@@ -1,9 +1,11 @@
 import AdminPage from "../pages/admin/AdminPage";
+import BoardAdminPage from "../pages/boardAdmin/BoardAdminPage";
 import CalendarManagePage from "../pages/calendarManage/CalendarManagePage";
 import ClubIntroManagePage from "../pages/clubIntroManage/ClubIntroManagePage";
 import NoticeManagePage from "../pages/noticeManage/NoticeManagePage";
 import OfficerManagePage from "../pages/officerManage/OfficerManagePage";
 import ProjectManagePage from "../pages/projectManage/ProjectManagePage";
+import ProjectMonitorPage from "../pages/projectMonitor/ProjectMonitorPage";
 import RecruitApplicationManagePage from "../pages/recruitApplicationManage/RecruitApplicationManagePage";
 import RecruitManagePage from "../pages/recruitManage/RecruitManagePage";
 import TermsManagePage from "../pages/termsManage/TermsManagePage";
@@ -51,6 +53,14 @@ export const adminRoutes = [
     ),
   },
   {
+    path: "/admin/project-monitoring",
+    element: (
+      <AdminRouteGuard>
+        <ProjectMonitorPage />
+      </AdminRouteGuard>
+    ),
+  },
+  {
     path: "/admin/calendar",
     element: (
       <AdminRouteGuard>
@@ -63,6 +73,14 @@ export const adminRoutes = [
     element: (
       <AdminRouteGuard>
         <NoticeManagePage />
+      </AdminRouteGuard>
+    ),
+  },
+  {
+    path: "/admin/board",
+    element: (
+      <AdminRouteGuard>
+        <BoardAdminPage />
       </AdminRouteGuard>
     ),
   },

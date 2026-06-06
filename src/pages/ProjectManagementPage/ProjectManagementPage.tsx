@@ -1,4 +1,4 @@
-import { AxiosError } from "axios";
+﻿import { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import editIcon from "../../assets/icons/Edit.png";
@@ -9,7 +9,7 @@ import {
   getMyProjects,
   type ProjectListItem,
 } from "../../services/projectAPI";
-import * as S from "../PostManagementPage/PostManagementPage.styles";
+import * as S from "./ProjectManagementPage.styles";
 
 const getSafeText = (value: unknown, fallback: string) =>
   typeof value === "string" && value.trim() ? value : fallback;
@@ -32,7 +32,6 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 export default function ProjectManagementPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -44,13 +43,11 @@ export default function ProjectManagementPage() {
       setErrorMessage("");
       const result = await getMyProjects({ page: 0, size: 50 });
       setProjects(result.content);
-      setCurrentUserId(result.currentUserId);
     } catch (error) {
       console.error("[project/manage] load failed", error);
       setProjects([]);
-      setCurrentUserId(null);
       setErrorMessage(
-        getApiErrorMessage(error, "내 프로젝트 목록을 불러오지 못했습니다.")
+        getApiErrorMessage(error, "프로젝트 목록을 불러오지 못했습니다.")
       );
     } finally {
       setIsLoading(false);
@@ -100,15 +97,11 @@ export default function ProjectManagementPage() {
               </S.SummaryTextGroup>
             </S.SummaryItem>
 
-            <S.SummaryItem>
-              <S.SummaryTextGroup>
-                <S.SummaryValue>{currentUserId ? "MY" : "-"}</S.SummaryValue>
-                <S.SummaryLabel>{currentUserId ?? "로그인이 필요합니다"}</S.SummaryLabel>
-              </S.SummaryTextGroup>
-            </S.SummaryItem>
-
             <S.SummaryAction>
-              <S.WriteActionButton type="button" onClick={() => navigate("/project/write")}>
+              <S.WriteActionButton
+                type="button"
+                onClick={() => navigate("/project/write")}
+              >
                 <S.WriteActionIcon src={editIcon} alt="" aria-hidden="true" />
                 프로젝트 글 작성하기
               </S.WriteActionButton>
@@ -116,12 +109,16 @@ export default function ProjectManagementPage() {
           </S.SummaryBar>
 
           <S.SectionHeader>
-            <S.Caret>⌄</S.Caret>
+            <S.Caret>▾</S.Caret>
             <span>내 프로젝트</span>
           </S.SectionHeader>
 
-          {isLoading ? <S.EmptyPanel>내 프로젝트를 불러오는 중입니다.</S.EmptyPanel> : null}
-          {!isLoading && errorMessage ? <S.EmptyPanel>{errorMessage}</S.EmptyPanel> : null}
+          {isLoading ? (
+            <S.EmptyPanel>내 프로젝트를 불러오는 중입니다.</S.EmptyPanel>
+          ) : null}
+          {!isLoading && errorMessage ? (
+            <S.EmptyPanel>{errorMessage}</S.EmptyPanel>
+          ) : null}
           {!isLoading && !errorMessage && projects.length === 0 ? (
             <S.EmptyPanel>아직 작성한 프로젝트 모집글이 없습니다.</S.EmptyPanel>
           ) : null}
@@ -130,50 +127,28 @@ export default function ProjectManagementPage() {
             <S.List>
               {projects.map((project) => (
                 <S.Card key={project.projectId}>
-                  <S.CardTop>
-                    <S.CardInfo>
-                      <S.CardTitleRow>
-                        <S.CardTitle>
-                          {getSafeText(project.projectName, "제목 없음")}
-                        </S.CardTitle>
-                        <S.CategoryChip>{project.status || "ACTIVE"}</S.CategoryChip>
-                      </S.CardTitleRow>
-                      <S.AuthorRow>
-                        <S.AuthorAvatar />
-                        <S.AuthorTextGroup>
-                          <S.AuthorName>
-                            {getSafeText(project.leaderName || project.leaderId, "팀장 정보 없음")}
-                          </S.AuthorName>
-                          <S.DateText>
-                            {project.schedules.length
-                              ? project.schedules
-                                  .map((schedule) => `${schedule.dayOfWeek} ${schedule.meetTime}`)
-                                  .join(", ")
-                              : "일정 없음"}
-                          </S.DateText>
-                        </S.AuthorTextGroup>
-                      </S.AuthorRow>
-                    </S.CardInfo>
+                  <S.CardTitle>
+                    {getSafeText(project.projectName, "제목 없음")}
+                  </S.CardTitle>
 
-                    <S.CardActions>
-                      <S.SecondaryButton
-                        type="button"
-                        onClick={() =>
-                          navigate(
-                            `/project/write?mode=edit&projectId=${project.projectId}`
-                          )
-                        }
-                      >
-                        수정
-                      </S.SecondaryButton>
-                      <S.SecondaryButton
-                        type="button"
-                        onClick={() => setDeleteTarget(project)}
-                      >
-                        삭제
-                      </S.SecondaryButton>
-                    </S.CardActions>
-                  </S.CardTop>
+                  <S.CardActions>
+                    <S.SecondaryButton
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          `/project/write?mode=edit&projectId=${project.projectId}`
+                        )
+                      }
+                    >
+                      수정
+                    </S.SecondaryButton>
+                    <S.SecondaryButton
+                      type="button"
+                      onClick={() => setDeleteTarget(project)}
+                    >
+                      삭제
+                    </S.SecondaryButton>
+                  </S.CardActions>
                 </S.Card>
               ))}
             </S.List>

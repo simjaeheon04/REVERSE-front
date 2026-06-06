@@ -83,13 +83,15 @@ export const ResultList = styled.div`
 export const ResultRow = styled.div`
   min-height: 74px;
   display: grid;
-  grid-template-columns: 86px 70px minmax(0, 1fr);
+  grid-template-columns: 160px 70px minmax(0, 1fr);
   align-items: center;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.12);
 
   @media (max-width: 720px) {
-    grid-template-columns: 74px 58px minmax(0, 1fr);
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 16px;
   }
 `;
 
@@ -98,7 +100,8 @@ export const OptionPill = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 62px;
+  max-width: 132px;
+  min-width: 104px;
   height: 34px;
   padding: 0 12px;
   border-radius: 17px;
@@ -106,6 +109,9 @@ export const OptionPill = styled.span`
   color: #ffffff;
   font-size: 14px;
   font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   box-sizing: border-box;
 `;
 
@@ -126,6 +132,33 @@ export const Members = styled.div`
   flex-wrap: wrap;
   gap: 28px;
   padding: 14px 34px;
+`;
+
+export const ResultBarTrack = styled.div`
+  position: relative;
+  height: 18px;
+  margin: 0 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+`;
+
+export const ResultBar = styled.div<{ $percent: number }>`
+  width: ${({ $percent }) => `${$percent}%`};
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0.58));
+`;
+
+export const PercentText = styled.span`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
 `;
 
 export const EmptyText = styled.span`
@@ -162,4 +195,14 @@ export const Avatar = styled.span<{ $tone: string }>`
   font-size: 11px;
   font-weight: 900;
   box-sizing: border-box;
+`;
+
+export const StateMessage = styled.div`
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  font-weight: 800;
 `;

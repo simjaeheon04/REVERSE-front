@@ -23,6 +23,12 @@ const adminMenus = [
     path: "/admin/project",
   },
   {
+    title: "프로젝트 운영 관리",
+    description:
+      "전체 프로젝트 모집글을 조회하고 관리자 권한으로 강제 종료 또는 삭제를 처리합니다.",
+    path: "/admin/project-monitoring",
+  },
+  {
     title: "캘린더 관리",
     description: "일정 카테고리와 실제 일정을 등록, 조회, 수정, 삭제합니다.",
     path: "/admin/calendar",
@@ -31,6 +37,12 @@ const adminMenus = [
     title: "공지사항 관리",
     description: "공지사항 목록을 확인하고 공지를 등록, 수정, 삭제합니다.",
     path: "/admin/notice",
+  },
+  {
+    title: "게시판 관리자",
+    description:
+      "게시판을 추가/삭제하고 게시글을 관리자 권한으로 강제 삭제합니다.",
+    path: "/admin/board",
   },
   {
     title: "모집공고 관리",

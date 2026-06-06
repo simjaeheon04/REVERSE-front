@@ -307,6 +307,49 @@ export const deleteProjectPost = async (
   return response.data;
 };
 
+export const getAdminProjects = async (
+  params: ProjectListParams = {}
+): Promise<ProjectListPage> => {
+  const response = await axiosInstance.get<ApiProjectPage>("/api/admin/projects", {
+    params: {
+      page: params.page ?? 0,
+      size: params.size ?? 10,
+    },
+  });
+
+  const payload = response.data;
+
+  return {
+    content: Array.isArray(payload.content) ? payload.content.map(normalizeProject) : [],
+    pageNumber: payload.pageable?.pageNumber ?? params.page ?? 0,
+    pageSize: payload.pageable?.pageSize ?? params.size ?? 10,
+    totalPages: payload.totalPages ?? 0,
+    totalElements: payload.totalElements ?? 0,
+    last: Boolean(payload.last),
+  };
+};
+
+export const closeAdminProject = async (
+  projectId: number | string
+): Promise<ProjectMutationResponse> => {
+  const response = await axiosInstance.patch<ProjectMutationResponse>(
+    `/api/admin/projects/${projectId}/close`,
+    {}
+  );
+
+  return response.data;
+};
+
+export const deleteAdminProject = async (
+  projectId: number | string
+): Promise<ProjectMutationResponse> => {
+  const response = await axiosInstance.delete<ProjectMutationResponse>(
+    `/api/admin/projects/${projectId}`
+  );
+
+  return response.data;
+};
+
 export interface ClubProject {
   projectId: number;
   projectName: string;

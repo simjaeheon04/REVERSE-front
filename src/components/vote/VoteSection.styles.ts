@@ -90,6 +90,13 @@ export const VoteInfo = styled.div`
   min-width: 0;
 `;
 
+export const VoteTextGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+`;
+
 export const VoteIcon = styled.span`
   position: relative;
   width: 22px;
@@ -119,6 +126,13 @@ export const VoteTitle = styled.h2`
   font-size: 15px;
   font-weight: 800;
   line-height: 1.3;
+`;
+
+export const VoteMeta = styled.p`
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 600;
 `;
 
 export const StatusBadge = styled.span<{ $status: "active" | "closed" }>`
@@ -158,6 +172,17 @@ export const PageNavButton = styled.button`
   color: rgba(255, 255, 255, 0.52);
   font-size: 10px;
   cursor: pointer;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+`;
+
+export const PageGroup = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
 `;
 
 export const PageNumberButton = styled.button<{ $active: boolean }>`
@@ -175,6 +200,19 @@ export const PageNumberButton = styled.button<{ $active: boolean }>`
 export const PageDots = styled.span`
   color: rgba(255, 255, 255, 0.56);
   font-size: 10px;
+`;
+
+export const EmptyState = styled.div`
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  border-radius: 4px;
+  background: rgba(122, 126, 138, 0.16);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 14px;
+  font-weight: 800;
 `;
 
 export const WriteButton = styled.button`
