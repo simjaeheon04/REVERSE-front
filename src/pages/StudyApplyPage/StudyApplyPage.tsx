@@ -1,9 +1,8 @@
 import { AxiosError } from "axios";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
-import { applyStudy } from "../../services/studyApi";
-import { getAllStudyPosts } from "../StudyPage/studyStorage";
+import { applyStudy, getStudyDetail, type StudyRecord } from "../../services/studyApi";
 import * as S from "./StudyApplyPage.styles";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -90,7 +89,7 @@ function StudyApplyInfo() {
   );
 }
 
-function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: string }) {
+function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: string }) {
   const navigate = useNavigate();
   const [weekday, setWeekday] = useState(WEEKDAYS[0]);
   const [isWeekdayOpen, setIsWeekdayOpen] = useState(false);
@@ -211,10 +210,28 @@ function StudyApplyForm({ studyId, studyName }: { studyId: number; studyName: st
 export default function StudyApplyPage() {
   const navigate = useNavigate();
   const { studyId } = useParams();
-  const study = useMemo(
-    () => getAllStudyPosts().find((item) => String(item.id) === studyId),
-    [studyId]
-  );
+  const [study, setStudy] = useState<StudyRecord | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!studyId) {
+      return;
+    }
+
+    const loadStudy = async () => {
+      try {
+        setIsLoading(true);
+        const result = await getStudyDetail(studyId);
+        setStudy(result);
+      } catch {
+        setStudy(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadStudy();
+  }, [studyId]);
 
   if (!study) {
     return (
@@ -222,7 +239,7 @@ export default function StudyApplyPage() {
         <S.ApplySection>
           <S.Content>
             <S.NotFoundBox>
-              <p>스터디를 찾을 수 없습니다.</p>
+              <p>{isLoading ? "스터디 정보를 불러오는 중입니다." : "스터디를 찾을 수 없습니다."}</p>
               <S.BackButton type="button" onClick={() => navigate("/study")}>
                 스터디 목록으로 돌아가기
               </S.BackButton>
@@ -242,7 +259,7 @@ export default function StudyApplyPage() {
           <StudyApplyInfo />
           <S.FormColumn>
             <S.VerticalDivider />
-            <StudyApplyForm studyId={study.id} studyName={study.title} />
+            <StudyApplyForm studyId={String(study.studyId)} studyName={study.studyName} />
           </S.FormColumn>
         </S.Content>
         <S.DeviceImage alt="REVERSE iMac" />

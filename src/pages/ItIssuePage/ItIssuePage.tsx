@@ -69,7 +69,7 @@ export default function ItIssuePage() {
                         type="button"
                         onClick={() => handleOpenSource(issue.sourceUrl)}
                       >
-                        {issue.sourceUrl ? "Apply Now" : issue.status ?? "open"}
+                        {issue.sourceUrl ? "Apply Now" : "No Link"}
                         <span aria-hidden="true">›</span>
                       </S.LinkButton>
                     </S.CardFooter>

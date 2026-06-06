@@ -1,39 +1,44 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import studyImage from "../../assets/images/project-study.jpg";
 import Footer from "../../components/common/footer/Footer";
-import { STUDY_SEMESTERS, type StudyPost } from "./studyDummyData";
-import { getAllStudyPosts } from "./studyStorage";
+import { getStudies, type StudyRecord } from "../../services/studyApi";
+import { STUDY_SEMESTERS } from "./studyDummyData";
 import * as S from "./StudyPage.styles";
-
-const PAGE_SIZE = 6;
 
 export default function StudyPage() {
   const navigate = useNavigate();
-  const [studies] = useState<StudyPost[]>(() => getAllStudyPosts());
+  const [studies, setStudies] = useState<StudyRecord[]>([]);
   const [semester, setSemester] = useState(STUDY_SEMESTERS[0]);
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [isSemesterOpen, setIsSemesterOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const filteredStudies = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase();
+  useEffect(() => {
+    const loadStudies = async () => {
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+        const result = await getStudies({
+          keyword: keyword.trim() || undefined,
+          page: currentPage - 1,
+        });
+        setStudies(result.content ?? []);
+        setTotalPages(Math.max(1, result.totalPages || 1));
+      } catch {
+        setStudies([]);
+        setTotalPages(1);
+        setErrorMessage("스터디 목록을 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return studies.filter((study) => {
-      const matchesSemester = study.semester === semester;
-      const matchesKeyword =
-        !normalizedKeyword ||
-        study.title.toLowerCase().includes(normalizedKeyword) ||
-        study.summary.toLowerCase().includes(normalizedKeyword);
-
-      return matchesSemester && matchesKeyword;
-    });
-  }, [keyword, semester, studies]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredStudies.length / PAGE_SIZE));
-  const pagedStudies = filteredStudies.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
+    void loadStudies();
+  }, [currentPage, keyword]);
 
   const handleSemesterChange = (value: string) => {
     setSemester(value);
@@ -95,19 +100,21 @@ export default function StudyPage() {
           <S.Divider />
 
           <S.ContentArea>
-            {pagedStudies.length > 0 ? (
+            {studies.length > 0 ? (
               <>
                 <S.StudyGrid>
-                  {pagedStudies.map((study) => (
+                  {studies.map((study) => (
                     <S.StudyCard
-                      key={study.id}
+                      key={study.studyId}
                       type="button"
-                      onClick={() => navigate(`/study/${study.id}`)}
+                      onClick={() => navigate(`/study/${study.studyId}`)}
                     >
-                      <S.StudyImage src={study.imageUrl} alt="" />
+                      <S.StudyImage src={studyImage} alt="" />
                       <S.StudyInfo>
-                        <S.StudyTitle>{study.title}</S.StudyTitle>
-                        <S.StudySummary>{study.summary}</S.StudySummary>
+                        <S.StudyTitle>{study.studyName}</S.StudyTitle>
+                        <S.StudySummary>
+                          {study.description || study.goal || "스터디 소개가 없습니다."}
+                        </S.StudySummary>
                       </S.StudyInfo>
                     </S.StudyCard>
                   ))}
@@ -131,7 +138,11 @@ export default function StudyPage() {
             ) : (
               <S.EmptyState>
                 <S.EmptyIcon aria-hidden="true">!</S.EmptyIcon>
-                <S.EmptyText>검색 결과가 없습니다.</S.EmptyText>
+                <S.EmptyText>
+                  {isLoading
+                    ? "스터디 목록을 불러오는 중입니다."
+                    : errorMessage || "검색 결과가 없습니다."}
+                </S.EmptyText>
               </S.EmptyState>
             )}
 

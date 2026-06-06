@@ -187,8 +187,8 @@ export default function MyPageManagePage() {
           <S.Card>
             <S.CardTitle>프로필 사진 수정</S.CardTitle>
             <S.CardText>
-              <code>POST /api/mypage/photo</code>로 로그인한 사용자의 프로필 사진을
-              업로드합니다.
+              <code>POST /api/r2/upload</code>로 이미지를 업로드한 뒤{" "}
+              <code>POST /api/mypage/photo</code>에 메타데이터를 저장합니다.
             </S.CardText>
 
             <S.Field>

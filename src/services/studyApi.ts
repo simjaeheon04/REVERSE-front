@@ -17,28 +17,65 @@ const unwrapApiData = <T>(payload: ApiResponse<T>): T => {
 };
 
 export type StudyCreatePayload = {
-  title: string;
-  content: string;
-  maxMembers: number;
+  studyName: string;
+  leaderId: string;
+  leaderName: string;
+  language?: string;
+  techStack?: string;
+  description?: string;
+  goal?: string;
+  maxMembers?: number;
+  location?: string;
+  notice?: string;
+  status?: "PENDING" | "ACTIVE" | "CLOSED";
+  schedules?: Array<{
+    dayOfWeek: number;
+    meetTime: string;
+  }>;
+  curriculums?: Array<{
+    week: number;
+    contents: string;
+  }>;
 };
 
-export type StudyPostCreatePayload = {
-  title: string;
-  content: string;
-  files?: File[];
+export type StudyRecord = {
+  studyId: number;
+  studyName: string;
+  leaderId: string;
+  leaderName: string;
+  language?: string;
+  techStack?: string;
+  description?: string;
+  goal?: string;
+  maxMembers?: number;
+  memberCount?: number;
+  location?: string;
+  notice?: string;
+  status?: "PENDING" | "ACTIVE" | "CLOSED" | string;
+  createdBy?: string;
+  createdDate?: string;
+  modifiedDate?: string;
+  schedules?: Array<{
+    dayOfWeek: number;
+    meetTime: string;
+  }>;
+  curriculums?: Array<{
+    week: number;
+    contents: string;
+  }>;
 };
 
-export type StudyPostUpdatePayload = {
-  title?: string;
-  content?: string;
+export type StudyPageResponse = {
+  content: StudyRecord[];
+  totalPages: number;
+  totalElements: number;
+  number: number;
 };
 
-export type StudyMemberStatusPayload = {
-  status: "approved" | "rejected";
-};
-
-export type StudyAdminReasonPayload = {
-  reason?: string;
+export type StudyListParams = {
+  keyword?: string;
+  status?: "PENDING" | "ACTIVE" | "CLOSED";
+  page?: number;
 };
 
 export const createStudyRecruitment = async (
@@ -53,110 +90,55 @@ export const createStudyRecruitment = async (
   return unwrapApiData(response.data);
 };
 
-export const deleteStudyRecruitment = async (studyId: number | string) => {
-  const response = await axiosInstance.delete(`/api/studies/${studyId}`);
-
-  return response.data;
-};
-
-export const createStudyPost = async (
-  studyId: number | string,
-  payload: StudyPostCreatePayload
-): Promise<unknown> => {
-  const formData = new FormData();
-  formData.append("title", payload.title);
-  formData.append("content", payload.content);
-  payload.files?.forEach((file) => formData.append("files", file));
-
-  const response = await axiosInstance.post<ApiResponse<unknown>>(
-    `/api/studies/${studyId}/posts`,
-    formData
-  );
-
-  return unwrapApiData(response.data);
-};
-
-export const updateStudyPost = async (
-  studyId: number | string,
-  postId: number | string,
-  payload: StudyPostUpdatePayload
-): Promise<unknown> => {
-  const response = await axiosInstance.patch<ApiResponse<unknown>>(
-    `/api/studies/${studyId}/posts/${postId}`,
-    payload,
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  return unwrapApiData(response.data);
-};
-
-export const deleteStudyPost = async (
-  studyId: number | string,
-  postId: number | string
-) => {
-  const response = await axiosInstance.delete(`/api/studies/${studyId}/posts/${postId}`);
-
-  return response.data;
-};
-
-export const applyStudy = async (studyId: number | string): Promise<unknown> => {
-  const response = await axiosInstance.post<ApiResponse<unknown>>(
-    `/api/studies/${studyId}/apply`
-  );
-
-  return unwrapApiData(response.data);
-};
-
-export const updateStudyMemberStatus = async (
-  studyId: number | string,
-  userId: number | string,
-  payload: StudyMemberStatusPayload
-): Promise<unknown> => {
-  const response = await axiosInstance.patch<ApiResponse<unknown>>(
-    `/api/studies/${studyId}/members/${userId}`,
-    payload,
-    {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  return unwrapApiData(response.data);
-};
-
-export const forceEndStudy = async (
-  studyId: number | string,
-  payload: StudyAdminReasonPayload
-) => {
-  const response = await axiosInstance.delete(`/api/admin/studies/${studyId}`, {
-    data: payload,
-    headers: {
-      "Content-Type": "application/json",
+export const getStudies = async (
+  params: StudyListParams = {}
+): Promise<StudyPageResponse> => {
+  const response = await axiosInstance.get<StudyPageResponse>("/api/studies", {
+    params: {
+      keyword: params.keyword || undefined,
+      status: params.status,
+      page: params.page,
     },
   });
 
   return response.data;
 };
 
-export const kickStudyMember = async (
+export const getStudyDetail = async (
+  studyId: number | string
+): Promise<StudyRecord> => {
+  const response = await axiosInstance.get<ApiResponse<StudyRecord>>(
+    `/api/studies/${studyId}`
+  );
+
+  return unwrapApiData(response.data);
+};
+
+export const updateStudyRecruitment = async (
   studyId: number | string,
-  memberId: number | string,
-  payload: StudyAdminReasonPayload
-) => {
-  const response = await axiosInstance.delete(
-    `/api/admin/studies/${studyId}/members/${memberId}`,
+  payload: Partial<StudyCreatePayload>
+): Promise<unknown> => {
+  const response = await axiosInstance.put<ApiResponse<unknown>>(
+    `/api/studies/${studyId}`,
+    payload,
     {
-      data: payload,
       headers: {
         "Content-Type": "application/json",
       },
     }
   );
 
+  return unwrapApiData(response.data);
+};
+
+export const deleteStudyRecruitment = async (studyId: number | string) => {
+  const response = await axiosInstance.delete(`/api/studies/${studyId}`);
+
   return response.data;
+};
+
+export const applyStudy = async (studyId: number | string): Promise<unknown> => {
+  void studyId;
+
+  throw new Error("최신 API 명세에 스터디 신청 엔드포인트가 없습니다.");
 };

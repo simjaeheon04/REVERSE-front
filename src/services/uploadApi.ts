@@ -1,6 +1,6 @@
 import { axiosInstance } from "./axiosInstance";
 
-export type R2Folder = "club" | "project" | "executive" | "board";
+export type R2Folder = "club" | "project" | "executive" | "board" | "profile";
 
 export const uploadImageToR2 = async (
   file: File,

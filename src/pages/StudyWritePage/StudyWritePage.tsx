@@ -1,14 +1,29 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import studyImage from "../../assets/images/project-study.jpg";
 import Footer from "../../components/common/footer/Footer";
 import { createStudyRecruitment } from "../../services/studyApi";
-import { createStudyPost as saveCreatedStudyPost } from "../StudyPage/studyStorage";
-import { STUDY_SEMESTERS, type StudyPost } from "../StudyPage/studyDummyData";
+import { useAuthStore } from "../../stores/authStore";
+import { STUDY_SEMESTERS } from "../StudyPage/studyDummyData";
 import * as S from "./StudyWritePage.styles";
 
 const WEEKDAYS = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"];
 const TIMES = ["오후 5시", "오후 6시", "오후 7시", "오후 8시", "오후 9시"];
+const DAY_OF_WEEK: Record<string, number> = {
+  일요일: 0,
+  월요일: 1,
+  화요일: 2,
+  수요일: 3,
+  목요일: 4,
+  금요일: 5,
+  토요일: 6,
+};
+const MEET_TIME: Record<string, string> = {
+  "오후 5시": "17:00",
+  "오후 6시": "18:00",
+  "오후 7시": "19:00",
+  "오후 8시": "20:00",
+  "오후 9시": "21:00",
+};
 
 const INITIAL_CURRICULUM = [
   "1주차 내용을 입력하세요.",
@@ -20,50 +35,10 @@ const INITIAL_CURRICULUM = [
   "7주차 내용을 입력하세요.",
 ];
 
-const getStudyIdFromResponse = (response: unknown) => {
-  if (!response || typeof response !== "object") {
-    return Date.now();
-  }
-
-  const record = response as Record<string, unknown>;
-
-  if (typeof record.studyId === "number") {
-    return record.studyId;
-  }
-
-  if (typeof record.id === "number") {
-    return record.id;
-  }
-
-  return Date.now();
-};
-
-const buildStudyContent = (data: {
-  introduction: string;
-  goal: string;
-  language: string;
-  stack: string;
-  schedule: string;
-  place: string;
-  notes: string;
-  curriculum: string[];
-}) =>
-  [
-    data.introduction,
-    `활동 목표: ${data.goal}`,
-    `사용 언어: ${data.language}`,
-    `기술 스택: ${data.stack}`,
-    `진행 요일 및 시간: ${data.schedule}`,
-    `진행 장소 및 방법: ${data.place}`,
-    `유의사항: ${data.notes}`,
-    "curriculum",
-    ...data.curriculum.map((item, index) => `${index + 1}주차: ${item}`),
-  ]
-    .filter(Boolean)
-    .join("\n");
-
 export default function StudyWritePage() {
   const navigate = useNavigate();
+  const userId = useAuthStore((state) => state.userId);
+  const userName = useAuthStore((state) => state.userName);
   const [semester, setSemester] = useState(STUDY_SEMESTERS[0]);
   const [title, setTitle] = useState("");
   const [leader, setLeader] = useState("");
@@ -98,52 +73,38 @@ export default function StudyWritePage() {
       return;
     }
 
+    if (!userId) {
+      setErrorMessage("로그인 후 스터디를 작성할 수 있습니다.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setErrorMessage("");
 
-      const schedule = `${weekday} ${time}`;
-      const response = await createStudyRecruitment({
-        title: title.trim(),
-        content: buildStudyContent({
-          introduction: introduction.trim(),
-          goal: goal.trim(),
-          language: language.trim(),
-          stack: stack.trim(),
-          schedule,
-          place: place.trim(),
-          notes: notes.trim(),
-          curriculum,
-        }),
-        maxMembers: Number(memberCount) || 1,
-      });
-
-      const studyPost: StudyPost = {
-        id: getStudyIdFromResponse(response),
-        semester,
-        status: "모집중",
-        title: title.trim(),
-        summary: introduction.trim() || "새로 등록된 스터디입니다.",
-        imageUrl: studyImage,
-        leader: leader.trim(),
-        introduction: introduction.trim() || "활동 소개가 입력되지 않았습니다.",
-        goal: goal.trim() || "활동 목표가 입력되지 않았습니다.",
-        memberCount: Number(memberCount) || 1,
-        schedule,
-        place: place.trim() || "진행 장소 및 방법이 입력되지 않았습니다.",
-        notes: notes.trim() || "유의사항이 입력되지 않았습니다.",
-        language: language.trim() || "미정",
-        stack: stack
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-        curriculum: curriculum.map((item, index) => ({
-          week: `${index + 1}주차`,
-          title: item.trim() || `${index + 1}주차 내용을 입력하세요.`,
+      await createStudyRecruitment({
+        studyName: title.trim(),
+        leaderId: userId,
+        leaderName: leader.trim() || userName || userId,
+        language: language.trim() || undefined,
+        techStack: stack.trim() || undefined,
+        description: introduction.trim() || undefined,
+        goal: goal.trim() || undefined,
+        maxMembers: Number(memberCount) || undefined,
+        location: place.trim() || undefined,
+        notice: notes.trim() || undefined,
+        status: "ACTIVE",
+        schedules: [
+          {
+            dayOfWeek: DAY_OF_WEEK[weekday] ?? 1,
+            meetTime: MEET_TIME[time] ?? "18:00",
+          },
+        ],
+        curriculums: curriculum.map((item, index) => ({
+          week: index + 1,
+          contents: item.trim() || `${index + 1}주차 내용을 입력하세요.`,
         })),
-      };
-
-      saveCreatedStudyPost(studyPost);
+      });
       navigate("/study");
     } catch (error) {
       setErrorMessage(

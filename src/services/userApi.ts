@@ -1,4 +1,5 @@
 import { axiosInstance } from "./axiosInstance";
+import { uploadImageToR2 } from "./uploadApi";
 
 export type CurrentUserResponse = {
   userId: string;
@@ -48,6 +49,12 @@ export type MyPagePhotoResponse = {
   attachedSize?: number;
 };
 
+export type MyPagePhotoPayload = {
+  attachedName: string;
+  attachedUrl: string;
+  attachedSize?: number;
+};
+
 export const getMyPageProfile = async (
   targetUserId: string
 ): Promise<MyPageProfile> => {
@@ -77,13 +84,31 @@ export const updateMyPageIntroduce = async (
 export const updateMyPagePhoto = async (
   file: File
 ): Promise<MyPagePhotoResponse> => {
-  const formData = new FormData();
-  formData.append("file", file);
+  const attachedUrl = await uploadImageToR2(file, "profile");
+  const attachedName = decodeURIComponent(
+    attachedUrl.split("/").pop() || file.name
+  );
+  const payload: MyPagePhotoPayload = {
+    attachedName,
+    attachedUrl,
+    attachedSize: file.size,
+  };
 
   const response = await axiosInstance.post<ApiResponse<MyPagePhotoResponse>>(
     "/api/mypage/photo",
-    formData
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
   );
 
-  return unwrapApiData(response.data);
+  const result = unwrapApiData(response.data);
+
+  return {
+    attachedName: result?.attachedName ?? attachedName,
+    attachedUrl: result?.attachedUrl ?? attachedUrl,
+    attachedSize: result?.attachedSize ?? file.size,
+  };
 };
