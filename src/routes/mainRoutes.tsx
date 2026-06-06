@@ -3,6 +3,11 @@ import BoardWritePage from "../pages/BoardWritePage/BoardWritePage";
 import CalendarPage from "../pages/CalendarPage";
 import BoardPage from "../pages/BoardPage";
 import HomePage from "../pages/HomePage/HomePage";
+import ItIssuePage from "../pages/ItIssuePage/ItIssuePage";
+import MyPage from "../pages/MyPage/MyPage";
+import MyProjectManagePage from "../pages/MyActivityManagePage/MyProjectManagePage";
+import MyStudyManagePage from "../pages/MyActivityManagePage/MyStudyManagePage";
+import MyVoteManagePage from "../pages/MyActivityManagePage/MyVoteManagePage";
 import NoticePage from "../pages/NoticePage";
 import PostManagementPage from "../pages/PostManagementPage/PostManagementPage";
 import ProjectApplyCompletePage from "../pages/ProjectApplyCompletePage/ProjectApplyCompletePage";
@@ -14,11 +19,17 @@ import ProjectWritePage from "../pages/ProjectWritePage/ProjectWritePage";
 import RecruitApplyCompletePage from "../pages/RecruitApplyCompletePage/RecruitApplyCompletePage";
 import RecruitApplyPage from "../pages/RecruitApplyPage/RecruitApplyPage";
 import RecruitPage from "../pages/RecruitPage/RecruitPage";
+import StudyApplyCompletePage from "../pages/StudyApplyCompletePage/StudyApplyCompletePage";
+import StudyApplyPage from "../pages/StudyApplyPage/StudyApplyPage";
+import StudyDetailPage from "../pages/StudyDetailPage/StudyDetailPage";
+import StudyPage from "../pages/StudyPage/StudyPage";
+import StudyWritePage from "../pages/StudyWritePage/StudyWritePage";
 import VoteDetailPage from "../pages/VoteDetailPage";
 import VoteManagementPage from "../pages/VoteManagementPage/VoteManagementPage";
 import VotePage from "../pages/VotePage";
 import VoteStatusPage from "../pages/VoteStatusPage";
 import VoteWritePage from "../pages/VoteWritePage";
+import AuthRouteGuard from "./AuthRouteGuard";
 
 export const mainRoutes = [
   {
@@ -28,6 +39,10 @@ export const mainRoutes = [
   {
     path: "/notice",
     element: <NoticePage />,
+  },
+  {
+    path: "/it-issue",
+    element: <ItIssuePage />,
   },
   {
     path: "/project",
@@ -59,7 +74,11 @@ export const mainRoutes = [
   },
   {
     path: "/board/manage",
-    element: <PostManagementPage />,
+    element: (
+      <AuthRouteGuard>
+        <PostManagementPage />
+      </AuthRouteGuard>
+    ),
   },
   {
     path: "/board/write",
@@ -68,6 +87,58 @@ export const mainRoutes = [
   {
     path: "/recruit",
     element: <RecruitPage />,
+  },
+  {
+    path: "/study",
+    element: <StudyPage />,
+  },
+  {
+    path: "/mypage",
+    element: (
+      <AuthRouteGuard>
+        <MyPage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/mypage/votes",
+    element: (
+      <AuthRouteGuard>
+        <MyVoteManagePage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/mypage/projects",
+    element: (
+      <AuthRouteGuard>
+        <MyProjectManagePage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/mypage/studies",
+    element: (
+      <AuthRouteGuard>
+        <MyStudyManagePage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/study/write",
+    element: <StudyWritePage />,
+  },
+  {
+    path: "/study/:studyId",
+    element: <StudyDetailPage />,
+  },
+  {
+    path: "/study/:studyId/apply",
+    element: <StudyApplyPage />,
+  },
+  {
+    path: "/study/:studyId/apply/complete",
+    element: <StudyApplyCompletePage />,
   },
   {
     path: "/recruit/apply",

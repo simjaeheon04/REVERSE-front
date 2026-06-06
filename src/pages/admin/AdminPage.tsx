@@ -68,6 +68,23 @@ const adminMenus = [
       "투표 목록, 상세 결과 조회, 관리자 권한 수정과 삭제를 처리합니다.",
     path: "/admin/votes",
   },
+  {
+    title: "스터디 관리",
+    description:
+      "스터디 모집, 게시글 자료, 참여 신청과 멤버 처리 기능을 관리합니다.",
+    path: "/admin/study",
+  },
+  {
+    title: "마이페이지 관리",
+    description:
+      "회원 마이페이지 조회, 자기소개 수정, 프로필 사진 수정 API를 확인합니다.",
+    path: "/admin/mypage",
+  },
+  {
+    title: "IT 이슈 관리",
+    description: "IT 이슈 목록을 조회하고 생성, 수정, 삭제를 처리합니다.",
+    path: "/admin/it-issue",
+  },
 ];
 
 export default function AdminPage() {
