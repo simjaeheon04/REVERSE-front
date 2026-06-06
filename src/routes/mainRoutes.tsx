@@ -3,6 +3,7 @@ import BoardWritePage from "../pages/BoardWritePage/BoardWritePage";
 import CalendarPage from "../pages/CalendarPage";
 import BoardPage from "../pages/BoardPage";
 import HomePage from "../pages/HomePage/HomePage";
+import ItIssuePage from "../pages/ItIssuePage/ItIssuePage";
 import MyPage from "../pages/MyPage/MyPage";
 import MyProjectManagePage from "../pages/MyActivityManagePage/MyProjectManagePage";
 import MyStudyManagePage from "../pages/MyActivityManagePage/MyStudyManagePage";
@@ -31,6 +32,10 @@ export const mainRoutes = [
   {
     path: "/notice",
     element: <NoticePage />,
+  },
+  {
+    path: "/it-issue",
+    element: <ItIssuePage />,
   },
   {
     path: "/project",

@@ -51,6 +51,7 @@ export const headerMenus: HeaderMenuItem[] = [
         title: "정보",
         items: [
           { label: "공지사항", path: "/notice" },
+          { label: "IT 이슈", path: "/it-issue" },
           { label: "캘린더", path: "/calendar" },
         ],
       },
