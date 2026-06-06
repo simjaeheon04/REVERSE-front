@@ -11,9 +11,9 @@ import { useAuthStore } from "../../stores/authStore";
 import * as S from "./MyPage.styles";
 
 const activityItems = [
-  { label: "투표", icon: "□", path: "/mypage/votes" },
+  { label: "투표", icon: "□", path: "/vote/manage" },
   { label: "게시글", icon: "▤", path: "/board/manage" },
-  { label: "프로젝트", icon: "▱", path: "/mypage/projects" },
+  { label: "프로젝트", icon: "▱", path: "/project/manage" },
   { label: "스터디", icon: "▥", path: "/mypage/studies" },
 ];
 
