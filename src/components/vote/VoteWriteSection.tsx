@@ -20,6 +20,13 @@ const MONTHS = [
 ];
 const YEARS = [2026, 2027, 2028];
 const KOREAN_WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const ROLE_OPTIONS = [
+  { value: 1, label: "최고관리자 이상" },
+  { value: 2, label: "관리자 이상" },
+  { value: 3, label: "정회원 이상" },
+  { value: 4, label: "준회원 이상" },
+  { value: 5, label: "게스트 이상" },
+];
 
 const formatDate = (date: Date | null) => {
   if (!date) {
@@ -62,6 +69,9 @@ export default function VoteWriteSection() {
   const [content, setContent] = useState("");
   const [options, setOptions] = useState(["", ""]);
   const [allowMultiple, setAllowMultiple] = useState(false);
+  const [isSecret, setIsSecret] = useState(false);
+  const [participantRole, setParticipantRole] = useState(3);
+  const [resultViewRole, setResultViewRole] = useState(3);
   const [selectedDate, setSelectedDate] = useState<Date | null>(today);
   const [deadlineTime, setDeadlineTime] = useState("23:59");
   const [calendarMonth, setCalendarMonth] = useState(today.getMonth());
@@ -157,6 +167,9 @@ export default function VoteWriteSection() {
         content: content.trim() || undefined,
         deadline: toDeadlineDateTime(selectedDate, deadlineTime),
         isMultiple: allowMultiple,
+        isSecret,
+        participantRole,
+        resultViewRole,
         options: cleanOptions,
       });
 
@@ -233,6 +246,43 @@ export default function VoteWriteSection() {
                 />
                 복수 선택 허용
               </S.CheckLabel>
+              <S.CheckLabel>
+                <input
+                  type="checkbox"
+                  checked={isSecret}
+                  onChange={(event) => setIsSecret(event.target.checked)}
+                />
+                비밀투표
+              </S.CheckLabel>
+              <S.RoleGrid>
+                <S.SelectLabel>
+                  참가 가능 권한
+                  <S.RoleSelect
+                    value={participantRole}
+                    onChange={(event) => setParticipantRole(Number(event.target.value))}
+                  >
+                    {ROLE_OPTIONS.map((role) => (
+                      <option key={role.value} value={role.value}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </S.RoleSelect>
+                </S.SelectLabel>
+                <S.SelectLabel>
+                  결과 조회 권한
+                  <S.RoleSelect
+                    value={resultViewRole}
+                    onChange={(event) => setResultViewRole(Number(event.target.value))}
+                    disabled={isSecret}
+                  >
+                    {ROLE_OPTIONS.map((role) => (
+                      <option key={role.value} value={role.value}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </S.RoleSelect>
+                </S.SelectLabel>
+              </S.RoleGrid>
             </S.CheckGroup>
           </S.PanelInner>
         </S.Panel>

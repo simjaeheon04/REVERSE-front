@@ -205,6 +205,43 @@ export const CheckLabel = styled.label`
   }
 `;
 
+export const RoleGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 6px;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const SelectLabel = styled.label`
+  display: grid;
+  gap: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+`;
+
+export const RoleSelect = styled.select`
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 6px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.82);
+  color: #252832;
+  font-size: 13px;
+  font-weight: 800;
+
+  &:disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+  }
+`;
+
 export const DatePanel = styled.section`
   position: relative;
   margin-top: 26px;

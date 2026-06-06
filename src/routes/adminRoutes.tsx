@@ -9,6 +9,8 @@ import ProjectMonitorPage from "../pages/projectMonitor/ProjectMonitorPage";
 import RecruitApplicationManagePage from "../pages/recruitApplicationManage/RecruitApplicationManagePage";
 import RecruitManagePage from "../pages/recruitManage/RecruitManagePage";
 import TermsManagePage from "../pages/termsManage/TermsManagePage";
+import UserAdminPage from "../pages/userAdmin/UserAdminPage";
+import VoteAdminPage from "../pages/voteAdmin/VoteAdminPage";
 import AdminRouteGuard from "./AdminRouteGuard";
 
 export const adminRoutes = [
@@ -97,6 +99,22 @@ export const adminRoutes = [
     element: (
       <AdminRouteGuard>
         <RecruitApplicationManagePage />
+      </AdminRouteGuard>
+    ),
+  },
+  {
+    path: "/admin/users",
+    element: (
+      <AdminRouteGuard>
+        <UserAdminPage />
+      </AdminRouteGuard>
+    ),
+  },
+  {
+    path: "/admin/votes",
+    element: (
+      <AdminRouteGuard>
+        <VoteAdminPage />
       </AdminRouteGuard>
     ),
   },

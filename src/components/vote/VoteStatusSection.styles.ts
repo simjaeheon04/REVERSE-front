@@ -77,20 +77,19 @@ export const Underline = styled.div`
 export const ResultList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 `;
 
 export const ResultRow = styled.div`
-  min-height: 74px;
+  min-height: 66px;
   display: grid;
-  grid-template-columns: 160px 70px minmax(0, 1fr);
+  grid-template-columns: 132px 66px minmax(0, 1fr);
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.11);
 
   @media (max-width: 720px) {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    grid-template-columns: 108px 56px minmax(0, 1fr);
     padding: 16px;
   }
 `;
@@ -100,11 +99,11 @@ export const OptionPill = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  max-width: 132px;
-  min-width: 104px;
-  height: 34px;
+  max-width: 104px;
+  min-width: 70px;
+  height: 30px;
   padding: 0 12px;
-  border-radius: 17px;
+  border-radius: 12px;
   background: rgba(234, 234, 240, 0.72);
   color: #ffffff;
   font-size: 14px;
@@ -130,35 +129,14 @@ export const Members = styled.div`
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 28px;
-  padding: 14px 34px;
-`;
+  gap: 26px;
+  min-width: 0;
+  padding: 0 32px;
 
-export const ResultBarTrack = styled.div`
-  position: relative;
-  height: 18px;
-  margin: 0 28px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  overflow: hidden;
-`;
-
-export const ResultBar = styled.div<{ $percent: number }>`
-  width: ${({ $percent }) => `${$percent}%`};
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #ffffff, rgba(255, 255, 255, 0.58));
-`;
-
-export const PercentText = styled.span`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 900;
+  @media (max-width: 720px) {
+    gap: 12px;
+    padding: 0 0 0 14px;
+  }
 `;
 
 export const EmptyText = styled.span`
@@ -182,19 +160,14 @@ export const Member = styled.span`
   font-weight: 800;
 `;
 
-export const Avatar = styled.span<{ $tone: string }>`
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+export const AvatarImage = styled.img`
+  width: 28px;
+  height: 28px;
   border: 2px solid rgba(255, 255, 255, 0.84);
   border-radius: 50%;
-  background: ${({ $tone }) => $tone};
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 900;
+  background: rgba(255, 255, 255, 0.28);
   box-sizing: border-box;
+  object-fit: cover;
 `;
 
 export const StateMessage = styled.div`

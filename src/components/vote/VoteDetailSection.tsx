@@ -29,7 +29,7 @@ const getDaysLeftText = (deadline: string | null) => {
 };
 
 const getTotalVoteCount = (vote: VoteDetail) =>
-  vote.options.reduce((sum, option) => sum + option.voteCount, 0);
+  vote.options.reduce((sum, option) => sum + (option.voteCount ?? 0), 0);
 
 export default function VoteDetailSection() {
   const navigate = useNavigate();
@@ -161,7 +161,7 @@ export default function VoteDetailSection() {
                       >
                         <S.CheckCircle $selected={isSelected || isMyVote} />
                         <S.OptionText>{option.optionText}</S.OptionText>
-                        <S.OptionCount>{option.voteCount}표</S.OptionCount>
+                        <S.OptionCount>{option.voteCount ?? 0}표</S.OptionCount>
                       </S.OptionButton>
                     );
                   })}

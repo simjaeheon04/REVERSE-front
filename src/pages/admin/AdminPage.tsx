@@ -56,6 +56,18 @@ const adminMenus = [
       "지원서 조회, 상태 변경, 면접 배정, 엑셀 다운로드와 상세 페이지/슬롯 설정을 처리합니다.",
     path: "/admin/recruit-applications",
   },
+  {
+    title: "회원 관리자",
+    description:
+      "회원 권한 변경과 강제 탈퇴를 최고관리자 권한으로 처리합니다.",
+    path: "/admin/users",
+  },
+  {
+    title: "투표 관리",
+    description:
+      "투표 목록, 상세 결과 조회, 관리자 권한 수정과 삭제를 처리합니다.",
+    path: "/admin/votes",
+  },
 ];
 
 export default function AdminPage() {

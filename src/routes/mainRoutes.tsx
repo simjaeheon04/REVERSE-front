@@ -15,6 +15,7 @@ import RecruitApplyCompletePage from "../pages/RecruitApplyCompletePage/RecruitA
 import RecruitApplyPage from "../pages/RecruitApplyPage/RecruitApplyPage";
 import RecruitPage from "../pages/RecruitPage/RecruitPage";
 import VoteDetailPage from "../pages/VoteDetailPage";
+import VoteManagementPage from "../pages/VoteManagementPage/VoteManagementPage";
 import VotePage from "../pages/VotePage";
 import VoteStatusPage from "../pages/VoteStatusPage";
 import VoteWritePage from "../pages/VoteWritePage";
@@ -87,6 +88,10 @@ export const mainRoutes = [
   {
     path: "/vote/write",
     element: <VoteWritePage />,
+  },
+  {
+    path: "/vote/manage",
+    element: <VoteManagementPage />,
   },
   {
     path: "/vote/:voteId/status",

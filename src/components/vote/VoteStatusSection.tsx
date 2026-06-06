@@ -1,13 +1,53 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getVoteDetail, type VoteDetail } from "../../services/voteApi";
+import {
+  getVoteDetail,
+  getVoteResult,
+  type VoteResultOption,
+  type VoteResult,
+} from "../../services/voteApi";
+import defaultAvatar from "../../assets/logos/Logo_4.png";
 import * as S from "./VoteStatusSection.styles";
+
+type VisibleVoter = {
+  name: string;
+  imageUrl: string;
+};
+
+const getVisibleVoters = (option: VoteResultOption) => {
+  if (Array.isArray(option.voters)) {
+    return option.voters.map<VisibleVoter>((voter, index) => {
+      if (typeof voter === "string") {
+        return {
+          name: voter,
+          imageUrl: defaultAvatar,
+        };
+      }
+
+      return {
+        name:
+          voter.userName?.trim() ||
+          voter.name?.trim() ||
+          voter.voterName?.trim() ||
+          voter.userId?.trim() ||
+          `알 수 없음 ${index + 1}`,
+        imageUrl:
+          voter.userPhotoUrl?.trim() ||
+          voter.photoUrl?.trim() ||
+          voter.profileImageUrl?.trim() ||
+          defaultAvatar,
+      };
+    });
+  }
+
+  return [];
+};
 
 export default function VoteStatusSection() {
   const navigate = useNavigate();
   const { voteId } = useParams();
   const parsedVoteId = Number(voteId);
-  const [vote, setVote] = useState<VoteDetail | null>(null);
+  const [vote, setVote] = useState<VoteResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -25,8 +65,31 @@ export default function VoteStatusSection() {
       setErrorMessage("");
 
       try {
-        const result = await getVoteDetail(parsedVoteId);
+        const result = await getVoteResult(parsedVoteId).catch(async (error) => {
+          console.error("[vote/result] failed, fallback to detail", error);
+          const detail = await getVoteDetail(parsedVoteId);
+          return {
+            voteId: detail.voteId,
+            creatorId: detail.userId,
+            title: detail.title,
+            content: detail.content,
+            isSecret: detail.isSecret,
+            participantRole: detail.participantRole,
+            resultViewRole: detail.resultViewRole,
+            deadline: detail.deadline,
+            isClosed: detail.isClosed,
+            totalVoteCount: detail.options.reduce(
+              (sum, option) => sum + (option.voteCount ?? 0),
+              0
+            ),
+            options: detail.options.map((option) => ({
+              ...option,
+              voters: null,
+            })),
+          };
+        });
         if (!ignore) {
+          console.log("[vote/status] loaded vote data", result);
           setVote(result);
         }
       } catch (error) {
@@ -47,11 +110,6 @@ export default function VoteStatusSection() {
       ignore = true;
     };
   }, [parsedVoteId]);
-
-  const totalVoteCount = useMemo(
-    () => vote?.options.reduce((sum, option) => sum + option.voteCount, 0) ?? 0,
-    [vote]
-  );
 
   return (
     <S.Page>
@@ -82,19 +140,39 @@ export default function VoteStatusSection() {
 
                 <S.ResultList>
                   {vote.options.map((option) => {
-                    const percent =
-                      totalVoteCount > 0
-                        ? Math.round((option.voteCount / totalVoteCount) * 100)
-                        : 0;
+                    const voteCount = option.voteCount ?? 0;
+                    const visibleVoters = getVisibleVoters(option);
+                    console.log("[vote/status] option raw data", option);
+                    console.log("[vote/status] option parsed voters", {
+                      optionId: option.optionId,
+                      optionText: option.optionText,
+                      voteCount,
+                      rawVoters: option.voters,
+                      visibleVoters,
+                    });
 
                     return (
                       <S.ResultRow key={option.optionId}>
                         <S.OptionPill>{option.optionText}</S.OptionPill>
-                        <S.Count>{option.voteCount}표</S.Count>
-                        <S.ResultBarTrack>
-                          <S.ResultBar $percent={percent} />
-                          <S.PercentText>{percent}%</S.PercentText>
-                        </S.ResultBarTrack>
+                        <S.Count>{voteCount}명</S.Count>
+                        <S.Members>
+                          {vote.isSecret ? (
+                            voteCount > 0 ? (
+                              <S.AnonymousText>익명</S.AnonymousText>
+                            ) : (
+                              <S.EmptyText>투표한 멤버가 없습니다.</S.EmptyText>
+                            )
+                          ) : visibleVoters.length === 0 ? (
+                            <S.EmptyText>투표한 멤버가 없습니다.</S.EmptyText>
+                          ) : (
+                            visibleVoters.map((voter) => (
+                              <S.Member key={`${option.optionId}-${voter.name}`}>
+                                <S.AvatarImage src={voter.imageUrl} alt="" />
+                                {voter.name}
+                              </S.Member>
+                            ))
+                          )}
+                        </S.Members>
                       </S.ResultRow>
                     );
                   })}

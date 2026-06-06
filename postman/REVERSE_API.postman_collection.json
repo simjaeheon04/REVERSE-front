@@ -1,0 +1,4968 @@
+{
+  "info": {
+    "name": "REVERSE API",
+    "description": "Generated from API.md. Base URL and token are collection variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01. 서버 상태",
+      "item": [
+        {
+          "name": "GET /test",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "test"
+              ]
+            },
+            "description": "### GET /test\n서버 동작 여부를 확인한다.\n\n- **응답**: `200 OK` — HTML 페이지 반환\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/deploy-check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/deploy-check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "deploy-check"
+              ]
+            },
+            "description": "### GET /api/deploy-check\n배포 상태 및 버전을 확인한다.\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"ok\",\n  \"version\": \"deploy-check-2026-05-19-01\"\n}\n```\n\n---\n\n## 2. 인증 (Auth)\n\nBase Path: `/api/auth`\n\n> 액세스 토큰 유효기간: **5분** / 리프레시 토큰 유효기간: **20분**\n> 서명 알고리즘: **HS256**\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02. Auth",
+      "item": [
+        {
+          "name": "POST /api/auth/email/send",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/email/send",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "email",
+                "send"
+              ]
+            },
+            "description": "### POST /api/auth/email/send\n인증번호를 이메일로 전송한다. 기존 미인증 코드는 자동으로 폐기된다.\n인증번호 유효시간은 **5분**이다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `email` | String | Y | 인증번호를 받을 이메일 주소 |\n\n```json\n{ \"email\": \"hong@example.com\" }\n```\n\n**응답 `200 OK`** (plain text)\n```\n인증번호가 전송되었습니다.\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"hong@example.com\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/email/resend",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/email/resend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "email",
+                "resend"
+              ]
+            },
+            "description": "### POST /api/auth/email/resend\n인증번호를 재전송한다. 이전 코드는 폐기되고 새 코드가 발급된다.\n\n**요청 Body** — `POST /api/auth/email/send`와 동일\n\n**응답 `200 OK`** (plain text)\n```\n인증번호가 재전송되었습니다.\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/email/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/email/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "email",
+                "verify"
+              ]
+            },
+            "description": "### POST /api/auth/email/verify\n입력한 인증번호가 맞는지 확인한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `email` | String | Y | 인증 대상 이메일 |\n| `code` | String | Y | 수신한 6자리 인증번호 |\n\n```json\n{\n  \"email\": \"hong@example.com\",\n  \"code\": \"382910\"\n}\n```\n\n**응답 `200 OK`** (plain text)\n```\n이메일 인증이 완료되었습니다.\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 인증번호 없음 | `500` — 인증번호를 찾을 수 없습니다. |\n| 인증번호 만료 | `500` — 인증번호가 만료되었습니다. |\n| 인증번호 불일치 | `500` — 인증번호가 올바르지 않습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hong@example.com\",\n  \"code\": \"382910\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "### POST /api/auth/register\n이메일 인증 완료 후 신규 계정을 생성한다.\n가입 즉시 `GUEST` 역할이 부여된다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `userId` | String | Y | 사용자 ID (최대 15자, 중복 불가) |\n| `userName` | String | Y | 사용자 이름 (최대 34자) |\n| `userEmail` | String | Y | 인증 완료된 이메일 |\n| `userPassword` | String | Y | 비밀번호 (BCrypt 해시로 저장) |\n| `userIntroduce` | String | N | 자기소개 (최대 100자) |\n| `userMbti` | String | N | MBTI (4자) |\n| `consents` | List | Y | 약관 동의 목록 |\n| `consents[].consentItemId` | Integer | Y | 약관 항목 ID |\n| `consents[].isAgreed` | Boolean | Y | 동의 여부 |\n\n```json\n{\n  \"userId\": \"user01\",\n  \"userName\": \"홍길동\",\n  \"userEmail\": \"hong@example.com\",\n  \"userPassword\": \"plainPassword\",\n  \"userIntroduce\": \"안녕하세요!\",\n  \"userMbti\": \"INFP\",\n  \"consents\": [\n    { \"consentItemId\": 1, \"isAgreed\": true },\n    { \"consentItemId\": 2, \"isAgreed\": true },\n    { \"consentItemId\": 3, \"isAgreed\": false },\n    { \"consentItemId\": 4, \"isAgreed\": false }\n  ]\n}\n```\n\n> 약관 항목 ID는 `CONSENT_ITEM` 테이블 기준 (1: 이용약관, 2: 개인정보 수집 및 이용, 3: 마케팅 수신, 4: 이벤트 알림)\n\n**응답 `200 OK`** (plain text)\n```\n회원가입이 완료되었습니다.\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| userId 중복 | `500` — 이미 사용 중인 아이디입니다. |\n| 이메일 미인증 | `500` — 이메일 인증이 완료되지 않았습니다. |\n| 필수 약관 미동의 | `500` — 필수 약관에 동의해야 합니다: {약관명} |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user01\",\n  \"userName\": \"홍길동\",\n  \"userEmail\": \"hong@example.com\",\n  \"userPassword\": \"plainPassword\",\n  \"userIntroduce\": \"안녕하세요!\",\n  \"userMbti\": \"INFP\",\n  \"consents\": [\n    { \"consentItemId\": 1, \"isAgreed\": true },\n    { \"consentItemId\": 2, \"isAgreed\": true },\n    { \"consentItemId\": 3, \"isAgreed\": false },\n    { \"consentItemId\": 4, \"isAgreed\": false }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "### POST /api/auth/login\n아이디와 비밀번호로 로그인하여 액세스 토큰과 리프레시 토큰을 발급한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `userId` | String | Y | 사용자 ID (최대 15자) |\n| `userPassword` | String | Y | 비밀번호 |\n\n```json\n{\n  \"userId\": \"admin01\",\n  \"userPassword\": \"plainPassword\"\n}\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n  \"accessTokenExpiry\": \"2026-05-12T12:05:00\",\n  \"refreshTokenExpiry\": \"2026-05-12T12:20:00\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 존재하지 않는 userId | `500` — 사용자를 찾을 수 없습니다. |\n| 비밀번호 불일치 | `500` — 비밀번호가 올바르지 않습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"admin01\",\n  \"userPassword\": \"plainPassword\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/refresh",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "### POST /api/auth/refresh\n리프레시 토큰으로 새 액세스 토큰을 재발급한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `refreshToken` | String | Y | 로그인 시 발급받은 리프레시 토큰 |\n\n```json\n{ \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\" }\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...(새 토큰)\",\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...(기존 유지)\",\n  \"accessTokenExpiry\": \"2026-05-12T12:10:00\",\n  \"refreshTokenExpiry\": \"2026-05-12T12:20:00\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 폐기된 토큰 또는 존재하지 않는 토큰 | `500` — 유효하지 않은 리프레시 토큰입니다. |\n| 리프레시 토큰 만료 | `500` — 리프레시 토큰이 만료되었습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "### POST /api/auth/logout\n리프레시 토큰을 폐기하여 로그아웃 처리한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `refreshToken` | String | Y | 폐기할 리프레시 토큰 |\n\n```json\n{ \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\" }\n```\n\n**응답 `200 OK`** (plain text)\n```\n로그아웃 완료\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/find-username/send-code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/find-username/send-code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "find-username",
+                "send-code"
+              ]
+            },
+            "description": "### POST /api/auth/find-username/send-code\n이름과 이메일로 아이디 찾기 인증번호를 발송한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `userName` | String | Y | 가입 시 등록한 이름 |\n| `email` | String | Y | 가입 시 등록한 이메일 |\n\n```json\n{\n  \"userName\": \"홍길동\",\n  \"email\": \"example@email.com\"\n}\n```\n\n**응답 `200 OK`**\n```json\n{ \"message\": \"인증번호가 발송되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 이름+이메일 불일치 | `400` — 해당 이메일로 가입된 아이디가 없습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"홍길동\",\n  \"email\": \"example@email.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/find-username/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/find-username/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "find-username",
+                "verify"
+              ]
+            },
+            "description": "### POST /api/auth/find-username/verify\n인증번호 확인 후 가입된 아이디를 반환한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `email` | String | Y | 인증번호를 받은 이메일 |\n| `authCode` | String | Y | 수신한 6자리 인증번호 |\n\n```json\n{\n  \"email\": \"example@email.com\",\n  \"authCode\": \"123456\"\n}\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"message\": \"아이디 찾기에 성공했습니다.\",\n  \"userId\": \"gildong123\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 인증번호 불일치 | `400` — 인증코드가 일치하지 않습니다. |\n| 인증 정보 없음/만료 | `400` — 유효한 인증 정보가 없거나 시간이 만료되었습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"example@email.com\",\n  \"authCode\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/find-password/send-code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/find-password/send-code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "find-password",
+                "send-code"
+              ]
+            },
+            "description": "### POST /api/auth/find-password/send-code\n아이디와 이메일로 비밀번호 찾기 인증번호를 발송한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `userId` | String | Y | 가입한 아이디 |\n| `email` | String | Y | 가입 시 등록한 이메일 |\n\n```json\n{\n  \"userId\": \"gildong123\",\n  \"email\": \"example@email.com\"\n}\n```\n\n**응답 `200 OK`**\n```json\n{ \"message\": \"인증번호가 발송되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 아이디+이메일 불일치 | `400` — 입력하신 정보와 일치하는 회원이 없습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"gildong123\",\n  \"email\": \"example@email.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/find-password/verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/find-password/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "find-password",
+                "verify"
+              ]
+            },
+            "description": "### POST /api/auth/find-password/verify\n비밀번호 찾기 인증번호를 확인한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `email` | String | Y | 인증번호를 받은 이메일 |\n| `authCode` | String | Y | 수신한 6자리 인증번호 |\n\n```json\n{\n  \"email\": \"example@email.com\",\n  \"authCode\": \"123456\"\n}\n```\n\n**응답 `200 OK`**\n```json\n{ \"message\": \"인증에 성공했습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 인증번호 불일치 | `400` — 인증번호가 일치하지 않습니다. |\n| 인증 정보 없음/만료 | `400` — 유효한 인증 정보가 없거나 시간이 만료되었습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"example@email.com\",\n  \"authCode\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/auth/find-password/issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/find-password/issue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "find-password",
+                "issue"
+              ]
+            },
+            "description": "### POST /api/auth/find-password/issue\n인증 완료 후 임시 비밀번호를 발급하여 이메일로 전송한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `userId` | String | Y | 가입한 아이디 |\n| `email` | String | Y | 가입 시 등록한 이메일 |\n\n```json\n{\n  \"userId\": \"gildong123\",\n  \"email\": \"example@email.com\"\n}\n```\n\n**응답 `200 OK`**\n```json\n{ \"message\": \"임시 비밀번호가 메일로 전송되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 이메일 인증 미완료 | `403` — 이메일 인증이 완료되지 않았습니다. |\n| 회원 정보 없음 | `403` — 회원 정보를 찾을 수 없습니다. |\n\n---\n\n## 3. 내 정보 (Me)\n\nBase Path: `/api/user`\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"gildong123\",\n  \"email\": \"example@email.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03. Me",
+      "item": [
+        {
+          "name": "GET /api/user/me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/user/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "me"
+              ]
+            },
+            "description": "### GET /api/user/me\n현재 로그인한 사용자의 정보를 조회한다.\n\n**응답 `200 OK`**\n```json\n{\n  \"userId\": \"admin01\",\n  \"userName\": \"홍길동\",\n  \"roleName\": \"ADMIN\",\n  \"userIntroduce\": \"안녕하세요\",\n  \"userMbti\": \"INTJ\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — UNAUTHORIZED |\n\n---\n\n## 4. 동아리 소개 (Club Intro)\n\nBase Path: `/api/club-intro`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04. Club Intro",
+      "item": [
+        {
+          "name": "GET /api/club-intro/main",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-intro/main",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-intro",
+                "main"
+              ]
+            },
+            "description": "### GET /api/club-intro/main\n노출 중인(`isActive: true`) 동아리 소개 목록을 조회한다.\n\n**응답 `200 OK`**\n```json\n[\n  {\n    \"clubIntroId\": 1,\n    \"title\": \"REVERSE\",\n    \"subTitle\": \"남서울대학교 컴퓨터소프트웨어학과 동아리\",\n    \"bannerUrl\": \"https://cdn.example.com/intro/banner.png\",\n    \"isActive\": true\n  }\n]\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/club-intro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-intro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-intro"
+              ]
+            },
+            "description": "### GET /api/club-intro\n동아리 소개 전체 목록을 조회한다 (숨김 포함).\n\n**응답 `200 OK`** — 위와 동일한 구조\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/club-intro/image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-intro/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-intro",
+                "image"
+              ]
+            },
+            "description": "### POST /api/club-intro/image\n배너 이미지를 Cloudflare R2에 업로드하고 URL을 반환한다.\n\n**요청** `multipart/form-data`\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `file` | MultipartFile | Y | 업로드할 이미지 파일 |\n\n**응답 `200 OK`** (plain text)\n```\nhttps://cdn.example.com/intro/uuid-filename.png\n```\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/club-intro",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-intro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-intro"
+              ]
+            },
+            "description": "### POST /api/club-intro\n동아리 소개 데이터를 저장한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `title` | String | Y | 동아리 이름 |\n| `subTitle` | String | Y | 부제목 |\n| `bannerUrl` | String | N | 이미지 업로드 후 받은 URL |\n| `isActive` | Boolean | N | 노출 여부 (기본값: `true`) |\n| `updatedBy` | String | Y | 등록 관리자 ID |\n\n**응답 `200 OK`** — 저장된 ClubIntro 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/club-intro/{id}/image",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-intro/:id/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-intro",
+                ":id",
+                "image"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/club-intro/{id}/image\n수정할 배너 이미지를 업로드하고 URL을 반환한다.\n\n**요청** `multipart/form-data` — POST /image와 동일\n\n**응답 `200 OK`** (plain text) — URL 반환\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/club-intro/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-intro/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-intro",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/club-intro/{id}\n동아리 소개 데이터를 수정한다. 이미지 변경 시 기존 R2 이미지 자동 삭제.\n\n**요청 Body** `application/json` — POST와 동일한 구조\n\n**응답 `200 OK`** — 수정된 ClubIntro 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/club-intro/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-intro/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-intro",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/club-intro/{id}\n동아리 소개 데이터를 삭제한다. R2 이미지도 함께 삭제.\n\n**응답 `200 OK`** (plain text)\n```\n삭제 완료: 1\n```\n\n---\n\n## 5. 프로젝트 소개 (Club Project)\n\nBase Path: `/api/club-project`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05. Club Project",
+      "item": [
+        {
+          "name": "GET /api/club-project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-project",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-project"
+              ]
+            },
+            "description": "### GET /api/club-project\n프로젝트 목록을 `sortOrder` 오름차순으로 전체 조회한다.\n\n**응답 `200 OK`**\n```json\n[\n  {\n    \"projectId\": 1,\n    \"sortOrder\": 0,\n    \"projectName\": \"REVERSE 웹사이트\",\n    \"thumbnailUrl\": \"https://cdn.example.com/project/uuid-filename.png\",\n    \"projectUrl\": \"https://github.com/example/reverse\",\n    \"updatedBy\": \"admin01\",\n    \"createdDate\": \"2026-04-01T12:00:00\",\n    \"modifiedDate\": \"2026-04-01T12:00:00\"\n  }\n]\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/club-project/image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-project/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-project",
+                "image"
+              ]
+            },
+            "description": "### POST /api/club-project/image\n프로젝트 썸네일 이미지를 업로드하고 URL을 반환한다.\n\n**요청** `multipart/form-data`\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `file` | MultipartFile | Y | 업로드할 이미지 파일 |\n\n**응답 `200 OK`** (plain text) — URL 반환\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/club-project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-project",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-project"
+              ]
+            },
+            "description": "### POST /api/club-project\n프로젝트 데이터를 저장한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `projectName` | String | Y | 프로젝트 이름 |\n| `thumbnailUrl` | String | N | 이미지 업로드 후 받은 URL |\n| `projectUrl` | String | N | 외부 링크 |\n| `sortOrder` | Integer | N | 노출 순서 (기본값: `0`) |\n| `updatedBy` | String | Y | 등록 관리자 ID |\n\n**응답 `200 OK`** — 저장된 ClubProject 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/club-project/{id}/image",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-project/:id/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-project",
+                ":id",
+                "image"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/club-project/{id}/image\n수정할 썸네일 이미지를 업로드하고 URL을 반환한다.\n\n**응답 `200 OK`** (plain text) — URL 반환\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/club-project/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-project/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-project",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/club-project/{id}\n프로젝트 데이터를 수정한다. 이미지 변경 시 기존 R2 이미지 자동 삭제.\n\n**요청 Body** `application/json` — POST와 동일한 구조\n\n**응답 `200 OK`** — 수정된 ClubProject 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/club-project/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/club-project/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "club-project",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/club-project/{id}\n프로젝트 데이터를 삭제한다. R2 썸네일도 함께 삭제.\n\n**응답 `200 OK`** (plain text)\n```\n삭제 완료: 1\n```\n\n---\n\n## 6. 임원진 소개 (Officer)\n\nBase Path: `/api/officer`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06. Officer",
+      "item": [
+        {
+          "name": "GET /api/officer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/officer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "officer"
+              ]
+            },
+            "description": "### GET /api/officer\n임원진 전체 목록을 조회한다.\n\n**응답 `200 OK`**\n```json\n[\n  {\n    \"officerId\": 1,\n    \"name\": \"홍길동\",\n    \"generation\": 5,\n    \"role\": \"회장\",\n    \"department\": \"개발\",\n    \"email\": \"hong@example.com\",\n    \"photoUrl\": \"https://cdn.example.com/officer/uuid-filename.png\",\n    \"sortOrder\": 0,\n    \"isVisible\": true,\n    \"updatedBy\": \"admin01\",\n    \"createdDate\": \"2026-04-01T12:00:00\",\n    \"modifiedDate\": \"2026-04-01T12:00:00\"\n  }\n]\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/officer/image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/officer/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "officer",
+                "image"
+              ]
+            },
+            "description": "### POST /api/officer/image\n임원진 프로필 사진을 업로드하고 URL을 반환한다.\n\n**요청** `multipart/form-data`\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `file` | MultipartFile | Y | 업로드할 이미지 파일 |\n\n**응답 `200 OK`** (plain text) — URL 반환\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/officer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/officer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "officer"
+              ]
+            },
+            "description": "### POST /api/officer\n임원진 데이터를 저장한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `name` | String | Y | 이름 |\n| `generation` | Integer | Y | 기수 (예: `5`) |\n| `role` | String | Y | 직책 (예: `회장`) |\n| `department` | String | N | 소속 파트 |\n| `email` | String | N | 연락용 이메일 |\n| `photoUrl` | String | N | 이미지 업로드 후 받은 URL |\n| `sortOrder` | Integer | N | 노출 순서 (기본값: `0`) |\n| `isVisible` | Boolean | N | 노출 여부 (기본값: `true`) |\n| `updatedBy` | String | Y | 등록 관리자 ID |\n\n**응답 `200 OK`** — 저장된 Officer 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/officer/{id}/image",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/officer/:id/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "officer",
+                ":id",
+                "image"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/officer/{id}/image\n수정할 프로필 사진을 업로드하고 URL을 반환한다.\n\n**응답 `200 OK`** (plain text) — URL 반환\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/officer/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/officer/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "officer",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/officer/{id}\n임원진 데이터를 수정한다. 이미지 변경 시 기존 R2 이미지 자동 삭제.\n\n**요청 Body** `application/json` — POST와 동일한 구조\n\n**응답 `200 OK`** — 수정된 Officer 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/officer/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/officer/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "officer",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/officer/{id}\n임원진 데이터를 삭제한다. R2 프로필 사진도 함께 삭제.\n\n**응답 `200 OK`** (plain text)\n```\n삭제 완료: 1\n```\n\n---\n\n## 7. 약관 (Terms)\n\nBase Path: `/api/terms`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07. Terms",
+      "item": [
+        {
+          "name": "GET /api/terms/current",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/terms/current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "terms",
+                "current"
+              ]
+            },
+            "description": "### GET /api/terms/current\n현재 적용 중인(`isCurrent: true`) 약관을 조회한다.\n\n**응답 `200 OK`** — Terms 단건 반환\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/terms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "terms"
+              ]
+            },
+            "description": "### GET /api/terms\n약관 전체 목록을 조회한다.\n\n**응답 `200 OK`**\n```json\n[\n  {\n    \"termsId\": 1,\n    \"sortOrder\": 0,\n    \"version\": \"v1.0\",\n    \"title\": \"개인정보 처리방침\",\n    \"contents\": \"...\",\n    \"isCurrent\": true,\n    \"updatedBy\": \"admin01\",\n    \"createdDate\": \"2026-04-01T12:00:00\"\n  }\n]\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/terms/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/terms/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "terms",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/terms/{id}\n약관 단건을 조회한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `id` | Long | 조회할 약관 ID |\n\n**응답 `200 OK`** — Terms 단건 반환\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/terms",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "terms"
+              ]
+            },
+            "description": "### POST /api/terms\n새 약관을 저장한다. `version` 중복 불가.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `sortOrder` | Integer | N | 조항 노출 순서 |\n| `version` | String | Y | 약관 버전 (예: `v1.0`) — 중복 불가 |\n| `title` | String | Y | 약관 제목 |\n| `contents` | String | Y | 약관 본문 |\n| `isCurrent` | Boolean | N | 현재 적용 버전 여부 (기본값: `false`) |\n| `updatedBy` | String | Y | 등록 관리자 ID |\n\n**응답 `200 OK`** — 저장된 Terms 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/terms/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/terms/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "terms",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/terms/{id}\n약관 내용을 수정한다.\n\n**요청 Body** `application/json` — POST와 동일한 구조\n\n**응답 `200 OK`** — 수정된 Terms 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/terms/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/terms/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "terms",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/terms/{id}\n약관을 삭제한다.\n\n**응답 `200 OK`**\n```json\n{ \"message\": \"1번 약관이 성공적으로 삭제되었습니다.\" }\n```\n\n---\n\n## 8. R2 스토리지 테스트 (R2)\n\nBase Path: `/api/r2`\n\n> 개발/테스트 용도. 운영 환경에서는 사용하지 않는다.\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08. R2",
+      "item": [
+        {
+          "name": "POST /api/r2/upload",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/r2/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "r2",
+                "upload"
+              ]
+            },
+            "description": "### POST /api/r2/upload\n이미지를 Cloudflare R2의 지정 폴더에 업로드한다.\n\n**요청** `multipart/form-data`\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `file` | MultipartFile | Y | 업로드할 파일 |\n| `folder` | String | N | 저장할 폴더명 (기본값: `test`) |\n\n**응답 `200 OK`** (plain text)\n```\nhttps://cdn.example.com/test/uuid-filename.png\n```\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/r2/delete",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/r2/delete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "r2",
+                "delete"
+              ]
+            },
+            "description": "### DELETE /api/r2/delete\nR2에 저장된 파일을 URL로 삭제한다.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `fileUrl` | String | Y | 삭제할 파일의 전체 URL |\n\n**응답 `200 OK`** (plain text)\n```\n삭제 완료: https://cdn.example.com/test/uuid-filename.png\n```\n\n---\n\n## 9. 모집 공고 (Recruitment)\n\nBase Path: `/api/recruit`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "09. Recruitment",
+      "item": [
+        {
+          "name": "GET /api/recruit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit"
+              ]
+            },
+            "description": "### GET /api/recruit\n모집 공고 전체 목록을 조회한다.\n\n**응답 `200 OK`**\n```json\n[\n  {\n    \"id\": 1,\n    \"title\": \"2026년 1학기 신입 부원 모집\",\n    \"description\": \"REVERSE 동아리 신입 부원을 모집합니다.\",\n    \"isActive\": true,\n    \"createdAt\": \"2026-04-01T12:00:00\",\n    \"updatedAt\": \"2026-04-01T12:00:00\"\n  }\n]\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/recruit/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/recruit/{id}\n모집 공고 단건을 상세 조회한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `id` | Integer | 조회할 공고 ID |\n\n**응답 `200 OK`** — 단건 반환\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/recruit/{id}/status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/:id/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                ":id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/recruit/{id}/status\n모집 공고의 지원 가능 여부를 조회한다.\n\n**응답 `200 OK`**\n```json\n{ \"isAvailable\": true }\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/recruit/{id}/gallery",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/:id/gallery",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                ":id",
+                "gallery"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/recruit/{id}/gallery\n모집 공고의 갤러리 이미지를 조회한다.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `tag` | String | N | 태그 필터 |\n\n**응답 `200 OK`** — 갤러리 목록 반환\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/recruit/subscribe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/subscribe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "subscribe"
+              ]
+            },
+            "description": "### POST /api/recruit/subscribe\n새 모집 공고 알림 이메일을 구독한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `email` | String | Y | 알림을 받을 이메일 주소 |\n\n```json\n{ \"email\": \"hong@example.com\" }\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"hong@example.com 주소로 알림 구독이 완료되었습니다.\"\n}\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"email\": \"hong@example.com\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/recruit/apply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/apply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "apply"
+              ]
+            },
+            "description": "### POST /api/recruit/apply\n모집 공고에 지원서를 제출한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `recruitmentId` | Integer | Y | 지원할 공고 ID |\n| `applicantName` | String | Y | 지원자 이름 |\n| `department` | String | Y | 학과 |\n| `studentNumber` | String | Y | 학번 |\n| `phoneNumber` | String | Y | 전화번호 (`000-0000-0000` 형식) |\n| `grade` | Byte | Y | 학년 (1~5) |\n| `email` | String | Y | 이메일 |\n| `portfolioUrl` | String | N | 포트폴리오 URL |\n| `termsAgreed` | Boolean | Y | 개인정보 수집 동의 여부 |\n| `categories` | List\\<String\\> | N | 지원 분야 목록 (예: `[\"메인프로젝트\", \"스터디\"]`) |\n\n```json\n{\n  \"recruitmentId\": 1,\n  \"applicantName\": \"홍길동\",\n  \"department\": \"컴퓨터소프트웨어학과\",\n  \"studentNumber\": \"20210001\",\n  \"phoneNumber\": \"010-1234-5678\",\n  \"grade\": 3,\n  \"email\": \"hong@example.com\",\n  \"portfolioUrl\": \"https://github.com/gildong\",\n  \"termsAgreed\": true,\n  \"categories\": [\"메인프로젝트\", \"스터디\"]\n}\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"신청이 완료되었습니다. 화이팅!\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 중복 신청 / 모집 기간 아님 | `400` — 사유 메시지 반환 |\n| 서버 오류 | `500` — 처리 중 오류가 발생했습니다. |\n\n---\n\n## 10. 일정 (Schedule)\n\nBase Path: `/api/schedule`\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recruitmentId\": 1,\n  \"applicantName\": \"홍길동\",\n  \"department\": \"컴퓨터소프트웨어학과\",\n  \"studentNumber\": \"20210001\",\n  \"phoneNumber\": \"010-1234-5678\",\n  \"grade\": 3,\n  \"email\": \"hong@example.com\",\n  \"portfolioUrl\": \"https://github.com/gildong\",\n  \"termsAgreed\": true,\n  \"categories\": [\"메인프로젝트\", \"스터디\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. Schedule",
+      "item": [
+        {
+          "name": "GET /api/schedule/category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "category"
+              ]
+            },
+            "description": "### GET /api/schedule/category\n노출 중인 카테고리 목록을 `sortOrder` 오름차순으로 조회한다.\n\n**응답 `200 OK`**\n```json\n[\n  {\n    \"id\": 1,\n    \"categoryName\": \"동아리\",\n    \"colorCode\": \"#FF5733\",\n    \"sortOrder\": 0,\n    \"isVisible\": true,\n    \"updatedBy\": \"admin01\",\n    \"createdAt\": \"2026-04-01T12:00:00\",\n    \"updatedAt\": \"2026-04-01T12:00:00\"\n  }\n]\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/schedule",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026",
+                  "disabled": false
+                },
+                {
+                  "key": "month",
+                  "value": "6",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/schedule\n월별 공개 일정 목록을 조회한다.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `year` | Integer | N | 조회 연도 (기본값: 현재 연도) |\n| `month` | Integer | N | 조회 월 (기본값: 현재 월) |\n\n**응답 `200 OK`**\n```json\n[\n  {\n    \"id\": 1,\n    \"categoryId\": 1,\n    \"categoryName\": \"동아리\",\n    \"colorCode\": \"#FF5733\",\n    \"title\": \"동아리 OT\",\n    \"description\": \"2026년 1학기 OT\",\n    \"startDate\": \"2026-04-05\",\n    \"endDate\": \"2026-04-05\",\n    \"startTime\": \"14:00:00\",\n    \"endTime\": \"17:00:00\",\n    \"isAllDay\": false,\n    \"isVisible\": true,\n    \"updatedBy\": \"admin01\",\n    \"createdAt\": \"2026-04-01T12:00:00\",\n    \"updatedAt\": \"2026-04-01T12:00:00\"\n  }\n]\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/schedule/{id}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/schedule/{id}\n일정 단건을 조회한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `id` | Integer | 조회할 일정 ID |\n\n**응답 `200 OK`** — 위 목록 응답의 단건 형태\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/schedule/admin/category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/admin/category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "admin",
+                "category"
+              ]
+            },
+            "description": "### GET /api/schedule/admin/category\n카테고리 전체 목록을 조회한다 (숨김 포함).\n\n**응답 `200 OK`** — GET /api/schedule/category와 동일한 구조\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/schedule/admin/category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/admin/category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "admin",
+                "category"
+              ]
+            },
+            "description": "### POST /api/schedule/admin/category\n카테고리를 생성한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `categoryName` | String | Y | 카테고리 이름 (최대 30자) |\n| `colorCode` | String | N | HEX 색상코드 (기본값: `#FFFFFF`) |\n| `sortOrder` | Integer | N | 노출 순서 (기본값: `0`) |\n| `isVisible` | Boolean | N | 노출 여부 (기본값: `true`) |\n| `updatedBy` | String | Y | 등록 관리자 ID |\n\n**응답 `200 OK`** — 생성된 카테고리 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/schedule/admin/category/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/admin/category/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "admin",
+                "category",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/schedule/admin/category/{id}\n카테고리를 수정한다.\n\n**요청 Body** `application/json` — POST와 동일한 구조\n\n**응답 `200 OK`** — 수정된 카테고리 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/schedule/admin/category/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/admin/category/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "admin",
+                "category",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/schedule/admin/category/{id}\n카테고리를 삭제한다.\n\n**응답 `200 OK`** (plain text)\n```\n카테고리가 삭제되었습니다. ID: 1\n```\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/schedule/admin",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026",
+                  "disabled": false
+                },
+                {
+                  "key": "month",
+                  "value": "6",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/schedule/admin\n월별 전체 일정을 조회한다 (숨김 포함).\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `year` | Integer | Y | 조회 연도 |\n| `month` | Integer | Y | 조회 월 |\n\n**응답 `200 OK`** — GET /api/schedule과 동일한 구조\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/schedule/admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026",
+                  "disabled": false
+                },
+                {
+                  "key": "month",
+                  "value": "6",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### POST /api/schedule/admin\n일정을 생성한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `categoryId` | Integer | Y | 카테고리 ID |\n| `title` | String | Y | 일정 제목 (최대 100자) |\n| `description` | String | N | 일정 상세 설명 |\n| `startDate` | LocalDate | Y | 시작일 (`yyyy-MM-dd`) |\n| `endDate` | LocalDate | Y | 종료일 (`yyyy-MM-dd`) |\n| `startTime` | LocalTime | N | 시작 시간 (`HH:mm:ss`, 종일이면 생략) |\n| `endTime` | LocalTime | N | 종료 시간 (`HH:mm:ss`, 종일이면 생략) |\n| `isAllDay` | Boolean | N | 종일 일정 여부 (기본값: `true`) |\n| `isVisible` | Boolean | N | 노출 여부 (기본값: `true`) |\n| `updatedBy` | String | Y | 등록 관리자 ID |\n\n**응답 `200 OK`** — 생성된 일정 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/schedule/admin/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/admin/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "admin",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/schedule/admin/{id}\n일정을 수정한다.\n\n**요청 Body** `application/json` — POST와 동일한 구조\n\n**응답 `200 OK`** — 수정된 일정 단건 반환\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/schedule/admin/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedule/admin/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "schedule",
+                "admin",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/schedule/admin/{id}\n일정을 삭제한다.\n\n**응답 `200 OK`** (plain text)\n```\n일정이 삭제되었습니다. ID: 1\n```\n\n---\n\n## 11. 공휴일 (Holiday)\n\nBase Path: `/api/holiday`\n\n> 공공데이터포털 \"한국천문연구원 특일 정보\" API 연동.\n> 매년 1월 1일 00:05 자동 갱신.\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11. Holiday",
+      "item": [
+        {
+          "name": "GET /api/holiday",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/holiday",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "holiday"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026",
+                  "disabled": false
+                },
+                {
+                  "key": "month",
+                  "value": "6",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/holiday\n월별 공휴일 목록을 조회한다.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `year` | Integer | Y | 조회 연도 |\n| `month` | Integer | Y | 조회 월 |\n\n**응답 `200 OK`**\n```json\n[\n  {\n    \"id\": 1,\n    \"holidayDate\": \"2026-03-01\",\n    \"holidayName\": \"삼일절\",\n    \"isHoliday\": true,\n    \"year\": 2026\n  }\n]\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/holiday/admin/sync",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/holiday/admin/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "holiday",
+                "admin",
+                "sync"
+              ]
+            },
+            "description": "### POST /api/holiday/admin/sync\n특정 연도의 공휴일을 공공 API에서 수동으로 동기화한다.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `year` | Integer | Y | 동기화할 연도 |\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"2026년 공휴일 동기화가 완료되었습니다.\"\n}\n```\n\n---\n\n## 12. 공지사항 (Notice)\n\nBase Path: `/api/notices` (조회) / `/api/posts/notices` (관리자 등록·수정·삭제)\n\n> 비로그인 사용자는 외부 공개(`isExternal: true`) 공지사항만 조회 가능.\n> 로그인 사용자는 내부/외부 모두 조회 가능.\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"success\",\n  \"message\": \"2026년 공휴일 동기화가 완료되었습니다.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12. Notice",
+      "item": [
+        {
+          "name": "POST /api/notices/image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notices/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notices",
+                "image"
+              ]
+            },
+            "description": "### POST /api/notices/image\n공지사항 이미지를 업로드하고 URL을 반환한다.\n\n**요청** `multipart/form-data`\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `file` | MultipartFile | Y | 업로드할 이미지 파일 |\n\n**응답 `200 OK`** (plain text) — URL 반환\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/notices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notices"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "??",
+                  "disabled": false
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/notices\n공지사항 목록을 조회한다. 6개씩 페이징. 비로그인 시 외부 공개 게시글만 반환.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `category` | String | N | 카테고리 필터 (`전체` \\| `동아리 활동` \\| `대외활동`, 기본값: `전체`) |\n| `page` | Integer | N | 페이지 번호 (기본값: `0`) |\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"content\": [\n      {\n        \"id\": 1,\n        \"title\": \"공지사항 제목\",\n        \"createdAt\": \"2026-05-12\",\n        \"userId\": \"admin01\",\n        \"category\": \"동아리 활동\",\n        \"isExternal\": true\n      }\n    ],\n    \"totalPages\": 3,\n    \"totalElements\": 15,\n    \"number\": 0,\n    \"size\": 6\n  }\n}\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/notices/{postId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notices/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notices",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/notices/{postId}\n공지사항 단건을 조회한다. 비로그인 사용자가 내부 공지 접근 시 403 반환.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `postId` | Integer | 조회할 공지사항 ID |\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"title\": \"공지사항 제목\",\n    \"content\": \"공지사항 본문 내용\",\n    \"createdAt\": \"2026-05-12\",\n    \"userId\": \"admin01\",\n    \"category\": \"동아리 활동\",\n    \"isExternal\": true,\n    \"imageUrls\": [\"https://cdn.example.com/notice/uuid-filename.png\"]\n  }\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 비로그인 + 내부 공지 접근 | `403` — FORBIDDEN |\n| 존재하지 않는 ID | `404` — NOT_FOUND |\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/posts/notices",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/notices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "notices"
+              ]
+            },
+            "description": "### POST /api/posts/notices\n공지사항을 등록(`postId` 없음) 또는 수정(`postId` 있음)한다. 관리자 전용.\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `postId` | Integer | N | 수정 시에만 포함 |\n| `title` | String | Y | 제목 (최대 50자) |\n| `content` | String | Y | 본문 (최대 4000자) |\n| `isPinned` | Boolean | N | 상단 고정 여부 (기본값: `false`) |\n| `isExternal` | Boolean | N | 외부 공개 여부 (기본값: `false`) |\n| `category` | String | N | 카테고리 (`동아리 활동` \\| `대외활동`, 기본값: `동아리 활동`) |\n| `imageUrls` | List\\<String\\> | N | 이미지 URL 목록 |\n\n**응답 `201 Created`** (등록)\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"postId\": 1,\n    \"title\": \"공지사항 제목\",\n    \"content\": \"...\",\n    \"isPinned\": false,\n    \"isExternal\": true,\n    \"category\": \"동아리 활동\",\n    \"imageUrls\": []\n  },\n  \"message\": \"공지사항이 등록되었습니다.\"\n}\n```\n\n**응답 `200 OK`** (수정)\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"postId\": 1,\n    \"title\": \"공지사항 제목\",\n    \"content\": \"...\",\n    \"isPinned\": false,\n    \"isExternal\": true,\n    \"category\": \"동아리 활동\",\n    \"imageUrls\": []\n  },\n  \"message\": \"공지사항이 수정되었습니다.\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| title 또는 content 누락 | `400` — BAD_REQUEST |\n| 존재하지 않는 postId | `404` — NOT_FOUND |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"success\": true,\n  \"data\": {\n    \"postId\": 1,\n    \"title\": \"공지사항 제목\",\n    \"content\": \"...\",\n    \"isPinned\": false,\n    \"isExternal\": true,\n    \"category\": \"동아리 활동\",\n    \"imageUrls\": []\n  },\n  \"message\": \"공지사항이 등록되었습니다.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/posts/notices/{postId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/notices/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "notices",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/posts/notices/{postId}\n공지사항을 삭제한다. 첨부 이미지도 함께 삭제. 관리자 전용.\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n**응답 `200 OK`**\n```json\n{ \"success\": true, \"data\": null, \"message\": \"삭제되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 존재하지 않는 ID | `400` — DELETE_FAILED |\n\n---\n\n## 13. 커뮤니티 게시판 (Community Board)\n\nBase Path: `/api/posts/board`\n\n> 모든 엔드포인트 로그인 필수 — `Authorization: Bearer {token}`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "13. Community Board",
+      "item": [
+        {
+          "name": "GET /api/posts/board",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "category",
+                  "value": "??",
+                  "disabled": false
+                },
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### GET /api/posts/board\n게시글 목록을 조회한다. 10개씩 페이징, 최신순 정렬.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `page` | Integer | N | 페이지 번호 (기본값: `0`) |\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"content\": [\n      {\n        \"postId\": 42,\n        \"title\": \"첫 번째 게시글\",\n        \"category\": \"동아리 활동\",\n        \"userId\": \"admin01\",\n        \"createdAt\": \"2026-05-12\",\n        \"commentCount\": 0,\n        \"likeCount\": 0,\n        \"imageUrls\": []\n      }\n    ],\n    \"totalPages\": 1,\n    \"totalElements\": 2,\n    \"number\": 0\n  }\n}\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/posts/board/{postId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/posts/board/{postId}\n게시글 단건을 조회한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `postId` | Integer | 조회할 게시글 ID |\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"postId\": 42,\n    \"title\": \"첫 번째 게시글\",\n    \"content\": \"게시글 내용입니다.\",\n    \"userId\": \"admin01\",\n    \"createdAt\": \"2026-05-12\",\n    \"modifiedAt\": null,\n    \"commentCount\": 0,\n    \"likeCount\": 0,\n    \"imageUrls\": [\"https://pub-xxx.r2.dev/board/uuid/파일명.png\"]\n  }\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 존재하지 않는 ID | `404` — NOT_FOUND |\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/posts/board/{postId}/comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board/:postId/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board",
+                ":postId",
+                "comments"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/posts/board/{postId}/comments\n댓글 목록을 계층형(원댓글 + 대댓글)으로 조회한다.\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": [\n    {\n      \"commentId\": 1,\n      \"userId\": \"superadmin\",\n      \"commentDetail\": \"원댓글입니다.\",\n      \"parentCommentId\": null,\n      \"createdAt\": \"2026-05-12\",\n      \"modifiedAt\": null,\n      \"replies\": [\n        {\n          \"commentId\": 6,\n          \"userId\": \"superadmin\",\n          \"commentDetail\": \"대댓글입니다.\",\n          \"parentCommentId\": 1,\n          \"createdAt\": \"2026-05-12\",\n          \"modifiedAt\": null,\n          \"replies\": []\n        }\n      ]\n    }\n  ]\n}\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/posts/board/{postId}/comments",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board/:postId/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board",
+                ":postId",
+                "comments"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### POST /api/posts/board/{postId}/comments\n댓글을 작성한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `commentDetail` | String | Y | 댓글 내용 (최대 1500자) |\n\n```json\n{ \"commentDetail\": \"좋은 게시글이네요!\" }\n```\n\n**응답 `201 Created`**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"commentId\": 1,\n    \"userId\": \"superadmin\",\n    \"commentDetail\": \"좋은 게시글이네요!\",\n    \"parentCommentId\": null,\n    \"createdAt\": \"2026-05-12\",\n    \"modifiedAt\": null,\n    \"replies\": []\n  },\n  \"message\": \"댓글이 작성되었습니다.\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 존재하지 않는 게시글 | `404` — NOT_FOUND |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"commentDetail\": \"좋은 게시글이네요!\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/posts/board/{postId}/comments/{commentId}/reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board/:postId/comments/:commentId/reply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board",
+                ":postId",
+                "comments",
+                ":commentId",
+                "reply"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                },
+                {
+                  "key": "commentId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### POST /api/posts/board/{postId}/comments/{commentId}/reply\n대댓글을 작성한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `postId` | Integer | 게시글 ID |\n| `commentId` | Integer | 원댓글 ID |\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `commentDetail` | String | Y | 대댓글 내용 (최대 1500자) |\n\n**응답 `201 Created`**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"commentId\": 6,\n    \"userId\": \"superadmin\",\n    \"commentDetail\": \"저도 동의해요!\",\n    \"parentCommentId\": 1,\n    \"createdAt\": \"2026-05-12\",\n    \"modifiedAt\": null,\n    \"replies\": []\n  },\n  \"message\": \"대댓글이 작성되었습니다.\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 존재하지 않는 게시글/댓글 | `404` — NOT_FOUND |\n| 대댓글에 대댓글 시도 | `404` — INVALID_PARENT |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"success\": true,\n  \"data\": {\n    \"commentId\": 6,\n    \"userId\": \"superadmin\",\n    \"commentDetail\": \"저도 동의해요!\",\n    \"parentCommentId\": 1,\n    \"createdAt\": \"2026-05-12\",\n    \"modifiedAt\": null,\n    \"replies\": []\n  },\n  \"message\": \"대댓글이 작성되었습니다.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/posts/board/comments/{commentId}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board/comments/:commentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board",
+                "comments",
+                ":commentId"
+              ],
+              "variable": [
+                {
+                  "key": "commentId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/posts/board/comments/{commentId}\n댓글을 수정한다. 본인만 가능.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `commentDetail` | String | Y | 수정할 내용 |\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": { \"commentId\": 1, \"commentDetail\": \"수정된 댓글입니다.\", \"...\" : \"...\" },\n  \"message\": \"댓글이 수정되었습니다.\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 본인 아님 | `403` — FORBIDDEN |\n| 존재하지 않는 댓글 | `404` — NOT_FOUND |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"success\": true,\n  \"data\": { \"commentId\": 1, \"commentDetail\": \"수정된 댓글입니다.\", \"...\" : \"...\" },\n  \"message\": \"댓글이 수정되었습니다.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/posts/board/comments/{commentId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board/comments/:commentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board",
+                "comments",
+                ":commentId"
+              ],
+              "variable": [
+                {
+                  "key": "commentId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/posts/board/comments/{commentId}\n댓글을 삭제한다. 본인만 가능.\n\n**응답 `200 OK`**\n```json\n{ \"success\": true, \"data\": null, \"message\": \"댓글이 삭제되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 본인 아님 | `403` — FORBIDDEN |\n| 존재하지 않는 댓글 | `404` — NOT_FOUND |\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/posts/board/{postId}/like",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board/:postId/like",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board",
+                ":postId",
+                "like"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### POST /api/posts/board/{postId}/like\n좋아요를 토글한다. 누르면 +1, 다시 누르면 -1. 계정당 1회 제한.\n\n**응답 `200 OK` — 좋아요 추가**\n```json\n{ \"success\": true, \"data\": true, \"message\": \"좋아요를 눌렀습니다.\" }\n```\n\n**응답 `200 OK` — 좋아요 취소**\n```json\n{ \"success\": true, \"data\": false, \"message\": \"좋아요를 취소했습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 존재하지 않는 게시글 | `404` — NOT_FOUND |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"success\": true, \"data\": true, \"message\": \"좋아요를 눌렀습니다.\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/posts/board/file",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/board/file",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "board",
+                "file"
+              ]
+            },
+            "description": "### POST /api/posts/board/file\n파일을 R2에 업로드하고 URL을 반환한다. 이미지·txt·pdf 등 모든 파일 가능. URL 접속 시 자동 다운로드.\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n**Request — form-data**\n\n| Key | Type | 필수 | 설명 |\n|---|---|---|---|\n| `file` | File | Y | 업로드할 파일 |\n\n**응답 `200 OK`**\n```\n\"https://pub-xxx.r2.dev/board/uuid/파일명.txt\"\n```\n\n반환된 URL을 게시글 작성 시 `imageUrls` 배열에 포함해서 전송한다.\n\n---\n\n## 14. 모집 관리자 (Recruitment Admin)\n\nBase Path: `/api/recruit/admin`\n\n> 모든 엔드포인트 관리자 권한 필요 — 요청 파라미터 또는 Body에 `roleId` 포함.\n\n---",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "???? ??"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "14. Recruitment Admin",
+      "item": [
+        {
+          "name": "POST /api/recruit/admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin"
+              ]
+            },
+            "description": "### POST /api/recruit/admin\n모집 공고와 상세 페이지를 동시에 생성한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n| `title` | String | Y | 공고 제목 |\n| `description` | String | N | 공고 본문 |\n| `applyStartDate` | LocalDateTime | Y | 지원 시작일시 |\n| `applyEndDate` | LocalDateTime | Y | 지원 마감일시 |\n| `isActive` | Boolean | N | 활성화 여부 (기본값: `true`) |\n| `updatedBy` | String | Y | 등록 관리자 ID |\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"공고 및 상세 페이지 등록 완료\",\n  \"recruitmentId\": 1,\n  \"pageId\": 1\n}\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"success\",\n  \"message\": \"공고 및 상세 페이지 등록 완료\",\n  \"recruitmentId\": 1,\n  \"pageId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/recruit/admin/{id}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/recruit/admin/{id}\n모집 공고 기본 정보를 수정한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `id` | Integer | 수정할 공고 ID |\n\n**요청 Body** `application/json` — POST와 동일한 구조\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"공고 수정 완료\",\n  \"recruitmentId\": 1\n}\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"success\",\n  \"message\": \"공고 수정 완료\",\n  \"recruitmentId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/recruit/admin/{id}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/recruit/admin/{id}\n모집 공고를 삭제한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `id` | Integer | 삭제할 공고 ID |\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n\n**응답 `200 OK`** (plain text)\n```\n공고 삭제 완료. ID: 1\n```\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/recruit/admin/applications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/applications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                "applications"
+              ],
+              "query": [
+                {
+                  "key": "roleId",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "recruitmentId",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "name",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "### GET /api/recruit/admin/applications\n특정 공고의 지원자 목록을 조회한다.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `recruitmentId` | Integer | Y | 조회할 공고 ID |\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n| `name` | String | N | 지원자 이름 검색 필터 |\n| `status` | String | N | 지원 상태 필터 (`PENDING`, `PASS`, `FAIL` 등) |\n\n**응답 `200 OK`** — 지원자 목록 반환\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/recruit/admin/applications/{applicationId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/applications/:applicationId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                "applications",
+                ":applicationId"
+              ],
+              "variable": [
+                {
+                  "key": "applicationId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/recruit/admin/applications/{applicationId}\n지원서 상세 내용을 조회한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `applicationId` | Integer | 조회할 지원서 ID |\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n\n**응답 `200 OK`** — 지원서 단건 반환\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/recruit/admin/applications/status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/applications/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                "applications",
+                "status"
+              ]
+            },
+            "description": "### PATCH /api/recruit/admin/applications/status\n지원서 상태를 변경한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n| `applicationId` | Integer | Y | 상태를 변경할 지원서 ID |\n| `status` | String | Y | 변경할 상태 (`PENDING` \\| `PASS` \\| `FAIL` 등) |\n\n```json\n{\n  \"roleId\": 1,\n  \"applicationId\": 5,\n  \"status\": \"PASS\"\n}\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"지원서 상태가 PASS(으)로 변경되었습니다.\"\n}\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleId\": 1,\n  \"applicationId\": 5,\n  \"status\": \"PASS\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/recruit/admin/applications/interview",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/applications/interview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                "applications",
+                "interview"
+              ]
+            },
+            "description": "### POST /api/recruit/admin/applications/interview\n지원자에게 면접 스케줄을 배정한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"면접 배정 완료\" }\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"success\", \"message\": \"면접 배정 완료\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/recruit/admin/applications/excel",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/applications/excel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                "applications",
+                "excel"
+              ],
+              "query": [
+                {
+                  "key": "roleId",
+                  "value": "1",
+                  "disabled": false
+                },
+                {
+                  "key": "recruitmentId",
+                  "value": "1",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/recruit/admin/applications/excel\n지원자 목록을 엑셀 파일로 다운로드한다.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `recruitmentId` | Integer | Y | 조회할 공고 ID |\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n\n**응답 `200 OK`**\n- Content-Type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`\n- Content-Disposition: `attachment; filename=applications_recruit_{recruitmentId}.xlsx`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/recruit/admin/{id}/page",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/:id/page",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                ":id",
+                "page"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PATCH /api/recruit/admin/{id}/page\n모집 상세 페이지 내용을 수정한다 (Hero, Intros, Cards, Galleries, Contacts 통합).\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `id` | Integer | 수정할 공고 ID |\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n| `adminId` | String | N | 관리자 ID |\n| `heroYear` | String | N | Hero 섹션 연도 |\n| `heroTitle` | String | N | Hero 섹션 제목 |\n| `heroSubTitle` | String | N | Hero 섹션 부제목 |\n| `heroBtnText` | String | N | Hero 버튼 텍스트 |\n| `heroBgUrl` | String | N | Hero 배경 이미지 URL |\n| `intros` | List | N | 소개 항목 목록 (`contents`, `sortOrder`) |\n| `cards` | List | N | 분야 카드 목록 (`applyField`, `cardTitle`, `cardSubTitle`, `cardDesc`, `imageUrl`, `sortOrder`) |\n| `galleries` | List | N | 갤러리 목록 (`imageUrl`, `imageDesc`, `tag`, `sortOrder`) |\n| `contacts` | List | N | 연락처 목록 (`contactType`, `label`, `value`, `subValue`, `sortOrder`) |\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"success\",\n  \"message\": \"상세 페이지 정보 수정 완료\",\n  \"recruitmentId\": 1\n}\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"success\",\n  \"message\": \"상세 페이지 정보 수정 완료\",\n  \"recruitmentId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/recruit/admin/{id}/slots",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recruit/admin/:id/slots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recruit",
+                "admin",
+                ":id",
+                "slots"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### POST /api/recruit/admin/{id}/slots\n면접 날짜 및 정원 슬롯을 설정한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `id` | Integer | 대상 공고 ID |\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |\n| `adminId` | String | N | 관리자 ID |\n| `slots` | List | Y | 슬롯 목록 |\n| `slots[].slotDate` | LocalDate | Y | 면접 날짜 (`yyyy-MM-dd`) |\n| `slots[].capacity` | Integer | Y | 해당 날짜 정원 수 |\n\n```json\n{\n  \"roleId\": 1,\n  \"adminId\": \"admin01\",\n  \"slots\": [\n    { \"slotDate\": \"2026-06-01\", \"capacity\": 10 },\n    { \"slotDate\": \"2026-06-02\", \"capacity\": 8 }\n  ]\n}\n```\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"면접 날짜 및 정원 설정 완료\" }\n```\n\n---\n\n## 15. 활동 프로젝트 (Projects)\n\nBase Path: `/api/projects`\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roleId\": 1,\n  \"adminId\": \"admin01\",\n  \"slots\": [\n    { \"slotDate\": \"2026-06-01\", \"capacity\": 10 },\n    { \"slotDate\": \"2026-06-02\", \"capacity\": 8 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "15. Projects",
+      "item": [
+        {
+          "name": "GET /api/projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/projects\n프로젝트 목록을 조회한다. 키워드 검색 및 상태 필터링 지원. 비로그인 사용자 접근 가능.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `keyword` | String | N | 프로젝트명 검색 키워드 |\n| `status` | String | N | 프로젝트 상태 필터 (`PENDING` \\| `ACTIVE` \\| `CLOSED`) |\n| `page` | Integer | N | 페이지 번호 (기본값: `0`, 6개씩 페이징) |\n\n**응답 `200 OK`** (Page)\n```json\n{\n  \"content\": [\n    {\n      \"projectId\": 1,\n      \"projectName\": \"웹 개발 스터디\",\n      \"leaderId\": \"user01\",\n      \"leaderName\": \"홍길동\",\n      \"photoUrl\": \"https://cdn.example.com/project/uuid.png\",\n      \"description\": \"프로젝트 설명입니다.\",\n      \"goal\": \"목표\",\n      \"memberCount\": 3,\n      \"location\": \"동아리방\",\n      \"notice\": \"공지사항\",\n      \"status\": \"ACTIVE\",\n      \"schedules\": [\n        { \"dayOfWeek\": 3, \"meetTime\": \"18:00\" }\n      ]\n    }\n  ],\n  \"totalPages\": 1,\n  \"totalElements\": 5,\n  \"number\": 0\n}\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/projects/{projectId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/:projectId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ":projectId"
+              ],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/projects/{projectId}\n프로젝트 상세 정보를 조회한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `projectId` | Integer | 조회할 프로젝트 ID |\n\n**응답 `200 OK`** — GET /api/projects 목록 응답의 단건 형태\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/projects",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### POST /api/projects\n프로젝트 게시글을 작성한다.\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `projectName` | String | Y | 프로젝트 이름 |\n| `leaderId` | String | N | 리더 ID |\n| `leaderName` | String | N | 리더 이름 |\n| `photoUrl` | String | N | 대표 이미지 URL |\n| `description` | String | N | 프로젝트 설명 |\n| `goal` | String | N | 프로젝트 목표 |\n| `location` | String | N | 활동 장소 |\n| `notice` | String | N | 공지사항 |\n| `status` | String | N | 상태 (`PENDING` \\| `ACTIVE` \\| `CLOSED`) |\n| `schedules` | List | N | 활동 일정 목록 |\n| `schedules[].dayOfWeek` | Integer | N | 요일 (0=일 ~ 6=토) |\n| `schedules[].meetTime` | String | N | 모임 시간 (예: `18:00`) |\n\n```json\n{\n  \"projectName\": \"웹 개발 스터디\",\n  \"description\": \"React와 Spring Boot로 풀스택 개발\",\n  \"goal\": \"실무 프로젝트 경험\",\n  \"location\": \"동아리방\",\n  \"status\": \"ACTIVE\",\n  \"schedules\": [\n    { \"dayOfWeek\": 3, \"meetTime\": \"18:00\" }\n  ]\n}\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"projectId\": 1,\n  \"message\": \"프로젝트 모집 글이 성공적으로 등록되었습니다.\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 로그인이 필요합니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectName\": \"웹 개발 스터디\",\n  \"description\": \"React와 Spring Boot로 풀스택 개발\",\n  \"goal\": \"실무 프로젝트 경험\",\n  \"location\": \"동아리방\",\n  \"status\": \"ACTIVE\",\n  \"schedules\": [\n    { \"dayOfWeek\": 3, \"meetTime\": \"18:00\" }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/projects/{projectId}/apply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/:projectId/apply",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ":projectId",
+                "apply"
+              ],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### POST /api/projects/{projectId}/apply\n프로젝트 모집에 지원서를 제출한다.\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `projectId` | Integer | 지원할 프로젝트 ID |\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `email` | String | Y | 지원자 이메일 |\n| `availableDate` | String | Y | 면접 가능 날짜 (`yyyy-MM-dd` 형식) |\n| `availableTime` | String | Y | 면접 가능 시간 (예: `오후 6시`) |\n| `privacyAgreement` | Boolean | N | 개인정보 동의 여부 |\n\n```json\n{\n  \"email\": \"hong@example.com\",\n  \"availableDate\": \"2026-05-20\",\n  \"availableTime\": \"오후 6시\",\n  \"privacyAgreement\": true\n}\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"message\": \"지원서가 성공적으로 접수되었습니다 🙌\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 다시 로그인해 주세요. |\n| 필수 필드 누락 | `400` — 요일과 시간, 이메일은 필수입니다. |\n| 중복 지원 / 기타 검증 실패 | `400` — 사유 메시지 반환 |\n\n---\n\n## 16. 다중 게시판 (Multi-Board)\n\nBase Path: `/api/board`\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n> boardId로 여러 게시판을 구분한다.\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"hong@example.com\",\n  \"availableDate\": \"2026-05-20\",\n  \"availableTime\": \"오후 6시\",\n  \"privacyAgreement\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "16. Multi-Board",
+      "item": [
+        {
+          "name": "POST /api/board/{boardId}",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/board/:boardId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "board",
+                ":boardId"
+              ],
+              "variable": [
+                {
+                  "key": "boardId",
+                  "value": "1"
+                }
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "??",
+                  "disabled": false
+                },
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### POST /api/board/{boardId}\n게시글을 작성한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `boardId` | Integer | 게시판 ID |\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `title` | String | Y | 제목 |\n| `content` | String | Y | 본문 |\n| `isPinned` | Boolean | N | 상단 고정 여부 |\n| `isExternal` | Boolean | N | 외부 공개 여부 |\n| `category` | String | N | 카테고리 |\n| `imageUrls` | List\\<String\\> | N | 첨부 파일/이미지 URL 목록 |\n\n**응답 `200 OK`**\n```json\n{\n  \"status\": \"success\",\n  \"postId\": 1,\n  \"message\": \"등록되었습니다.\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"success\",\n  \"postId\": 1,\n  \"message\": \"등록되었습니다.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/board/post/{postId}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/board/post/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "board",
+                "post",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PATCH /api/board/post/{postId}\n게시글을 수정한다. 본인만 가능.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `postId` | Integer | 수정할 게시글 ID |\n\n**요청 Body** `application/json` — POST와 동일한 구조\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"수정되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 본인 아님 / 권한 없음 | `403` — 사유 메시지 반환 |\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"success\", \"message\": \"수정되었습니다.\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/board/post/{postId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/board/post/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "board",
+                "post",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/board/post/{postId}\n게시글을 삭제한다. 본인만 가능.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `postId` | Integer | 삭제할 게시글 ID |\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"삭제되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 본인 아님 / 권한 없음 | `403` — 사유 메시지 반환 |\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/board/{boardId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/board/:boardId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "board",
+                ":boardId"
+              ],
+              "variable": [
+                {
+                  "key": "boardId",
+                  "value": "1"
+                }
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "??",
+                  "disabled": false
+                },
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/board/{boardId}\n게시글 목록을 조회한다. 카테고리 필터링 및 키워드 검색 지원. 6개씩 페이징.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `boardId` | Integer | 게시판 ID |\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `category` | String | N | 카테고리 필터 |\n| `type` | String | N | 검색 타입 (예: `title`, `content`) |\n| `keyword` | String | N | 검색 키워드 |\n| `page` | Integer | N | 페이지 번호 (기본값: `0`) |\n\n**응답 `200 OK`** (Page)\n```json\n{\n  \"content\": [\n    {\n      \"postId\": 1,\n      \"title\": \"게시글 제목\",\n      \"category\": \"동아리 활동\",\n      \"userId\": \"user01\",\n      \"createdAt\": \"2026-05-19\",\n      \"commentCount\": 0,\n      \"likeCount\": 0,\n      \"imageUrls\": []\n    }\n  ],\n  \"totalPages\": 1,\n  \"totalElements\": 3,\n  \"number\": 0\n}\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/board/my/stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/board/my/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "board",
+                "my",
+                "stats"
+              ]
+            },
+            "description": "### GET /api/board/my/stats\n현재 로그인한 사용자의 게시글 통계 정보를 조회한다.\n\n**응답 `200 OK`** — 통계 정보 반환 (게시글 수 등)\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/board/my/posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/board/my/posts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "board",
+                "my",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/board/my/posts\n현재 로그인한 사용자의 게시글 목록을 조회한다. 6개씩 페이징.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `page` | Integer | N | 페이지 번호 (기본값: `0`) |\n\n**응답 `200 OK`** (Page) — GET /api/board/{boardId} 응답과 동일한 구조\n\n---\n\n## 17. 스터디 (Study)\n\nBase Path: `/api/studies`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "17. Study",
+      "item": [
+        {
+          "name": "GET /api/studies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/studies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "studies"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/studies\n스터디 목록을 조회한다. 키워드 검색 및 상태 필터링 지원. 비로그인 가능. 6개씩 페이징.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `keyword` | String | N | 스터디명·소개·목표 검색 키워드 |\n| `status` | String | N | 상태 필터 (`PENDING` \\| `ACTIVE` \\| `CLOSED`) |\n| `page` | Integer | N | 페이지 번호 (기본값: `0`) |\n\n**응답 `200 OK`** (Page)\n```json\n{\n  \"content\": [\n    {\n      \"studyId\": 1,\n      \"studyName\": \"알고리즘 스터디\",\n      \"leaderId\": \"user01\",\n      \"leaderName\": \"홍길동\",\n      \"language\": \"Python\",\n      \"techStack\": \"알고리즘, 자료구조\",\n      \"description\": \"코딩테스트 대비 알고리즘 스터디입니다.\",\n      \"goal\": \"백준 골드 달성\",\n      \"memberCount\": 1,\n      \"location\": \"동아리방\",\n      \"notice\": \"결석 시 사전 공지 필수\",\n      \"status\": \"ACTIVE\",\n      \"createdBy\": \"user01\",\n      \"createdDate\": \"2026-05-20T10:00:00\",\n      \"modifiedDate\": \"2026-05-20T10:00:00\",\n      \"schedules\": [\n        { \"dayOfWeek\": 3, \"meetTime\": \"18:00\" }\n      ],\n      \"curriculums\": [\n        { \"week\": 1, \"contents\": \"그리디 알고리즘\" },\n        { \"week\": 2, \"contents\": \"BFS / DFS\" }\n      ]\n    }\n  ],\n  \"totalPages\": 1,\n  \"totalElements\": 3,\n  \"number\": 0\n}\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/studies/{studyId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/studies/:studyId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "studies",
+                ":studyId"
+              ],
+              "variable": [
+                {
+                  "key": "studyId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/studies/{studyId}\n스터디 상세 정보를 조회한다. 비로그인 가능.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `studyId` | Integer | 조회할 스터디 ID |\n\n**응답 `200 OK`** — GET /api/studies 목록 응답의 단건 형태\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 존재하지 않는 ID | `404` — 스터디를 찾을 수 없습니다. |\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/studies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/studies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "studies"
+              ],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### POST /api/studies\n스터디를 생성한다. 팀장(`leaderId`)이 자동으로 LEADER 권한 멤버로 등록된다.\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `studyName` | String | Y | 스터디명 (최대 100자) |\n| `leaderId` | String | Y | 팀장 userId |\n| `leaderName` | String | Y | 팀장 이름 |\n| `language` | String | N | 사용 언어 |\n| `techStack` | String | N | 기술 스택 |\n| `description` | String | N | 활동 소개 (최대 500자) |\n| `goal` | String | N | 활동 목표 (최대 500자) |\n| `location` | String | N | 진행 장소 및 방법 |\n| `notice` | String | N | 유의사항 (최대 500자) |\n| `status` | String | N | 상태 (`PENDING` \\| `ACTIVE` \\| `CLOSED`, 기본값: `ACTIVE`) |\n| `schedules` | List | N | 진행 요일·시간 목록 |\n| `schedules[].dayOfWeek` | Integer | Y | 요일 (0=일 ~ 6=토) |\n| `schedules[].meetTime` | String | Y | 진행 시간 (`HH:mm`, 예: `18:00`) |\n| `curriculums` | List | N | 주차별 커리큘럼 목록 |\n| `curriculums[].week` | Integer | Y | 주차 번호 (1, 2, 3 …) |\n| `curriculums[].contents` | String | Y | 해당 주차 내용 (최대 500자) |\n\n```json\n{\n  \"studyName\": \"알고리즘 스터디\",\n  \"leaderId\": \"user01\",\n  \"leaderName\": \"홍길동\",\n  \"language\": \"Python\",\n  \"techStack\": \"알고리즘, 자료구조\",\n  \"description\": \"코딩테스트 대비 스터디\",\n  \"goal\": \"백준 골드 달성\",\n  \"location\": \"동아리방\",\n  \"status\": \"ACTIVE\",\n  \"schedules\": [\n    { \"dayOfWeek\": 3, \"meetTime\": \"18:00\" }\n  ],\n  \"curriculums\": [\n    { \"week\": 1, \"contents\": \"그리디 알고리즘\" },\n    { \"week\": 2, \"contents\": \"BFS / DFS\" }\n  ]\n}\n```\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"studyId\": 1,\n  \"message\": \"스터디가 성공적으로 등록되었습니다.\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 로그인이 필요합니다. |\n| 필수 필드 누락 | `400` — 필수 항목이 누락되었습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studyName\": \"알고리즘 스터디\",\n  \"leaderId\": \"user01\",\n  \"leaderName\": \"홍길동\",\n  \"language\": \"Python\",\n  \"techStack\": \"알고리즘, 자료구조\",\n  \"description\": \"코딩테스트 대비 스터디\",\n  \"goal\": \"백준 골드 달성\",\n  \"location\": \"동아리방\",\n  \"status\": \"ACTIVE\",\n  \"schedules\": [\n    { \"dayOfWeek\": 3, \"meetTime\": \"18:00\" }\n  ],\n  \"curriculums\": [\n    { \"week\": 1, \"contents\": \"그리디 알고리즘\" },\n    { \"week\": 2, \"contents\": \"BFS / DFS\" }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT /api/studies/{studyId}",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/studies/:studyId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "studies",
+                ":studyId"
+              ],
+              "variable": [
+                {
+                  "key": "studyId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PUT /api/studies/{studyId}\n스터디 정보를 수정한다. 팀장만 가능. `schedules`·`curriculums` 전달 시 기존 데이터를 교체한다.\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `studyId` | Integer | 수정할 스터디 ID |\n\n**요청 Body** `application/json` — POST와 동일한 구조 (수정할 필드만 포함 가능)\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": { \"studyId\": 1, \"studyName\": \"수정된 스터디명\", \"...\" : \"...\" },\n  \"message\": \"스터디가 수정되었습니다.\"\n}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 로그인이 필요합니다. |\n| 팀장 아님 | `403` — 스터디 팀장만 수정할 수 있습니다. |\n| 존재하지 않는 ID | `404` — 스터디를 찾을 수 없습니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"success\": true,\n  \"data\": { \"studyId\": 1, \"studyName\": \"수정된 스터디명\", \"...\" : \"...\" },\n  \"message\": \"스터디가 수정되었습니다.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/studies/{studyId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/studies/:studyId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "studies",
+                ":studyId"
+              ],
+              "variable": [
+                {
+                  "key": "studyId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/studies/{studyId}\n스터디를 삭제한다. 팀장만 가능. 연관된 일정·커리큘럼·멤버 데이터도 함께 삭제된다.\n\n> 로그인 필수 — `Authorization: Bearer {token}`\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `studyId` | Integer | 삭제할 스터디 ID |\n\n**응답 `200 OK`**\n```json\n{ \"success\": true, \"message\": \"스터디가 삭제되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 로그인이 필요합니다. |\n| 팀장 아님 | `403` — 스터디 팀장만 삭제할 수 있습니다. |\n| 존재하지 않는 ID | `404` — 스터디를 찾을 수 없습니다. |\n\n---\n\n---\n\n## 18. IT 이슈 (IT Issue)",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "18. IT Issue",
+      "item": [
+        {
+          "name": "GET /api/it-issues",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/it-issues",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "it-issues"
+              ]
+            },
+            "description": "### GET /api/it-issues\nAI Times 최신 IT 이슈 6개를 조회한다. 비로그인 접근 가능.\n\n- **인증**: 불필요\n- **갱신 주기**: 서버 시작 시 즉시 수집, 이후 매일 05:00 자동 갱신\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": [\n    {\n      \"title\": \"엔비디아, 'RTX 5090' 한장으로 1분 영상 생성하는 월드 모델 오픈 공개\",\n      \"imageUrl\": \"https://cdn.aitimes.com/news/photo/202605/210609_213000_1234.jpg\",\n      \"articleUrl\": \"https://www.aitimes.com/news/articleView.html?idxno=210609\"\n    }\n  ],\n  \"code\": null,\n  \"message\": null\n}\n```\n\n**응답 (데이터 없음)**\n```json\n{\n  \"success\": false,\n  \"data\": null,\n  \"code\": \"NO_DATA\",\n  \"message\": \"현재 이슈를 불러올 수 없습니다.\"\n}\n```\n\n---\n\n## 19. 투표 (Vote)\n\nBase Path: `/api/votes`\n\n> **역할(roleId) 체계**: 1=최고관리자, 2=관리자, 3=정회원, 4=준회원, 5=게스트\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "19. Vote",
+      "item": [
+        {
+          "name": "POST /api/votes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/votes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "votes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### POST /api/votes\n투표를 생성한다.\n\n- **인증**: 필요\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `title` | String | Y | 투표 제목 (최대 100자) |\n| `content` | String | N | 투표 설명 |\n| `deadline` | LocalDateTime | N | 마감 일시 (예: `2026-06-10T23:59:00`) |\n| `isMultiple` | Boolean | N | 복수 선택 여부 (기본값: `false`) |\n| `isSecret` | Boolean | N | 비밀투표 여부 (기본값: `false`) |\n| `participantRole` | Integer | N | 투표 참가 가능 최소 roleId (기본값: `3` = 정회원 이상) |\n| `resultViewRole` | Integer | N | 결과 조회 가능 최소 roleId (기본값: `3`, 공개투표일 때만 적용) |\n| `options` | String[] | Y | 투표 항목 목록 (최소 2개) |\n\n```json\n{\n  \"title\": \"이번 주 모임 장소\",\n  \"content\": \"이번 주 동아리 모임 장소를 투표해주세요.\",\n  \"deadline\": \"2026-06-10T23:59:00\",\n  \"isMultiple\": false,\n  \"isSecret\": false,\n  \"participantRole\": 3,\n  \"resultViewRole\": 3,\n  \"options\": [\"강의실 302호\", \"도서관 세미나실\", \"카페 스터디룸\"]\n}\n```\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"voteId\": 1, \"message\": \"투표가 등록되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"이번 주 모임 장소\",\n  \"content\": \"이번 주 동아리 모임 장소를 투표해주세요.\",\n  \"deadline\": \"2026-06-10T23:59:00\",\n  \"isMultiple\": false,\n  \"isSecret\": false,\n  \"participantRole\": 3,\n  \"resultViewRole\": 3,\n  \"options\": [\"강의실 302호\", \"도서관 세미나실\", \"카페 스터디룸\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/votes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/votes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "votes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/votes\n투표 목록을 조회한다. 10개씩 페이징.\n\n- **인증**: 불필요\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `page` | Integer | N | 페이지 번호 (기본값: `0`) |\n| `size` | Integer | N | 페이지 크기 (기본값: `10`) |\n\n**응답 `200 OK`** (Page)\n```json\n{\n  \"content\": [\n    {\n      \"voteId\": 1,\n      \"userId\": \"user01\",\n      \"title\": \"이번 주 모임 장소\",\n      \"deadline\": \"2026-06-10T23:59:00\",\n      \"isClosed\": false,\n      \"isSecret\": false,\n      \"participantRole\": 3,\n      \"resultViewRole\": 3,\n      \"optionCount\": 3,\n      \"totalVoteCount\": 5,\n      \"createdDate\": \"2026-05-30T21:58:42\"\n    }\n  ],\n  \"totalPages\": 1,\n  \"totalElements\": 1,\n  \"number\": 0\n}\n```\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/votes/{voteId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/votes/:voteId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "votes",
+                ":voteId"
+              ],
+              "variable": [
+                {
+                  "key": "voteId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/votes/{voteId}\n투표 상세 정보를 조회한다.\n\n- **인증**: 선택 (로그인 시 `myVotedOptionId` 포함 및 결과 가시성 적용)\n- 결과 가시성(`voteCount`):\n  - 관리자·최고관리자: 항상 표시\n  - 생성자: 항상 표시\n  - 비밀투표: 위 두 경우 외에는 `voteCount = null`\n  - 공개투표: `resultViewRole` 이하 roleId 사용자에게 표시, 그 외 `null`\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `voteId` | Integer | 조회할 투표 ID |\n\n**응답 `200 OK`**\n```json\n{\n  \"voteId\": 1,\n  \"userId\": \"user01\",\n  \"title\": \"이번 주 모임 장소\",\n  \"content\": \"이번 주 동아리 모임 장소를 투표해주세요.\",\n  \"deadline\": \"2026-06-10T23:59:00\",\n  \"isMultiple\": false,\n  \"isSecret\": false,\n  \"participantRole\": 3,\n  \"resultViewRole\": 3,\n  \"isClosed\": false,\n  \"createdDate\": \"2026-05-30T21:58:42\",\n  \"modifiedDate\": null,\n  \"myVotedOptionId\": 2,\n  \"options\": [\n    { \"optionId\": 1, \"optionText\": \"강의실 302호\", \"sortOrder\": 0, \"voteCount\": 0 },\n    { \"optionId\": 2, \"optionText\": \"도서관 세미나실\", \"sortOrder\": 1, \"voteCount\": 3 },\n    { \"optionId\": 3, \"optionText\": \"카페 스터디룸\", \"sortOrder\": 2, \"voteCount\": 2 }\n  ]\n}\n```\n\n> `myVotedOptionId`: 미로그인 또는 미투표 시 `null`\n> `voteCount`: 결과 조회 권한 없을 경우 `null`\n\n---",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/votes/{voteId}/result",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/votes/:voteId/result",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "votes",
+                ":voteId",
+                "result"
+              ],
+              "variable": [
+                {
+                  "key": "voteId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### GET /api/votes/{voteId}/result\n투표 상세 결과를 조회한다. 옵션별 voteCount와 투표자 목록을 반환한다.\n\n- **인증**: 필요\n- **접근 권한**:\n  - 비밀투표: 생성자 또는 관리자·최고관리자만\n  - 공개투표: 생성자·관리자 항상, 그 외 `resultViewRole` 이하 roleId 사용자\n- **투표자 목록(`voters`)**: 관리자·최고관리자에게만 포함, 그 외 `null`\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `voteId` | Integer | 조회할 투표 ID |\n\n**응답 `200 OK`**\n```json\n{\n  \"voteId\": 1,\n  \"creatorId\": \"user01\",\n  \"title\": \"이번 주 모임 장소\",\n  \"content\": \"이번 주 동아리 모임 장소를 투표해주세요.\",\n  \"isSecret\": false,\n  \"participantRole\": 3,\n  \"resultViewRole\": 3,\n  \"deadline\": \"2026-06-10T23:59:00\",\n  \"isClosed\": false,\n  \"totalVoteCount\": 5,\n  \"options\": [\n    {\n      \"optionId\": 1,\n      \"optionText\": \"강의실 302호\",\n      \"sortOrder\": 0,\n      \"voteCount\": 0,\n      \"voters\": null\n    },\n    {\n      \"optionId\": 2,\n      \"optionText\": \"도서관 세미나실\",\n      \"sortOrder\": 1,\n      \"voteCount\": 3,\n      \"voters\": [\"admin01\", \"user02\", \"user03\"]\n    }\n  ]\n}\n```\n\n> `voters`: 관리자만 포함됨, 그 외 `null`\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n| 결과 조회 권한 없음 | `403` — 비밀투표의 결과는 투표 생성자와 관리자만 조회할 수 있습니다. |\n| 존재하지 않는 투표 | `404` |\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/votes/{voteId}/vote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/votes/:voteId/vote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "votes",
+                ":voteId",
+                "vote"
+              ],
+              "variable": [
+                {
+                  "key": "voteId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### POST /api/votes/{voteId}/vote\n투표한다. 1인 1표 제한.\n\n- **인증**: 필요\n- **참가 권한**: 관리자는 항상 가능. 그 외 사용자는 `participantRole` 이하 roleId 필요\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `voteId` | Integer | 투표 ID |\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `optionId` | Integer | Y | 선택한 항목 ID |\n\n```json\n{ \"optionId\": 2 }\n```\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"투표가 완료되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 참가 권한 없음 | `403` — 이 투표에 참가할 권한이 없습니다. |\n| 이미 투표한 경우 | `400` — 이미 투표하셨습니다. |\n| 마감된 투표 | `400` — 마감된 투표입니다. |\n| optionId 누락 | `400` — optionId는 필수입니다. |\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"optionId\": 2 }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/votes/{voteId}/vote",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/votes/:voteId/vote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "votes",
+                ":voteId",
+                "vote"
+              ],
+              "variable": [
+                {
+                  "key": "voteId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/votes/{voteId}/vote\n투표를 취소한다. 마감된 투표는 취소 불가.\n\n- **인증**: 필요\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `voteId` | Integer | 투표 ID |\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"투표가 취소되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 투표 기록 없음 | `400` — 투표 기록이 없습니다. |\n| 마감된 투표 | `400` — 마감된 투표는 취소할 수 없습니다. |\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/votes/{voteId}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/votes/:voteId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "votes",
+                ":voteId"
+              ],
+              "variable": [
+                {
+                  "key": "voteId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PATCH /api/votes/{voteId}\n투표를 수정한다. 생성자 또는 관리자만 가능. 투표가 시작된 후(투표 기록 존재)에는 수정 불가.\n\n- **인증**: 필요\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `voteId` | Integer | 수정할 투표 ID |\n\n**요청 Body** — POST /api/votes 와 동일한 구조\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"수정되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 본인 아님 / 관리자 아님 | `403` — 수정 권한이 없습니다. |\n| 투표 시작 후 수정 시도 | `403` — 투표가 시작된 후에는 수정할 수 없습니다. |\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"success\", \"message\": \"수정되었습니다.\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/votes/{voteId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/votes/:voteId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "votes",
+                ":voteId"
+              ],
+              "variable": [
+                {
+                  "key": "voteId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/votes/{voteId}\n투표를 삭제한다. 생성자 또는 관리자만 가능.\n\n- **인증**: 필요\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `voteId` | Integer | 삭제할 투표 ID |\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"삭제되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |\n| 본인 아님 / 관리자 아님 | `403` — 삭제 권한이 없습니다. |\n\n---\n\n## 20. 게시판 관리 Admin (Board Admin)\n\nBase Path: `/api/admin`\n\n> 모든 엔드포인트 JWT 인증 필요 (`Authorization: Bearer {token}`) — 관리자 권한 필요\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "20. Board Admin",
+      "item": [
+        {
+          "name": "DELETE /api/admin/posts/{postId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/posts/:postId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "posts",
+                ":postId"
+              ],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/admin/posts/{postId}\n관리자가 게시글을 강제 삭제한다. 작성자 무관하게 삭제 가능.\n\n**응답 `200 OK`**\n```json\n{ \"success\": true, \"data\": null, \"message\": \"게시글이 삭제되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음 | `401` |\n| 관리자 아님 | `403` |\n| 존재하지 않는 게시글 | `404` |\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/admin/boards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/boards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "boards"
+              ]
+            },
+            "description": "### GET /api/admin/boards\n게시판 목록 전체 조회.\n\n**응답 `200 OK`**\n```json\n{\n  \"success\": true,\n  \"data\": [\n    { \"boardId\": 1, \"boardName\": \"공지사항\", \"boardDescription\": \"공지사항 게시판\" }\n  ]\n}\n```\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/admin/boards",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/boards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "boards"
+              ]
+            },
+            "description": "### POST /api/admin/boards\n새 게시판 추가.\n\n**Request Body**\n```json\n{ \"boardName\": \"자유게시판\", \"boardDescription\": \"자유롭게 작성하는 게시판\" }\n```\n\n**응답 `201 Created`**\n```json\n{ \"success\": true, \"data\": { \"boardId\": 5, \"boardName\": \"자유게시판\", \"boardDescription\": \"자유롭게 작성하는 게시판\" }, \"message\": \"게시판이 추가되었습니다.\" }\n```\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"boardName\": \"자유게시판\", \"boardDescription\": \"자유롭게 작성하는 게시판\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/admin/boards/{boardId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/boards/:boardId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "boards",
+                ":boardId"
+              ],
+              "variable": [
+                {
+                  "key": "boardId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/admin/boards/{boardId}\n게시판 삭제.\n\n**응답 `200 OK`**\n```json\n{ \"success\": true, \"data\": null, \"message\": \"게시판이 삭제되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 토큰 없음 | `401` |\n| 관리자 아님 | `403` |\n| 존재하지 않는 게시판 | `404` |\n\n---\n\n## 21. 마이페이지 (My Page)\n\nBase Path: `/api/mypage`\n\n> 모든 엔드포인트 로그인 필수 — `Authorization: Bearer {token}`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "21. My Page",
+      "item": [
+        {
+          "name": "GET /api/mypage/{targetUserId}",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/mypage/:targetUserId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mypage",
+                ":targetUserId"
+              ],
+              "variable": [
+                {
+                  "key": "targetUserId",
+                  "value": "member01"
+                }
+              ]
+            },
+            "description": "### GET /api/mypage/{targetUserId}\n특정 사용자의 마이페이지 정보를 조회한다. 본인 여부(`isOwner`)를 함께 반환하여 수정 UI를 제어한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `targetUserId` | String | 조회할 사용자 ID |\n\n**응답 `200 OK`**\n```json\n{\n  \"userId\": \"user01\",\n  \"userName\": \"홍길동\",\n  \"userEmail\": \"hong@example.com\",\n  \"userMbti\": \"INTJ\",\n  \"userIntroduce\": \"안녕하세요!\",\n  \"userPhotoUrl\": \"https://pub-xxx.r2.dev/photo/uuid.png\",\n  \"roleName\": \"부원\",\n  \"isOwner\": true\n}\n```\n\n> `userPhotoUrl`: 프로필 사진 미등록 시 `null`\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/mypage/introduce",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mypage/introduce",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mypage",
+                "introduce"
+              ]
+            },
+            "description": "### PATCH /api/mypage/introduce\n본인의 한 줄 자기소개를 수정한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `userIntroduce` | String | Y | 수정할 자기소개 (글자 수 제한 있음) |\n\n```json\n{ \"userIntroduce\": \"새로운 한 줄 소개입니다.\" }\n```\n\n**응답 `200 OK`**\n```json\n{ \"success\": true, \"message\": \"자기소개가 성공적으로 수정되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 글자 수 초과 등 유효성 실패 | `400` — 사유 메시지 반환 |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"userIntroduce\": \"새로운 한 줄 소개입니다.\" }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/mypage/photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/mypage/photo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "mypage",
+                "photo"
+              ]
+            },
+            "description": "### POST /api/mypage/photo\n본인의 프로필 사진을 변경한다. R2에 이미지 업로드 후 반환된 메타데이터를 전달한다.\n\n**요청 Body** `application/json`\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `attachedName` | String | Y | 업로드된 파일명 |\n| `attachedUrl` | String | Y | R2 업로드 후 반환된 이미지 URL |\n| `attachedSize` | Integer | N | 파일 크기 (bytes) |\n\n```json\n{\n  \"attachedName\": \"profile.png\",\n  \"attachedUrl\": \"https://pub-xxx.r2.dev/photo/uuid-profile.png\",\n  \"attachedSize\": 204800\n}\n```\n\n**응답 `200 OK`**\n```json\n{ \"success\": true, \"message\": \"프로필 사진이 성공적으로 변경되었습니다.\" }\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 이미지 주소 누락 등 유효성 실패 | `400` — 사유 메시지 반환 |\n\n---\n\n## 22. 프로젝트 관리자 (Project Admin)\n\nBase Path: `/api/admin/projects`\n\n> 모든 엔드포인트 JWT 인증 필요 — 관리자(roleId 1 또는 2)만 접근 가능\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"attachedName\": \"profile.png\",\n  \"attachedUrl\": \"https://pub-xxx.r2.dev/photo/uuid-profile.png\",\n  \"attachedSize\": 204800\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "22. Project Admin",
+      "item": [
+        {
+          "name": "GET /api/admin/projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "disabled": false
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "### GET /api/admin/projects\n모든 프로젝트를 페이징하여 조회한다.\n\n**Query Parameter**\n\n| 파라미터 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `page` | Integer | N | 페이지 번호 (기본값: `0`) |\n| `size` | Integer | N | 페이지 크기 (기본값: `10`) |\n\n**응답 `200 OK`** (Page) — `GET /api/projects` 목록 응답과 동일한 구조\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 관리자 아님 | `403` — 관리자만 접근 가능한 페이지입니다. |\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /api/admin/projects/{projectId}/close",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/projects/:projectId/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "projects",
+                ":projectId",
+                "close"
+              ],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### PATCH /api/admin/projects/{projectId}/close\n프로젝트를 강제 종료(상태 `CLOSED`) 처리한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `projectId` | Integer | 종료할 프로젝트 ID |\n\n**응답 `200 OK`**\n```json\n{}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 관리자 아님 | `403` — 해당 작업을 수행할 권한이 없습니다. |\n| 존재하지 않는 ID | `400` — 사유 메시지 반환 |\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/admin/projects/{projectId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/projects/:projectId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "projects",
+                ":projectId"
+              ],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "### DELETE /api/admin/projects/{projectId}\n프로젝트를 강제 삭제한다. 작성자 무관하게 삭제 가능.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `projectId` | Integer | 삭제할 프로젝트 ID |\n\n**응답 `200 OK`**\n```json\n{}\n```\n\n**에러 응답**\n| 상황 | HTTP 상태 |\n|---|---|\n| 관리자 아님 | `403` — 해당 작업을 수행할 권한이 없습니다. |\n| 존재하지 않는 ID | `400` — 사유 메시지 반환 |\n\n---\n\n## 23. 회원 관리 Admin (User Admin)\n\n> **Base Path**: `/api/admin/users`\n> **인증**: 모든 엔드포인트에 Bearer 토큰 필수\n> **권한**: **최고관리자(roleId=1)만** 접근 가능\n\n---",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "23. User Admin",
+      "item": [
+        {
+          "name": "PATCH /api/admin/users/{targetUserId}/role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/:targetUserId/role",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":targetUserId",
+                "role"
+              ],
+              "variable": [
+                {
+                  "key": "targetUserId",
+                  "value": "member01"
+                }
+              ]
+            },
+            "description": "### PATCH /api/admin/users/{targetUserId}/role\n\n회원 권한을 수정한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `targetUserId` | String | 권한을 변경할 대상 userId |\n\n**Request Body**\n\n```json\n{ \"roleId\": 3 }\n```\n\n| 필드 | 타입 | 필수 | 설명 |\n|---|---|---|---|\n| `roleId` | Integer | ✅ | 변경할 roleId (1=최고관리자, 2=관리자, 3=정회원, 4=준회원, 5=게스트) |\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"권한이 수정되었습니다.\" }\n```\n\n**에러 응답**\n\n| 상황 | HTTP 상태 |\n|---|---|\n| 미인증 | `401` — 로그인이 필요한 서비스입니다. |\n| 최고관리자 아님 | `403` — 최고관리자만 접근할 수 있습니다. |\n| 존재하지 않는 회원 | `404` — 존재하지 않는 회원입니다. |\n| 존재하지 않는 roleId | `404` — 존재하지 않는 권한입니다. |\n| roleId 누락 | `400` — roleId는 필수입니다. |\n\n> 변경 시 최고관리자 메일로 감사 로그(변경자 ID, 변경 내용, 변경 일시)가 자동 발송된다.\n\n---",
+            "body": {
+              "mode": "raw",
+              "raw": "3",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /api/admin/users/{targetUserId}",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/:targetUserId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":targetUserId"
+              ],
+              "variable": [
+                {
+                  "key": "targetUserId",
+                  "value": "member01"
+                }
+              ]
+            },
+            "description": "### DELETE /api/admin/users/{targetUserId}\n\n회원을 강제 탈퇴 처리한다.\n\n**Path Variable**\n\n| 파라미터 | 타입 | 설명 |\n|---|---|---|\n| `targetUserId` | String | 강제 탈퇴시킬 대상 userId |\n\n**응답 `200 OK`**\n```json\n{ \"status\": \"success\", \"message\": \"강제 탈퇴 처리되었습니다.\" }\n```\n\n**에러 응답**\n\n| 상황 | HTTP 상태 |\n|---|---|\n| 미인증 | `401` — 로그인이 필요한 서비스입니다. |\n| 최고관리자 아님 | `403` — 최고관리자만 접근할 수 있습니다. |\n| 존재하지 않는 회원 | `404` — 존재하지 않는 회원입니다. |\n\n> 처리 후 최고관리자 메일로 감사 로그(변경자 ID, 대상 ID, 변경 일시)가 자동 발송된다.\n\n---\n\n## 이미지 포함 데이터 등록/수정 플로우\n\n이미지가 있는 도메인(동아리 소개, 프로젝트, 임원진)은 2단계로 등록 및 수정한다.\n\n**등록**\n```\n1. POST /api/{domain}/image      → 이미지 업로드 → URL 반환\n2. POST /api/{domain}            → URL 포함한 전체 데이터 저장\n```\n\n**수정**\n```\n1. PUT /api/{domain}/{id}/image  → 새 이미지 업로드 → URL 반환  (이미지 변경 시에만)\n2. PUT /api/{domain}/{id}        → URL 포함한 전체 데이터 수정\n                                    (이미지 미변경 시 기존 URL 그대로 전달)\n```\n\n> 이미지 URL이 변경된 경우, 기존 R2 이미지는 수정 요청 처리 시 자동으로 삭제된다.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
