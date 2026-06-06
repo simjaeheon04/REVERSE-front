@@ -22,6 +22,10 @@ export type ItIssue = {
   description?: string;
   status?: "open" | "in_progress" | "closed" | string;
   assigneeId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  publishedAt?: string;
+  crawledAt?: string;
   imageUrl: string;
   sourceUrl: string;
 };
@@ -36,6 +40,11 @@ type ItIssueRecord = Partial<ItIssue> & {
   originUrl?: string;
   originalUrl?: string;
   sourceLink?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  publishedAt?: string;
+  crawledAt?: string;
+  collectedAt?: string;
 };
 
 const normalizeItIssue = (item: ItIssueRecord, index: number): ItIssue => ({
@@ -44,6 +53,10 @@ const normalizeItIssue = (item: ItIssueRecord, index: number): ItIssue => ({
   description: item.description,
   status: item.status ?? "open",
   assigneeId: item.assigneeId,
+  createdAt: item.createdAt,
+  updatedAt: item.updatedAt,
+  publishedAt: item.publishedAt,
+  crawledAt: item.crawledAt ?? item.collectedAt,
   imageUrl: item.imageUrl ?? item.thumbnailUrl ?? "",
   sourceUrl:
     item.sourceUrl ??
@@ -56,12 +69,28 @@ const normalizeItIssue = (item: ItIssueRecord, index: number): ItIssue => ({
     "",
 });
 
+const getIssueTime = (issue: ItIssueRecord) => {
+  const value =
+    issue.publishedAt ??
+    issue.crawledAt ??
+    issue.collectedAt ??
+    issue.createdAt ??
+    issue.updatedAt ??
+    "";
+  const time = Date.parse(value);
+
+  return Number.isNaN(time) ? 0 : time;
+};
+
 export const getItIssues = async (): Promise<ItIssue[]> => {
   const response = await axiosInstance.get<ApiResponse<ItIssueRecord[]>>("/api/issues");
   const data = unwrapApiData(response.data);
   const issues = Array.isArray(data) ? data : [];
 
-  return issues.slice(0, 6).map(normalizeItIssue);
+  return [...issues]
+    .sort((current, next) => getIssueTime(next) - getIssueTime(current))
+    .slice(0, 6)
+    .map(normalizeItIssue);
 };
 
 export type ItIssueCreatePayload = {

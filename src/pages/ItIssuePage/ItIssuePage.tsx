@@ -4,27 +4,35 @@ import { getItIssues, type ItIssue } from "../../services/itIssueApi";
 import { FALLBACK_IT_ISSUES } from "./itIssueFallbackData";
 import * as S from "./ItIssuePage.styles";
 
-const getDisplayIssues = (issues: ItIssue[]) =>
-  issues.length ? issues.slice(0, 6) : FALLBACK_IT_ISSUES;
+const defaultIssueImage = FALLBACK_IT_ISSUES[0]?.imageUrl ?? "";
 
 export default function ItIssuePage() {
-  const [issues, setIssues] = useState<ItIssue[]>(FALLBACK_IT_ISSUES);
+  const [issues, setIssues] = useState<ItIssue[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     const loadIssues = async () => {
       try {
         setIsLoading(true);
+        setErrorMessage("");
         const result = await getItIssues();
-        setIssues(getDisplayIssues(result));
+        setIssues(result);
       } catch {
-        setIssues(FALLBACK_IT_ISSUES);
+        setIssues([]);
+        setErrorMessage("이슈를 불러오는 데 실패했습니다. 다시 시도해주세요.");
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadIssues();
+
+    const refreshTimer = window.setInterval(() => {
+      void loadIssues();
+    }, 24 * 60 * 60 * 1000);
+
+    return () => window.clearInterval(refreshTimer);
   }, []);
 
   const handleOpenSource = (sourceUrl: string) => {
@@ -52,7 +60,7 @@ export default function ItIssuePage() {
             {issues.length ? (
               issues.map((issue) => (
                 <S.IssueCard key={issue.id}>
-                  <S.CardImage src={issue.imageUrl} alt="" />
+                  <S.CardImage src={issue.imageUrl || defaultIssueImage} alt="" />
                   <S.CardBody>
                     <S.CardTitle>{issue.title}</S.CardTitle>
                     <S.TitleRule />
@@ -70,7 +78,9 @@ export default function ItIssuePage() {
               ))
             ) : (
               <S.EmptyState>
-                {isLoading ? "현재 이슈를 불러오는 중입니다." : "현재 이슈를 불러올 수 없습니다."}
+                {isLoading
+                  ? "현재 이슈를 불러오는 중입니다."
+                  : errorMessage || "현재 이슈를 불러올 수 없습니다."}
               </S.EmptyState>
             )}
           </S.IssueGrid>
