@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from "react";
+ï»¿import { useState, type ChangeEvent } from "react";
 import { subscribeRecruitNotification } from "../../../services/recruitApi";
 import * as S from "./RecruitContactSection.styles";
 
@@ -9,7 +9,7 @@ export default function RecruitContactSection() {
 
   const handleSubscribe = async () => {
     if (!email.trim()) {
-      setMessage("¾Ë¸² ¹ŞÀ» ÀÌ¸ŞÀÏÀ» ÀÔ·ÂÇØÁÖ¼¼¿ä.");
+      setMessage("ì•Œë¦¼ ë°›ì„ ì´ë©”ì¼ì„ ì…ë ¥í•´ ì£¼ì„¸ìš”.");
       return;
     }
 
@@ -17,11 +17,11 @@ export default function RecruitContactSection() {
       setIsSubmitting(true);
       setMessage("");
       const responseMessage = await subscribeRecruitNotification(email.trim());
-      setMessage(responseMessage || "¸ğÁı ¾Ë¸² ±¸µ¶ÀÌ ¿Ï·áµÇ¾ú½À´Ï´Ù.");
+      setMessage(responseMessage || "ëª¨ì§‘ ì•Œë¦¼ êµ¬ë…ì´ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤.");
       setEmail("");
     } catch (error) {
       console.error("recruit notification subscribe failed", error);
-      setMessage("¸ğÁı ¾Ë¸² ±¸µ¶¿¡ ½ÇÆĞÇß½À´Ï´Ù.");
+      setMessage("ëª¨ì§‘ ì•Œë¦¼ êµ¬ë…ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.");
     } finally {
       setIsSubmitting(false);
     }
@@ -30,73 +30,93 @@ export default function RecruitContactSection() {
   return (
     <S.Section>
       <S.Header>
-        <S.Title>¹®ÀÇ »çÇ×</S.Title>
-        <S.Subtitle>±Ã±İÇÏ½Å Á¡ÀÌ ÀÖ´Ù¸é ¾Æ·¡ Ã¤³Î·Î ÆíÇÏ°Ô ¿¬¶ô ÁÖ¼¼¿ä.</S.Subtitle>
+        <S.Title>ë¬¸ì˜ ì‚¬í•­</S.Title>
+        <S.Subtitle>
+          ê¶ê¸ˆí•˜ì‹  ì ì´ ìˆë‹¤ë©´ ì•„ë˜ ì±„ë„ë¡œ í¸í•˜ê²Œ ì—°ë½ ì£¼ì„¸ìš”.
+        </S.Subtitle>
       </S.Header>
 
       <S.Grid>
         <S.Item>
-          <S.Icon viewBox="0 0 32 32" fill="none">
-            <path d="M5 9H27V23H5V9Z" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M6 10L16 17L26 10" stroke="currentColor" strokeWidth="1.8" />
+          <S.Icon viewBox='0 0 32 32' fill='none'>
+            <path d='M5 9H27V23H5V9Z' stroke='currentColor' strokeWidth='1.8' />
+            <path
+              d='M6 10L16 17L26 10'
+              stroke='currentColor'
+              strokeWidth='1.8'
+            />
           </S.Icon>
           <S.Label>SNS</S.Label>
           <S.Description>
-            REVERSEÀÇ È°µ¿°ú ¸ğÁı ¼Ò½ÄÀº ÀÎ½ºÅ¸±×·¥¿¡¼­ °¡Àå ºü¸£°Ô È®ÀÎÇÒ ¼ö ÀÖ½À´Ï´Ù.
+            REVERSEì˜ í™œë™ê³¼ ëª¨ì§‘ ì†Œì‹ì€ ì¸ìŠ¤íƒ€ê·¸ë¨ì—ì„œ ê°€ì¥ ë¹ ë¥´ê²Œ í™•ì¸í•  ìˆ˜
+            ìˆìŠµë‹ˆë‹¤.
           </S.Description>
           <S.Strong>@nsu_reverse</S.Strong>
         </S.Item>
 
         <S.Item>
-          <S.Icon viewBox="0 0 32 32" fill="none">
+          <S.Icon viewBox='0 0 32 32' fill='none'>
             <path
-              d="M10.4 6.5L13.3 12.1L10.8 14.5C12.4 17.8 14.8 20.2 18.1 21.8L20.5 19.3L26.1 22.2C25.4 24.5 23.6 26 21.3 26C13.1 25.9 6.7 19.5 6.5 11.3C6.5 9 8.1 7.2 10.4 6.5Z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
+              d='M10.4 6.5L13.3 12.1L10.8 14.5C12.4 17.8 14.8 20.2 18.1 21.8L20.5 19.3L26.1 22.2C25.4 24.5 23.6 26 21.3 26C13.1 25.9 6.7 19.5 6.5 11.3C6.5 9 8.1 7.2 10.4 6.5Z'
+              stroke='currentColor'
+              strokeWidth='1.8'
+              strokeLinejoin='round'
             />
           </S.Icon>
           <S.Label>Phone</S.Label>
           <S.Description>
-            ¸ğÁı °ü·Ã ¹®ÀÇ´Â È¸Àå´Ü¿¡°Ô ÆíÇÏ°Ô ¿¬¶ôÇØ ÁÖ¼¼¿ä.
+            ëª¨ì§‘ ê´€ë ¨ ë¬¸ì˜ëŠ” íšŒì¥ë‹¨ì—ê²Œ í¸í•˜ê²Œ ì—°ë½í•´ ì£¼ì„¸ìš”.
           </S.Description>
-          <S.Strong>È¸Àå ¹Ú½ÃÇö 010-000-0000</S.Strong>
-          <S.Strong>ºÎÈ¸Àå Å¹Á¤¹Î 010-000-0000</S.Strong>
+          <S.Strong>íšŒì¥ ë°•ì‹œì—° 010-000-0000</S.Strong>
+          <S.Strong>ë¶€íšŒì¥ í™ì •ë¯¼ 010-000-0000</S.Strong>
         </S.Item>
 
         <S.Item>
-          <S.Icon viewBox="0 0 32 32" fill="none">
+          <S.Icon viewBox='0 0 32 32' fill='none'>
             <path
-              d="M16 28C16 28 25 19.5 25 12.5C25 7.8 21 4 16 4C11 4 7 7.8 7 12.5C7 19.5 16 28 16 28Z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
+              d='M16 28C16 28 25 19.5 25 12.5C25 7.8 21 4 16 4C11 4 7 7.8 7 12.5C7 19.5 16 28 16 28Z'
+              stroke='currentColor'
+              strokeWidth='1.8'
+              strokeLinejoin='round'
             />
-            <circle cx="16" cy="12.5" r="3" stroke="currentColor" strokeWidth="1.8" />
+            <circle
+              cx='16'
+              cy='12.5'
+              r='3'
+              stroke='currentColor'
+              strokeWidth='1.8'
+            />
           </S.Icon>
           <S.Label>Club Room</S.Label>
           <S.Description>
-            Á÷Á¢ ¹æ¹®ÇÏ¸é µ¿¾Æ¸® È°µ¿°ú ¸ğÁı ÀÏÁ¤À» ´õ ÀÚ¼¼È÷ ¾È³»¹ŞÀ» ¼ö ÀÖ½À´Ï´Ù.
+            ì§ì ‘ ë°©ë¬¸í•˜ë©´ ë™ì•„ë¦¬ í™œë™ê³¼ ëª¨ì§‘ ì¼ì •ì„ ë” ìì„¸íˆ ì•ˆë‚´ë°›ì„ ìˆ˜
+            ìˆìŠµë‹ˆë‹¤.
           </S.Description>
-          <S.Strong>³²¼­¿ï´ëÇĞ±³ ÄÄÇ»ÅÍ¼ÒÇÁÆ®¿ş¾îÇĞ°ú</S.Strong>
+          <S.Strong>ë‚¨ì„œìš¸ëŒ€í•™êµ ì»´í“¨í„°ì†Œí”„íŠ¸ì›¨ì–´í•™ê³¼</S.Strong>
         </S.Item>
       </S.Grid>
 
       <S.NotifyCard>
-        <S.NotifyTitle>¸ğÁı ¾Ë¸² ±¸µ¶</S.NotifyTitle>
+        <S.NotifyTitle>ëª¨ì§‘ ì•Œë¦¼ êµ¬ë…</S.NotifyTitle>
         <S.NotifyDescription>
-          ´ÙÀ½ ¸ğÁıÀÌ ¿­¸®¸é ÀÌ¸ŞÀÏ·Î ¼Ò½ÄÀ» ¹Ş¾Æº¼ ¼ö ÀÖ½À´Ï´Ù.
+          ë‹¤ìŒ ëª¨ì§‘ì´ ì—´ë¦¬ë©´ ì´ë©”ì¼ë¡œ ì†Œì‹ì„ ë°›ì•„ë³¼ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
         </S.NotifyDescription>
 
         <S.NotifyRow>
           <S.NotifyInput
-            type="email"
+            type='email'
             value={email}
-            onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
-            placeholder="example@email.com"
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              setEmail(event.target.value)
+            }
+            placeholder='example@email.com'
           />
-          <S.NotifyButton type="button" onClick={handleSubscribe} disabled={isSubmitting}>
-            {isSubmitting ? "±¸µ¶ Áß..." : "¾Ë¸² ¹Ş±â"}
+          <S.NotifyButton
+            type='button'
+            onClick={handleSubscribe}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "êµ¬ë… ì¤‘..." : "ì•Œë¦¼ ë°›ê¸°"}
           </S.NotifyButton>
         </S.NotifyRow>
 

@@ -24,6 +24,8 @@ export default function LoginPage() {
         <LoginForm
           onSubmit={handleSubmit}
           onClickSignUp={() => navigate("/signup")}
+          onClickFindId={() => navigate("/find-id")}
+          onClickFindPassword={() => navigate("/find-password")}
           isSubmitting={isLoading}
           submitError={error}
         />

@@ -1,20 +1,20 @@
 import styled from "styled-components";
 
 export const TermsSection = styled.section`
-  margin-top: 28px;
+  margin-top: 50px;
 `;
 
 export const TermsTitle = styled.h2`
   margin: 0 0 14px;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 500;
 `;
 
 export const TermsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 `;
 
 export const TermsGroup = styled.div`
@@ -29,24 +29,24 @@ export const CheckItem = styled.label`
   align-items: center;
   gap: 10px;
   color: #ffffff;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 300;
   cursor: pointer;
 
   input {
-    width: 16px;
-    height: 16px;
+    width: 13px;
+    height: 13px;
     appearance: none;
-    border: 2px solid #ffffffa2;
-    border-radius: 3px;
+    border: 1px solid #ffffffa2;
+    border-radius: 2px;
     background: transparent;
     cursor: pointer;
     display: inline-block;
   }
 
   input:checked {
-    background-color: #7b61ff;
-    border-color: #7b61ff;
+    background-color: #7a7a7a;
+    border-color: #7a7a7a;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='8' viewBox='0 0 10 8' fill='none'%3E%3Cpath d='M1 4L3.5 6.5L9 1' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: center;

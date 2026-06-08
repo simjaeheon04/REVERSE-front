@@ -16,6 +16,8 @@ export const Input = styled.input`
   color: #222222;
   font-size: 12px;
   outline: none;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
   &::placeholder {
     color: rgba(52, 56, 68, 0.28);
@@ -28,14 +30,17 @@ export const Input = styled.input`
 
 export const Select = styled.select`
   width: 100%;
-  height: 44px;
-  padding: 0 14px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
   border-radius: 10px;
   border: 1px solid rgba(237, 241, 255, 0.34);
-  background: rgba(255, 255, 255, 0.04);
-  color: #ffffff;
-  font-size: 12px;
+  background: #ffffff;
+  color: rgba(114, 123, 135, 0.6);
+  font-size: 10px;
   outline: none;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
   option {
     color: #111111;
@@ -70,60 +75,65 @@ export const PrimaryButton = styled.button`
 `;
 
 export const GhostButton = styled.button`
-  height: 44px;
-  padding: 0 16px;
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
   border-radius: 10px;
   border: 1px solid rgba(237, 241, 255, 0.34);
-  background: rgba(255, 255, 255, 0.3);
+  background: #bbc4e5;
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: #aeb8dc;
   }
 `;
 
 export const Row = styled.div`
   display: grid;
-  grid-template-columns: 1fr 124px;
+  grid-template-columns: 1fr 140px;
   gap: 12px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+  align-items: center;
 `;
 
 export const EmailRow = styled.div`
   display: grid;
-  grid-template-columns: 1fr 24px 1fr 104px;
+  grid-template-columns: 140px 20px minmax(0, 1fr) 140px;
   gap: 12px;
   align-items: center;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 export const At = styled.span`
   text-align: center;
   color: #ffffff;
-  font-size: 18px;
-  font-weight: 700;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
+  font-size: 10px;
+  font-weight: 300;
 `;
 
 export const TextButton = styled.button`
   border: none;
   background: none;
-  padding: 0 0 0 6px;
+  padding-left: 6px;
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
   color: #ffffff;
+`;
+
+export const Message = styled.p<{ $type?: "error" | "success" }>`
+  margin: 12px 0 0;
+  color: ${({ $type }) =>
+    $type === "error"
+      ? "#ff7b7b"
+      : $type === "success"
+      ? "#7ea6ff"
+      : "rgba(255, 255, 255, 0.74)"};
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
 `;

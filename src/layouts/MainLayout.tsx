@@ -37,9 +37,11 @@ export default function MainLayout() {
       <Header
         menus={headerMenus}
         loginText={isAuthenticated ? "LOGOUT" : "LOGIN"}
+        myPageText={isAuthenticated ? "MY PAGE" : undefined}
         loginDisabled={isLoading || isProfileLoading}
         canAccessAdmin={isAdminRole(roleName)}
         onLogoClick={handleLogoClick}
+        onMyPageClick={() => navigate("/mypage")}
         onLoginClick={() => void handleAuthClick()}
       />
       <Outlet />

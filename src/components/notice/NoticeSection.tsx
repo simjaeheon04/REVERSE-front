@@ -1,3 +1,4 @@
+﻿import { AxiosError } from "axios";
 import { useEffect, useMemo, useState } from "react";
 import * as S from "./NoticeSection.styles";
 import {
@@ -10,15 +11,31 @@ import {
 const getCategoryColor = (category: string) => {
   const key = category.trim().toLowerCase();
 
-  if (key.includes("external") || key.includes("���")) {
+  if (key.includes("external") || key.includes("대외")) {
     return "#4b78ff";
   }
 
-  if (key.includes("club") || key.includes("���Ƹ�")) {
+  if (key.includes("club") || key.includes("동아리")) {
     return "#7d5cff";
   }
 
   return "#5b647a";
+};
+
+const getNoticeErrorMessage = (error: unknown, notice?: NoticeListItem) => {
+  if (error instanceof AxiosError) {
+    if (error.response?.status === 401) {
+      return "로그인이 필요합니다. 다시 로그인해 주세요.";
+    }
+
+    if (error.response?.status === 403) {
+      return notice?.isExternal
+        ? "공지사항 접근 권한이 없습니다."
+        : "내부 공지는 로그인 후 확인할 수 있습니다.";
+    }
+  }
+
+  return "공지사항 상세를 불러오지 못했습니다.";
 };
 
 export default function NoticeSection() {
@@ -58,7 +75,8 @@ export default function NoticeSection() {
 
         setNoticePage(result);
         setKnownCategories((prev) => Array.from(new Set([...prev, ...categories])));
-      } catch {
+      } catch (error) {
+        console.error("[notice/list] failed", error);
         setNoticePage({
           content: [],
           totalPages: 0,
@@ -66,7 +84,7 @@ export default function NoticeSection() {
           number: currentPage,
           size: 6,
         });
-        setErrorMessage("Failed to load notices.");
+        setErrorMessage("공지사항 목록을 불러오지 못했습니다.");
       } finally {
         setIsLoadingList(false);
       }
@@ -90,12 +108,19 @@ export default function NoticeSection() {
 
   const categories = useMemo(() => ["", ...knownCategories], [knownCategories]);
 
-  const handleOpenModal = async (noticeId: number) => {
+  const handleOpenModal = async (notice: NoticeListItem) => {
     try {
-      const detail = await getNoticeDetail(noticeId);
+      setErrorMessage("");
+      const detail = await getNoticeDetail(notice.id, {
+        requiresAuth: !notice.isExternal,
+      });
       setSelectedNotice(detail);
-    } catch {
-      setErrorMessage("Failed to load notice detail.");
+    } catch (error) {
+      console.error("[notice/detail] failed", {
+        notice,
+        error,
+      });
+      setErrorMessage(getNoticeErrorMessage(error, notice));
     }
   };
 
@@ -140,18 +165,18 @@ export default function NoticeSection() {
           </S.TabList>
 
           <S.CardList>
-            {isLoadingList ? <S.EmptyState>Loading notices...</S.EmptyState> : null}
+            {isLoadingList ? <S.EmptyState>공지사항을 불러오는 중입니다.</S.EmptyState> : null}
 
             {!isLoadingList && errorMessage ? <S.EmptyState>{errorMessage}</S.EmptyState> : null}
 
             {!isLoadingList && !errorMessage && noticePage.content.length === 0 ? (
-              <S.EmptyState>No notices found.</S.EmptyState>
+              <S.EmptyState>공지사항이 없습니다.</S.EmptyState>
             ) : null}
 
             {!isLoadingList &&
               !errorMessage &&
               noticePage.content.map((notice) => (
-                <S.Card key={notice.id} type="button" onClick={() => void handleOpenModal(notice.id)}>
+                <S.Card key={notice.id} type="button" onClick={() => void handleOpenModal(notice)}>
                   <S.CardRow>
                     <S.Left>
                       <S.Category $bgColor={getCategoryColor(notice.category)}>
@@ -202,7 +227,7 @@ export default function NoticeSection() {
         </S.Inner>
       </S.Section>
 
-      {selectedNotice && (
+      {selectedNotice ? (
         <S.ModalOverlay onClick={handleCloseModal}>
           <S.ModalContainer onClick={(event) => event.stopPropagation()}>
             <S.Close type="button" onClick={handleCloseModal}>
@@ -241,7 +266,7 @@ export default function NoticeSection() {
             ) : null}
           </S.ModalContainer>
         </S.ModalOverlay>
-      )}
+      ) : null}
     </>
   );
 }

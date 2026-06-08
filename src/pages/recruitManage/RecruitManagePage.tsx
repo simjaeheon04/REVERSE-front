@@ -158,10 +158,16 @@ export default function RecruitManagePage() {
       setSaveMessage("");
 
       if (editingId !== null) {
-        await updateRecruitment(editingId, form);
+        await updateRecruitment(editingId, {
+          ...form,
+          roleId: statusRoleId.trim() ? Number(statusRoleId) : form.roleId,
+        });
         setSaveMessage("모집공고가 수정되었습니다.");
       } else {
-        await createRecruitment(form);
+        await createRecruitment({
+          ...form,
+          roleId: statusRoleId.trim() ? Number(statusRoleId) : form.roleId,
+        });
         setSaveMessage("모집공고가 등록되었습니다.");
       }
 
@@ -220,7 +226,10 @@ export default function RecruitManagePage() {
       setIsDeleting(true);
       setDeleteMessage("");
 
-      await deleteRecruitment(deleteId.trim());
+      await deleteRecruitment(
+        deleteId.trim(),
+        statusRoleId.trim() ? Number(statusRoleId) : undefined
+      );
 
       setDeleteMessage("모집공고가 삭제되었습니다.");
 

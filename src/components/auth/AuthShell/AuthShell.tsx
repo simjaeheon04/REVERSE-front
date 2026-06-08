@@ -57,7 +57,11 @@ export default function AuthShell({ title, children }: AuthShellProps) {
                   type='matrix'
                   values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0'
                 />
-                <feBlend in2='shape' mode='normal' result='effect1_innerShadow' />
+                <feBlend
+                  in2='shape'
+                  mode='normal'
+                  result='effect1_innerShadow'
+                />
               </filter>
             </defs>
             <text

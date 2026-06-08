@@ -8,22 +8,77 @@ import {
 } from "../utils/tokenStorage";
 
 const DEFAULT_BASE_URL = "http://localhost:8080";
-const baseURL = import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL;
+const baseURL = import.meta.env.DEV
+  ? ""
+  : import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL;
 
 export const axiosInstance = axios.create({
   baseURL,
   withCredentials: true,
 });
 
+type HeaderAccessor = {
+  get?: (key: string) => unknown;
+  delete?: (key: string) => unknown;
+};
+
+const getHeaderValue = (headers: unknown, key: string) => {
+  if (!headers) {
+    return undefined;
+  }
+
+  const accessor = headers as HeaderAccessor;
+  if (typeof accessor.get === "function") {
+    return accessor.get(key);
+  }
+
+  return (headers as Record<string, unknown>)[key];
+};
+
+const removeHeader = (headers: unknown, key: string) => {
+  if (!headers) {
+    return;
+  }
+
+  const accessor = headers as HeaderAccessor;
+  if (typeof accessor.delete === "function") {
+    accessor.delete(key);
+    return;
+  }
+
+  delete (headers as Record<string, unknown>)[key];
+};
+
 axiosInstance.interceptors.request.use((config) => {
   const accessToken = getStoredAccessToken();
   const requestUrl = config.url ?? "";
-  const isAuthRequest =
-    requestUrl.includes("/api/auth/login") ||
-    requestUrl.includes("/api/auth/refresh") ||
-    requestUrl.includes("/api/auth/logout");
+  const requestMethod = config.method?.toLowerCase() ?? "get";
+  const requiresAuth = getHeaderValue(config.headers, "X-Require-Auth") === "true";
+  const isAuthRequest = requestUrl.includes("/api/auth/");
+  const isPublicProjectReadRequest =
+    requestMethod === "get" &&
+    /^\/api\/projects(?:\/[^/]+)?$/.test(requestUrl.split("?")[0]);
 
-  if (accessToken && !isAuthRequest) {
+  removeHeader(config.headers, "X-Require-Auth");
+
+  console.log("[axios/request]", {
+    method: requestMethod,
+    url: requestUrl,
+    hasAccessToken: Boolean(accessToken),
+    requiresAuth,
+    isAuthRequest,
+    isPublicProjectReadRequest,
+    willAttachAuthorization:
+      Boolean(accessToken) &&
+      !isAuthRequest &&
+      (!isPublicProjectReadRequest || requiresAuth),
+  });
+
+  if (
+    accessToken &&
+    !isAuthRequest &&
+    (!isPublicProjectReadRequest || requiresAuth)
+  ) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 

@@ -23,6 +23,12 @@ const adminMenus = [
     path: "/admin/project",
   },
   {
+    title: "프로젝트 운영 관리",
+    description:
+      "전체 프로젝트 모집글을 조회하고 관리자 권한으로 강제 종료 또는 삭제를 처리합니다.",
+    path: "/admin/project-monitoring",
+  },
+  {
     title: "캘린더 관리",
     description: "일정 카테고리와 실제 일정을 등록, 조회, 수정, 삭제합니다.",
     path: "/admin/calendar",
@@ -33,9 +39,51 @@ const adminMenus = [
     path: "/admin/notice",
   },
   {
+    title: "게시판 관리자",
+    description:
+      "게시판을 추가/삭제하고 게시글을 관리자 권한으로 강제 삭제합니다.",
+    path: "/admin/board",
+  },
+  {
     title: "모집공고 관리",
-    description: "모집공고 목록을 조회하고 공고 등록, 수정, 상태 변경, 삭제를 처리합니다.",
+    description:
+      "모집공고 목록을 조회하고 공고 등록, 수정, 상태 변경, 삭제를 처리합니다.",
     path: "/admin/recruit",
+  },
+  {
+    title: "모집 지원자 관리",
+    description:
+      "지원서 조회, 상태 변경, 면접 배정, 엑셀 다운로드와 상세 페이지/슬롯 설정을 처리합니다.",
+    path: "/admin/recruit-applications",
+  },
+  {
+    title: "회원 관리자",
+    description:
+      "회원 권한 변경과 강제 탈퇴를 최고관리자 권한으로 처리합니다.",
+    path: "/admin/users",
+  },
+  {
+    title: "투표 관리",
+    description:
+      "투표 목록, 상세 결과 조회, 관리자 권한 수정과 삭제를 처리합니다.",
+    path: "/admin/votes",
+  },
+  {
+    title: "스터디 관리",
+    description:
+      "스터디 모집, 게시글 자료, 참여 신청과 멤버 처리 기능을 관리합니다.",
+    path: "/admin/study",
+  },
+  {
+    title: "마이페이지 관리",
+    description:
+      "회원 마이페이지 조회, 자기소개 수정, 프로필 사진 수정 API를 확인합니다.",
+    path: "/admin/mypage",
+  },
+  {
+    title: "IT 이슈 관리",
+    description: "IT 이슈 목록을 조회하고 생성, 수정, 삭제를 처리합니다.",
+    path: "/admin/it-issue",
   },
 ];
 
@@ -58,7 +106,7 @@ export default function AdminPage() {
             <S.Card key={menu.path}>
               <S.CardTitle>{menu.title}</S.CardTitle>
               <S.CardText>{menu.description}</S.CardText>
-              <S.MoveButton type="button" onClick={() => navigate(menu.path)}>
+              <S.MoveButton type='button' onClick={() => navigate(menu.path)}>
                 이동하기
               </S.MoveButton>
             </S.Card>
