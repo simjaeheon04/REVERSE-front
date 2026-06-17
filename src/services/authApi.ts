@@ -71,6 +71,21 @@ export type LogoutRequest = {
   refreshToken: string;
 };
 
+type ApiResponse<T> =
+  | T
+  | {
+      message?: string;
+      data?: T;
+    };
+
+const unwrapApiData = <T>(payload: ApiResponse<T>): T => {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return (payload as { data?: T }).data as T;
+  }
+
+  return payload as T;
+};
+
 export const login = async (
   payload: LoginRequest
 ): Promise<AuthTokenResponse> => {
@@ -132,7 +147,12 @@ export const sendFindUsernameCode = async (
 ) => {
   const response = await axiosInstance.post<MessageResponse>(
     "/api/auth/find-username/send-code",
-    payload
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
   );
   return response.data;
 };
@@ -140,11 +160,16 @@ export const sendFindUsernameCode = async (
 export const verifyFindUsernameCode = async (
   payload: FindUsernameVerifyPayload
 ) => {
-  const response = await axiosInstance.post<FindUsernameVerifyResponse>(
+  const response = await axiosInstance.post<ApiResponse<FindUsernameVerifyResponse>>(
     "/api/auth/find-username/verify",
-    payload
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
   );
-  return response.data;
+  return unwrapApiData(response.data);
 };
 
 export const sendFindPasswordCode = async (

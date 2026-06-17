@@ -5,6 +5,8 @@ import editIcon from "../../assets/icons/Edit.png";
 import fileTextIcon from "../../assets/icons/File_text.png";
 import heartIcon from "../../assets/icons/Heart.png";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
+import { useLoginRequiredNavigation } from "../../hooks/useLoginRequiredNavigation";
 import {
   deleteBoardPost,
   getMyBoardPosts,
@@ -21,6 +23,8 @@ const getSafeText = (value: unknown, fallback: string) => {
 
 export default function PostManagementPage() {
   const navigate = useNavigate();
+  const { isLoginRequiredOpen, moveToLogin, navigateWithAuth } =
+    useLoginRequiredNavigation();
   const currentUserId = useAuthStore((state) => state.userId);
   const [posts, setPosts] = useState<BoardMyPostItem[]>([]);
   const [stats, setStats] = useState<BoardMyStats>({
@@ -132,7 +136,7 @@ export default function PostManagementPage() {
             </S.SummaryItem>
 
             <S.SummaryAction>
-              <S.WriteActionButton type="button" onClick={() => navigate("/board/write")}>
+              <S.WriteActionButton type="button" onClick={() => navigateWithAuth("/board/write")}>
                 <S.WriteActionIcon src={editIcon} alt="" aria-hidden="true" />
                 게시글 작성하기
               </S.WriteActionButton>
@@ -188,6 +192,7 @@ export default function PostManagementPage() {
         </S.Frame>
       </S.Page>
       <Footer />
+      <LoginRequiredModal isOpen={isLoginRequiredOpen} onConfirm={moveToLogin} />
 
       {deleteTarget ? (
         <S.ModalOverlay role="presentation">

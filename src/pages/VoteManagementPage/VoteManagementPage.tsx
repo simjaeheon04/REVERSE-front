@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import editIcon from "../../assets/icons/Edit.png";
 import fileTextIcon from "../../assets/icons/File_text.png";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
+import { useLoginRequiredNavigation } from "../../hooks/useLoginRequiredNavigation";
 import {
   deleteVote,
   getMyVotes,
@@ -50,6 +52,8 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 
 export default function VoteManagementPage() {
   const navigate = useNavigate();
+  const { isLoginRequiredOpen, moveToLogin, navigateWithAuth } =
+    useLoginRequiredNavigation();
   const currentUserId = useAuthStore((state) => state.userId);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [votes, setVotes] = useState<VoteListItem[]>([]);
@@ -130,7 +134,7 @@ export default function VoteManagementPage() {
             <S.SummaryAction>
               <S.WriteActionButton
                 type="button"
-                onClick={() => navigate("/vote/write")}
+                onClick={() => navigateWithAuth("/vote/write")}
               >
                 <S.WriteActionIcon src={editIcon} alt="" aria-hidden="true" />
                 투표 생성
@@ -187,6 +191,7 @@ export default function VoteManagementPage() {
         </S.Frame>
       </S.Page>
       <Footer />
+      <LoginRequiredModal isOpen={isLoginRequiredOpen} onConfirm={moveToLogin} />
 
       {deleteTarget ? (
         <S.ModalOverlay role="presentation">

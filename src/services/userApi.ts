@@ -5,6 +5,7 @@ export type CurrentUserResponse = {
   userId: string;
   userName: string;
   roleName: string;
+  roleId?: number | null;
 };
 
 export type AdminUserMutationResponse = {

@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from "react";
+import { AxiosError } from "axios";
 import {
   sendFindUsernameCode,
   verifyFindUsernameCode,
@@ -6,6 +7,7 @@ import {
 import AuthShell from "../AuthShell/AuthShell";
 import FormField from "../FormField/FormField";
 import * as C from "../FormField/AuthControls.styles";
+import * as S from "./FindIdForm.style";
 
 export default function FindIdForm() {
   const [userName, setUserName] = useState("");
@@ -19,8 +21,35 @@ export default function FindIdForm() {
   }>({ text: "", type: undefined });
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
 
-  const email = emailId && emailDomain ? `${emailId}@${emailDomain}` : "";
+  const emailLocalPart = emailId.trim();
+  const emailHost = emailDomain.trim();
+  const email = emailLocalPart && emailHost ? `${emailLocalPart}@${emailHost}` : "";
+
+  const getErrorMessage = (error: unknown, fallback: string) => {
+    if (error instanceof AxiosError) {
+      const data = error.response?.data;
+
+      if (typeof data === "string" && data.trim()) {
+        return data;
+      }
+
+      if (data && typeof data === "object") {
+        const message = (data as { message?: unknown }).message;
+        if (typeof message === "string" && message.trim()) {
+          return message;
+        }
+      }
+    }
+
+    return fallback;
+  };
+
+  const resetFoundUserId = () => {
+    setFoundUserId("");
+    setIsResultModalOpen(false);
+  };
 
   const handleSendCode = async () => {
     if (!userName.trim() || !email) {
@@ -30,6 +59,8 @@ export default function FindIdForm() {
 
     try {
       setIsSending(true);
+      resetFoundUserId();
+      setAuthCode("");
       const result = await sendFindUsernameCode({
         userName: userName.trim(),
         email,
@@ -37,13 +68,20 @@ export default function FindIdForm() {
       setMessage({ text: result.message ?? "인증번호가 발송되었습니다.", type: "success" });
     } catch (error) {
       console.error("find username send failed", error);
-      setMessage({ text: "아이디 찾기 인증번호 발송에 실패했습니다.", type: "error" });
+      setMessage({
+        text: getErrorMessage(error, "아이디 찾기 인증번호 발송에 실패했습니다."),
+        type: "error",
+      });
     } finally {
       setIsSending(false);
     }
   };
 
   const handleVerifyCode = async () => {
+    if (isVerifying || foundUserId) {
+      return;
+    }
+
     if (!email || !authCode.trim()) {
       setMessage({ text: "이메일과 인증번호를 입력해 주세요.", type: "error" });
       return;
@@ -56,16 +94,19 @@ export default function FindIdForm() {
         authCode: authCode.trim(),
       });
       setFoundUserId(result.userId);
-      setMessage({
-        text: result.userId
-          ? `아이디 찾기에 성공했습니다. 아이디: ${result.userId}`
-          : result.message,
-        type: "success",
-      });
+      if (result.userId) {
+        setMessage({ text: "", type: undefined });
+        setIsResultModalOpen(true);
+      } else {
+        setMessage({ text: result.message, type: "success" });
+      }
     } catch (error) {
       console.error("find username verify failed", error);
       setFoundUserId("");
-      setMessage({ text: "인증번호 확인에 실패했습니다.", type: "error" });
+      setMessage({
+        text: getErrorMessage(error, "인증번호 확인에 실패했습니다."),
+        type: "error",
+      });
     } finally {
       setIsVerifying(false);
     }
@@ -80,9 +121,10 @@ export default function FindIdForm() {
             type="text"
             placeholder="이름을 입력하세요."
             value={userName}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setUserName(event.target.value)
-            }
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setUserName(event.target.value);
+              resetFoundUserId();
+            }}
           />
         </FormField>
 
@@ -92,16 +134,18 @@ export default function FindIdForm() {
               type="text"
               placeholder="이메일을 입력하세요."
               value={emailId}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setEmailId(event.target.value)
-              }
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setEmailId(event.target.value);
+                resetFoundUserId();
+              }}
             />
             <C.At>@</C.At>
             <C.Select
               value={emailDomain}
-              onChange={(event: ChangeEvent<HTMLSelectElement>) =>
-                setEmailDomain(event.target.value)
-              }
+              onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                setEmailDomain(event.target.value);
+                resetFoundUserId();
+              }}
             >
               <option value="" disabled>
                 선택하세요.
@@ -110,7 +154,7 @@ export default function FindIdForm() {
               <option value="naver.com">naver.com</option>
               <option value="daum.net">daum.net</option>
             </C.Select>
-            <C.GhostButton type="button" onClick={handleSendCode}>
+            <C.GhostButton type="button" onClick={handleSendCode} disabled={isSending}>
               {isSending ? "전송 중..." : "인증번호 전송"}
             </C.GhostButton>
           </C.EmailRow>
@@ -123,11 +167,16 @@ export default function FindIdForm() {
               type="text"
               placeholder="인증번호를 입력하세요."
               value={authCode}
-              onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                setAuthCode(event.target.value)
-              }
+              onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                setAuthCode(event.target.value);
+                resetFoundUserId();
+              }}
             />
-            <C.GhostButton type="button" onClick={handleVerifyCode}>
+            <C.GhostButton
+              type="button"
+              onClick={handleVerifyCode}
+              disabled={isVerifying || Boolean(foundUserId)}
+            >
               {isVerifying ? "확인 중..." : "인증번호 확인"}
             </C.GhostButton>
           </C.Row>
@@ -137,10 +186,28 @@ export default function FindIdForm() {
           <C.Message $type={message.type}>{message.text}</C.Message>
         ) : null}
 
-        <C.PrimaryButton type="button" onClick={handleVerifyCode}>
-          {foundUserId ? `아이디: ${foundUserId}` : "아이디 찾기"}
-        </C.PrimaryButton>
       </C.Form>
+      {isResultModalOpen ? (
+        <S.ModalOverlay role="presentation">
+          <S.ModalCard
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="find-id-result-title"
+          >
+            <S.ModalTitle id="find-id-result-title">
+              아이디 찾기가 완료되었습니다.
+            </S.ModalTitle>
+            <S.ModalText>회원님의 아이디는</S.ModalText>
+            <S.FoundUserId>{foundUserId}</S.FoundUserId>
+            <S.ModalConfirmButton
+              type="button"
+              onClick={() => setIsResultModalOpen(false)}
+            >
+              확인
+            </S.ModalConfirmButton>
+          </S.ModalCard>
+        </S.ModalOverlay>
+      ) : null}
     </AuthShell>
   );
 }

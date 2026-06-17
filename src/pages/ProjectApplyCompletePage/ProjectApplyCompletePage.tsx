@@ -1,8 +1,20 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import completeLogo from "../../assets/logos/Logo_4.png";
 import Footer from "../../components/common/footer/Footer";
 import * as S from "./ProjectApplyCompletePage.styles";
 
 export default function ProjectApplyCompletePage() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const redirectTimer = window.setTimeout(() => {
+      navigate("/");
+    }, 2000);
+
+    return () => window.clearTimeout(redirectTimer);
+  }, [navigate]);
+
   return (
     <S.Page>
       <S.CompleteSection>

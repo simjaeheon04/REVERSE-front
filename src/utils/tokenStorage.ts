@@ -5,6 +5,7 @@ const REFRESH_TOKEN_EXPIRY_KEY = "reverse.refreshTokenExpiry";
 const USER_ID_KEY = "reverse.userId";
 const USER_NAME_KEY = "reverse.userName";
 const ROLE_NAME_KEY = "reverse.roleName";
+const ROLE_ID_KEY = "reverse.roleId";
 
 export type StoredAuthTokens = {
   accessToken: string;
@@ -14,6 +15,7 @@ export type StoredAuthTokens = {
   userId: string | null;
   userName: string | null;
   roleName: string | null;
+  roleId: number | null;
 };
 
 const isBrowser = typeof window !== "undefined";
@@ -27,6 +29,17 @@ export const getStoredRefreshToken = () =>
 export const getStoredRoleName = () =>
   isBrowser ? window.localStorage.getItem(ROLE_NAME_KEY) : null;
 
+const getStoredRoleId = () => {
+  if (!isBrowser) {
+    return null;
+  }
+
+  const storedRoleId = window.localStorage.getItem(ROLE_ID_KEY);
+  const roleId = storedRoleId ? Number(storedRoleId) : null;
+
+  return Number.isFinite(roleId) ? roleId : null;
+};
+
 export const getStoredAuthTokens = (): StoredAuthTokens | null => {
   if (!isBrowser) {
     return null;
@@ -39,6 +52,7 @@ export const getStoredAuthTokens = (): StoredAuthTokens | null => {
   const userId = window.localStorage.getItem(USER_ID_KEY);
   const userName = window.localStorage.getItem(USER_NAME_KEY);
   const roleName = getStoredRoleName();
+  const roleId = getStoredRoleId();
 
   if (!accessToken || !refreshToken || !accessTokenExpiry || !refreshTokenExpiry) {
     return null;
@@ -52,6 +66,7 @@ export const getStoredAuthTokens = (): StoredAuthTokens | null => {
     userId,
     userName,
     roleName,
+    roleId,
   };
 };
 
@@ -82,6 +97,12 @@ export const setStoredAuthTokens = (tokens: StoredAuthTokens) => {
   } else {
     window.localStorage.removeItem(ROLE_NAME_KEY);
   }
+
+  if (tokens.roleId) {
+    window.localStorage.setItem(ROLE_ID_KEY, String(tokens.roleId));
+  } else {
+    window.localStorage.removeItem(ROLE_ID_KEY);
+  }
 };
 
 export const clearStoredAuthTokens = () => {
@@ -96,4 +117,5 @@ export const clearStoredAuthTokens = () => {
   window.localStorage.removeItem(USER_ID_KEY);
   window.localStorage.removeItem(USER_NAME_KEY);
   window.localStorage.removeItem(ROLE_NAME_KEY);
+  window.localStorage.removeItem(ROLE_ID_KEY);
 };

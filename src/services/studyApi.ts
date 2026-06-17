@@ -81,11 +81,15 @@ export type StudyListParams = {
 export const createStudyRecruitment = async (
   payload: StudyCreatePayload
 ): Promise<unknown> => {
-  const response = await axiosInstance.post<ApiResponse<unknown>>("/api/studies", payload, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  const response = await axiosInstance.post<ApiResponse<unknown>>(
+    "/api/studies",
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
   return unwrapApiData(response.data);
 };
@@ -133,12 +137,13 @@ export const updateStudyRecruitment = async (
 
 export const deleteStudyRecruitment = async (studyId: number | string) => {
   const response = await axiosInstance.delete(`/api/studies/${studyId}`);
-
   return response.data;
 };
 
-export const applyStudy = async (studyId: number | string): Promise<unknown> => {
+export const applyStudy = async (
+  studyId: number | string
+): Promise<unknown> => {
   void studyId;
 
-  throw new Error("최신 API 명세에 스터디 신청 엔드포인트가 없습니다.");
+  throw new Error("엔드포인트가 없습니다.");
 };

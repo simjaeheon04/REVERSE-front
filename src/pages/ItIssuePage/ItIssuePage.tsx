@@ -20,7 +20,7 @@ export default function ItIssuePage() {
         setIssues(result);
       } catch {
         setIssues([]);
-        setErrorMessage("이슈를 불러오는 데 실패했습니다. 다시 시도해주세요.");
+        setErrorMessage("IT 이슈를 불러오는 데 실패했습니다. 다시 시도해 주세요.");
       } finally {
         setIsLoading(false);
       }
@@ -37,7 +37,7 @@ export default function ItIssuePage() {
 
   const handleOpenSource = (sourceUrl: string) => {
     if (!sourceUrl) {
-      window.alert("연결된 원문 링크가 없습니다.");
+      window.alert("연결할 원문 링크가 없습니다.");
       return;
     }
 
@@ -51,7 +51,7 @@ export default function ItIssuePage() {
           <S.Hero>
             <S.Eyebrow>REVERSE</S.Eyebrow>
             <S.Title>IT ISSUE</S.Title>
-            <S.Subtitle>Today IT이슈</S.Subtitle>
+            <S.Subtitle>Today IT 이슈</S.Subtitle>
           </S.Hero>
 
           <S.Divider />
@@ -59,18 +59,20 @@ export default function ItIssuePage() {
           <S.IssueGrid>
             {issues.length ? (
               issues.map((issue) => (
-                <S.IssueCard key={issue.id}>
+                <S.IssueCard
+                  key={issue.id}
+                  type="button"
+                  onClick={() => handleOpenSource(issue.sourceUrl)}
+                  aria-label={`${issue.title} 원문으로 이동`}
+                >
                   <S.CardImage src={issue.imageUrl || defaultIssueImage} alt="" />
                   <S.CardBody>
                     <S.CardTitle>{issue.title}</S.CardTitle>
                     <S.TitleRule />
                     <S.CardFooter>
-                      <S.LinkButton
-                        type="button"
-                        onClick={() => handleOpenSource(issue.sourceUrl)}
-                      >
+                      <S.LinkButton>
                         {issue.sourceUrl ? "Apply Now" : "No Link"}
-                        <span aria-hidden="true">›</span>
+                        <span aria-hidden="true">{">"}</span>
                       </S.LinkButton>
                     </S.CardFooter>
                   </S.CardBody>
@@ -80,7 +82,7 @@ export default function ItIssuePage() {
               <S.EmptyState>
                 {isLoading
                   ? "현재 이슈를 불러오는 중입니다."
-                  : errorMessage || "현재 이슈를 불러올 수 없습니다."}
+                  : errorMessage || "현재 불러올 이슈가 없습니다."}
               </S.EmptyState>
             )}
           </S.IssueGrid>

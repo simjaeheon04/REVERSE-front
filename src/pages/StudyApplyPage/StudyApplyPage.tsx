@@ -2,7 +2,10 @@ import { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
 import { applyStudy, getStudyDetail, type StudyRecord } from "../../services/studyApi";
+import { useAuthStore } from "../../stores/authStore";
+import { canApplyAsMember } from "../../utils/memberPermission";
 import * as S from "./StudyApplyPage.styles";
 
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -210,8 +213,16 @@ function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: st
 export default function StudyApplyPage() {
   const navigate = useNavigate();
   const { studyId } = useParams();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const roleId = useAuthStore((state) => state.roleId);
+  const roleName = useAuthStore((state) => state.roleName);
+  const isProfileLoading = useAuthStore((state) => state.isProfileLoading);
   const [study, setStudy] = useState<StudyRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const hasApplyPermission = canApplyAsMember({ isAuthenticated, roleId, roleName });
+  const permissionModal =
+    !isAuthenticated ? "login" : !isProfileLoading && !hasApplyPermission ? "member" : null;
 
   useEffect(() => {
     if (!studyId) {
@@ -232,6 +243,40 @@ export default function StudyApplyPage() {
 
     void loadStudy();
   }, [studyId]);
+
+  if (isProfileLoading || permissionModal) {
+    return (
+      <S.Page>
+        <S.ApplySection>
+          <S.Content>
+            <S.NotFoundBox>
+              <p>
+                {isProfileLoading
+                  ? "신청 권한을 확인하는 중입니다."
+                  : "스터디 신청 권한이 없습니다."}
+              </p>
+              {!isProfileLoading ? (
+                <S.BackButton type="button" onClick={() => navigate("/study")}>
+                  스터디 목록으로 돌아가기
+                </S.BackButton>
+              ) : null}
+            </S.NotFoundBox>
+          </S.Content>
+        </S.ApplySection>
+        <LoginRequiredModal
+          isOpen={permissionModal === "login"}
+          onConfirm={() => navigate("/login")}
+        />
+        <LoginRequiredModal
+          isOpen={permissionModal === "member"}
+          title="현부원 이상 신청할 수 있습니다."
+          description="스터디 신청은 멤버 권한부터 이용할 수 있습니다."
+          onConfirm={() => navigate("/study")}
+        />
+        <Footer />
+      </S.Page>
+    );
+  }
 
   if (!study) {
     return (

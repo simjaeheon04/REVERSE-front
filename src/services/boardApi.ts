@@ -11,8 +11,7 @@ const unwrapApiData = <T>(payload: ApiSuccessResponse<T> | T): T => {
   if (
     payload &&
     typeof payload === "object" &&
-    "data" in payload &&
-    ("success" in payload || "status" in payload)
+    "data" in payload
   ) {
     return (payload as ApiSuccessResponse<T>).data;
   }
@@ -281,12 +280,14 @@ export const getBoardPostList = async (page = 0): Promise<BoardPostListPage> => 
   const response = await axiosInstance.get<ApiSuccessResponse<RawBoardPostPage> | RawBoardPostPage>(
     "/api/posts/board",
     {
-      params: { page },
+      params: { page, size: 10 },
     }
   );
 
   const payload = unwrapApiData(response.data);
-  const rawContent = Array.isArray(payload.content) ? payload.content : [];
+  const rawContent = Array.isArray(payload)
+    ? payload
+    : payload.content ?? payload.posts ?? payload.list ?? payload.items ?? [];
   const normalizedContent = rawContent.map(normalizeBoardPostListItem);
 
   console.log("[board/list] raw response", response.data);
@@ -295,9 +296,13 @@ export const getBoardPostList = async (page = 0): Promise<BoardPostListPage> => 
 
   return {
     content: normalizedContent,
-    totalPages: payload.totalPages ?? 0,
-    totalElements: payload.totalElements ?? 0,
-    number: payload.number ?? 0,
+    totalPages: Array.isArray(payload) ? 1 : payload.totalPages ?? payload.totalPage ?? 1,
+    totalElements: Array.isArray(payload)
+      ? payload.length
+      : payload.totalElements ?? rawContent.length,
+    number: Array.isArray(payload)
+      ? page
+      : payload.number ?? payload.currentPage ?? payload.page ?? page,
   };
 };
 

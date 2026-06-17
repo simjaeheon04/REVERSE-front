@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import editIcon from "../../assets/icons/Edit.png";
 import fileTextIcon from "../../assets/icons/File_text.png";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
+import { useLoginRequiredNavigation } from "../../hooks/useLoginRequiredNavigation";
 import {
   deleteProjectPost,
   getMyProjects,
@@ -31,6 +33,8 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 
 export default function ProjectManagementPage() {
   const navigate = useNavigate();
+  const { isLoginRequiredOpen, moveToLogin, navigateWithAuth } =
+    useLoginRequiredNavigation();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -100,7 +104,7 @@ export default function ProjectManagementPage() {
             <S.SummaryAction>
               <S.WriteActionButton
                 type="button"
-                onClick={() => navigate("/project/write")}
+                onClick={() => navigateWithAuth("/project/write")}
               >
                 <S.WriteActionIcon src={editIcon} alt="" aria-hidden="true" />
                 프로젝트 글 작성하기
@@ -156,6 +160,7 @@ export default function ProjectManagementPage() {
         </S.Frame>
       </S.Page>
       <Footer />
+      <LoginRequiredModal isOpen={isLoginRequiredOpen} onConfirm={moveToLogin} />
 
       {deleteTarget ? (
         <S.ModalOverlay role="presentation">

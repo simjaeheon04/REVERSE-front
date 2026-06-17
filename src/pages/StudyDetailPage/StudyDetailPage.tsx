@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
 import { getStudyDetail, type StudyRecord } from "../../services/studyApi";
+import { useAuthStore } from "../../stores/authStore";
+import { canApplyAsMember } from "../../utils/memberPermission";
 import * as S from "./StudyDetailPage.styles";
 
 const DAY_LABELS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
@@ -66,9 +69,36 @@ function CurriculumPanel({ study }: { study: StudyRecord }) {
 export default function StudyDetailPage() {
   const navigate = useNavigate();
   const { studyId } = useParams();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const roleId = useAuthStore((state) => state.roleId);
+  const roleName = useAuthStore((state) => state.roleName);
+  const isProfileLoading = useAuthStore((state) => state.isProfileLoading);
   const [study, setStudy] = useState<StudyRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [permissionModal, setPermissionModal] = useState<"login" | "member" | null>(null);
+
+  const handleApply = () => {
+    if (!study) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setPermissionModal("login");
+      return;
+    }
+
+    if (isProfileLoading) {
+      return;
+    }
+
+    if (!canApplyAsMember({ isAuthenticated, roleId, roleName })) {
+      setPermissionModal("member");
+      return;
+    }
+
+    navigate(`/study/${study.studyId}/apply`);
+  };
 
   useEffect(() => {
     if (!studyId) {
@@ -155,7 +185,7 @@ export default function StudyDetailPage() {
                 <S.ApplyButton
                   type="button"
                   aria-label={`${study.studyName} 신청하기`}
-                  onClick={() => navigate(`/study/${study.studyId}/apply`)}
+                  onClick={handleApply}
                 />
                 <S.ApplyText>신청하기</S.ApplyText>
               </S.ApplyRow>
@@ -163,6 +193,19 @@ export default function StudyDetailPage() {
           </S.ContentGrid>
         </S.Inner>
       </S.Page>
+      <LoginRequiredModal
+        isOpen={permissionModal === "login"}
+        onConfirm={() => {
+          setPermissionModal(null);
+          navigate("/login");
+        }}
+      />
+      <LoginRequiredModal
+        isOpen={permissionModal === "member"}
+        title="현부원 이상 신청할 수 있습니다."
+        description="스터디 신청은 멤버 권한부터 이용할 수 있습니다."
+        onConfirm={() => setPermissionModal(null)}
+      />
       <Footer />
     </>
   );

@@ -8,6 +8,8 @@ import {
   type BoardPostDetail,
   type BoardPostListItem,
 } from "../../services/boardApi";
+import { useLoginRequiredNavigation } from "../../hooks/useLoginRequiredNavigation";
+import LoginRequiredModal from "../common/LoginRequiredModal/LoginRequiredModal";
 import * as S from "./BoardSection.styles";
 
 type SearchField = "제목" | "본문" | "작성자";
@@ -92,6 +94,8 @@ const toBoardPostDetailFallback = (post: BoardPostListItem): BoardPostDetail => 
 
 export default function BoardSection() {
   const navigate = useNavigate();
+  const { isLoginRequiredOpen, moveToLogin, navigateWithAuth } =
+    useLoginRequiredNavigation();
   const [boards, setBoards] = useState<AdminBoard[]>([]);
   const [activeBoardId, setActiveBoardId] = useState<number | null>(null);
   const [searchField, setSearchField] = useState<SearchField>("제목");
@@ -327,11 +331,12 @@ export default function BoardSection() {
             </S.PageNavButton>
           </S.Pagination>
 
-          <S.WriteButton type="button" aria-label="게시글 작성" onClick={() => navigate("/board/write")}>
+          <S.WriteButton type="button" aria-label="게시글 작성" onClick={() => navigateWithAuth("/board/write")}>
             <S.WriteIcon />
           </S.WriteButton>
         </S.Inner>
       </S.Section>
+      <LoginRequiredModal isOpen={isLoginRequiredOpen} onConfirm={moveToLogin} />
     </>
   );
 }

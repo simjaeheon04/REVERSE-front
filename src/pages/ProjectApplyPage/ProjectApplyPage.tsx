@@ -2,11 +2,14 @@ import { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
 import {
   applyProject,
   getProjectDetail,
   type ProjectListItem,
 } from "../../services/projectAPI";
+import { useAuthStore } from "../../stores/authStore";
+import { canApplyAsMember } from "../../utils/memberPermission";
 import * as S from "./ProjectApplyPage.styles";
 
 const getErrorMessage = (error: unknown) => {
@@ -164,9 +167,17 @@ function ProjectApplyForm({ project }: { project: ProjectListItem }) {
 export default function ProjectApplyPage() {
   const navigate = useNavigate();
   const { projectId } = useParams();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const roleId = useAuthStore((state) => state.roleId);
+  const roleName = useAuthStore((state) => state.roleName);
+  const isProfileLoading = useAuthStore((state) => state.isProfileLoading);
   const [project, setProject] = useState<ProjectListItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const hasApplyPermission = canApplyAsMember({ isAuthenticated, roleId, roleName });
+  const permissionModal =
+    !isAuthenticated ? "login" : !isProfileLoading && !hasApplyPermission ? "member" : null;
 
   useEffect(() => {
     if (!projectId) {
@@ -192,6 +203,40 @@ export default function ProjectApplyPage() {
 
     void fetchProject();
   }, [projectId]);
+
+  if (isProfileLoading || permissionModal) {
+    return (
+      <S.Page>
+        <S.ApplySection>
+          <S.Content>
+            <S.NotFoundBox>
+              <p>
+                {isProfileLoading
+                  ? "신청 권한을 확인하는 중입니다."
+                  : "프로젝트 신청 권한이 없습니다."}
+              </p>
+              {!isProfileLoading ? (
+                <S.BackButton type="button" onClick={() => navigate("/project")}>
+                  프로젝트 목록으로 돌아가기
+                </S.BackButton>
+              ) : null}
+            </S.NotFoundBox>
+          </S.Content>
+        </S.ApplySection>
+        <LoginRequiredModal
+          isOpen={permissionModal === "login"}
+          onConfirm={() => navigate("/login")}
+        />
+        <LoginRequiredModal
+          isOpen={permissionModal === "member"}
+          title="현부원 이상 신청할 수 있습니다."
+          description="프로젝트 신청은 멤버 권한부터 이용할 수 있습니다."
+          onConfirm={() => navigate("/project")}
+        />
+        <Footer />
+      </S.Page>
+    );
+  }
 
   if (isLoading || !project) {
     return (
