@@ -170,6 +170,12 @@ export default function MyPage() {
                     <S.InfoLabel>MBTI</S.InfoLabel>
                     <S.InfoValue>{displayMbti}</S.InfoValue>
                   </div>
+                  <S.PasswordButton
+                    type="button"
+                    onClick={() => navigate("/mypage/password")}
+                  >
+                    비밀번호 변경
+                  </S.PasswordButton>
                 </S.InfoList>
 
                 <S.IntroBox>

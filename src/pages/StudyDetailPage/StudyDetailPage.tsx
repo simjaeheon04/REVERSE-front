@@ -4,6 +4,7 @@ import Footer from "../../components/common/footer/Footer";
 import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
 import { getStudyDetail, type StudyRecord } from "../../services/studyApi";
 import { useAuthStore } from "../../stores/authStore";
+import { isAdminRole } from "../../utils/admin";
 import { canApplyAsMember } from "../../utils/memberPermission";
 import * as S from "./StudyDetailPage.styles";
 
@@ -72,11 +73,22 @@ export default function StudyDetailPage() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const roleId = useAuthStore((state) => state.roleId);
   const roleName = useAuthStore((state) => state.roleName);
+  const userId = useAuthStore((state) => state.userId);
   const isProfileLoading = useAuthStore((state) => state.isProfileLoading);
   const [study, setStudy] = useState<StudyRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [permissionModal, setPermissionModal] = useState<"login" | "member" | null>(null);
+
+  const canManageApplications =
+    isAuthenticated &&
+    Boolean(
+      study &&
+        (study.leaderId === userId ||
+          roleId === 1 ||
+          roleId === 2 ||
+          isAdminRole(roleName))
+    );
 
   const handleApply = () => {
     if (!study) {
@@ -189,6 +201,15 @@ export default function StudyDetailPage() {
                 />
                 <S.ApplyText>신청하기</S.ApplyText>
               </S.ApplyRow>
+
+              {canManageApplications ? (
+                <S.ManageApplicationsButton
+                  type="button"
+                  onClick={() => navigate(`/study/${study.studyId}/applications`)}
+                >
+                  신청자 관리
+                </S.ManageApplicationsButton>
+              ) : null}
             </S.SideColumn>
           </S.ContentGrid>
         </S.Inner>

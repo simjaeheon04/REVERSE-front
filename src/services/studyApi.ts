@@ -78,6 +78,29 @@ export type StudyListParams = {
   page?: number;
 };
 
+export type StudyAvailability = {
+  dayOfWeek: number;
+  availableTime: string;
+};
+
+export type StudyApplyPayload = {
+  availabilities: StudyAvailability[];
+};
+
+export type StudyApplication = {
+  studyApplicationId: number;
+  studyId: number;
+  userId: string;
+  status: "PENDING" | "APPROVED" | "REJECTED" | string;
+  appliedDate: string;
+  availabilities: StudyAvailability[];
+};
+
+export type StudyApplicationMutationResponse = {
+  success?: boolean;
+  message?: string;
+};
+
 export const createStudyRecruitment = async (
   payload: StudyCreatePayload
 ): Promise<unknown> => {
@@ -141,9 +164,48 @@ export const deleteStudyRecruitment = async (studyId: number | string) => {
 };
 
 export const applyStudy = async (
-  studyId: number | string
-): Promise<unknown> => {
-  void studyId;
+  studyId: number | string,
+  payload: StudyApplyPayload
+): Promise<StudyApplicationMutationResponse> => {
+  const response = await axiosInstance.post<StudyApplicationMutationResponse>(
+    `/api/studies/${studyId}/apply`,
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
-  throw new Error("엔드포인트가 없습니다.");
+  return response.data;
+};
+
+export const getStudyApplications = async (
+  studyId: number | string
+): Promise<StudyApplication[]> => {
+  const response = await axiosInstance.get<ApiResponse<StudyApplication[]>>(
+    `/api/studies/${studyId}/applications`
+  );
+
+  return unwrapApiData(response.data);
+};
+
+export const approveStudyApplication = async (
+  applicationId: number | string
+): Promise<StudyApplicationMutationResponse> => {
+  const response = await axiosInstance.patch<StudyApplicationMutationResponse>(
+    `/api/studies/applications/${applicationId}/approve`
+  );
+
+  return response.data;
+};
+
+export const rejectStudyApplication = async (
+  applicationId: number | string
+): Promise<StudyApplicationMutationResponse> => {
+  const response = await axiosInstance.patch<StudyApplicationMutationResponse>(
+    `/api/studies/applications/${applicationId}/reject`
+  );
+
+  return response.data;
 };

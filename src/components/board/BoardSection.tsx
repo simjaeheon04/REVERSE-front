@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  getAdminBoards,
+  getBoardCategories,
   getAllBoardPosts,
   getMultiBoardPosts,
   type AdminBoard,
@@ -121,10 +121,10 @@ export default function BoardSection() {
     const fetchBoards = async () => {
       try {
         setIsLoadingBoards(true);
-        const result = await getAdminBoards();
+        const result = await getBoardCategories();
         setBoards(result);
       } catch (error) {
-        console.warn("[board] admin board list failed, fallback will use post list", error);
+        console.warn("[board] category list failed, fallback will use post list", error);
         setBoards([]);
       } finally {
         setIsLoadingBoards(false);

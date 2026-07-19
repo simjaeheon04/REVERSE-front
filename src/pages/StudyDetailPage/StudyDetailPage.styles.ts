@@ -210,6 +210,23 @@ export const ApplyText = styled.span`
   font-weight: 700;
 `;
 
+export const ManageApplicationsButton = styled.button`
+  width: 100%;
+  min-height: 42px;
+  margin-top: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+`;
+
 export const EmptyState = styled.div`
   min-height: 420px;
   display: flex;

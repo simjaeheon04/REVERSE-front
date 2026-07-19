@@ -139,6 +139,8 @@ export type AdminBoard = {
   boardDescription: string;
 };
 
+export type BoardCategory = AdminBoard;
+
 export type AdminBoardPayload = {
   boardName: string;
   boardDescription: string;
@@ -624,11 +626,23 @@ export const getAdminBoards = async (): Promise<AdminBoard[]> => {
     : [];
 };
 
+export const getBoardCategories = async (): Promise<BoardCategory[]> => {
+  const response = await axiosInstance.get<ApiSuccessResponse<RawAdminBoard[]> | RawAdminBoard[]>(
+    "/api/posts/board/categories"
+  );
+
+  const payload = unwrapApiData(response.data);
+
+  return Array.isArray(payload)
+    ? payload.map(normalizeAdminBoard).filter((board) => board.boardId && board.boardName)
+    : [];
+};
+
 export const getAvailableBoards = async (): Promise<AdminBoard[]> => {
   try {
-    return await getAdminBoards();
+    return await getBoardCategories();
   } catch (error) {
-    console.warn("[board] admin board list unavailable, falling back to post list", error);
+    console.warn("[board] category list unavailable, falling back to post list", error);
   }
 
   const postPage = await getBoardPostList(0);
@@ -656,7 +670,7 @@ export const getAvailableBoards = async (): Promise<AdminBoard[]> => {
 
 export const getAllBoardPosts = async (page = 0): Promise<BoardPostListPage> => {
   try {
-    const boards = await getAdminBoards();
+    const boards = await getBoardCategories();
 
     if (!boards.length) {
       return await getBoardPostList(page);

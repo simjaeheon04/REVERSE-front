@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
 import {
   createBoardPost,
-  getAdminBoards,
+  getBoardCategories,
   getBoardPostDetail,
   getMultiBoardPosts,
   updateBoardPost,
@@ -80,7 +80,7 @@ export default function BoardWritePage() {
 
     const loadCategories = async () => {
       try {
-        const boards = await getAdminBoards();
+        const boards = await getBoardCategories();
         const realCategories = boards.map((board: AdminBoard) => ({
           boardId: board.boardId,
           label: board.boardName,
@@ -89,7 +89,7 @@ export default function BoardWritePage() {
         setCategories(realCategories);
         setSelectedCategory((prev) => prev ?? realCategories[0] ?? null);
       } catch (error) {
-        console.warn("[board/write] admin category load failed, using board posts", error);
+        console.warn("[board/write] category load failed, using board posts", error);
 
         try {
           const result = await getMultiBoardPosts(BOARD_ID, { page: 0 });

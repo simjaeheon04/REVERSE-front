@@ -15,6 +15,30 @@ export type AdminUserMutationResponse = {
 
 export type AdminUserRoleId = 1 | 2 | 3 | 4 | 5;
 
+export type AdminUserRecord = {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userMbti: string | null;
+  roleId: AdminUserRoleId;
+  roleName: string;
+  createdDate: string;
+};
+
+export type AdminUserPage = {
+  content: AdminUserRecord[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+};
+
+export type AdminUserListParams = {
+  page?: number;
+  size?: number;
+  sort?: string;
+};
+
 export const getCurrentUser = async (): Promise<CurrentUserResponse> => {
   const response = await axiosInstance.get("/api/user/me");
   return response.data;
@@ -34,6 +58,26 @@ const unwrapApiData = <T>(payload: ApiResponse<T>): T => {
   }
 
   return payload as T;
+};
+
+export const getAdminUsers = async (
+  params: AdminUserListParams = {}
+): Promise<AdminUserPage> => {
+  const response = await axiosInstance.get<ApiResponse<AdminUserPage>>(
+    "/api/admin/users",
+    {
+      params: {
+        page: params.page ?? 0,
+        size: params.size ?? 20,
+        sort: params.sort ?? "createdDate,desc",
+      },
+      headers: {
+        "X-Require-Auth": "true",
+      },
+    }
+  );
+
+  return unwrapApiData(response.data);
 };
 
 export const updateAdminUserRole = async (
@@ -98,6 +142,16 @@ export type MyPagePhotoPayload = {
   attachedSize?: number;
 };
 
+export type MyPagePasswordPayload = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type MyPagePasswordResponse = {
+  success?: boolean;
+  message?: string;
+};
+
 export const getMyPageProfile = async (
   targetUserId: string
 ): Promise<MyPageProfile> => {
@@ -154,4 +208,20 @@ export const updateMyPagePhoto = async (
     attachedUrl: result?.attachedUrl ?? attachedUrl,
     attachedSize: result?.attachedSize ?? file.size,
   };
+};
+
+export const updateMyPagePassword = async (
+  payload: MyPagePasswordPayload
+): Promise<MyPagePasswordResponse> => {
+  const response = await axiosInstance.patch<MyPagePasswordResponse>(
+    "/api/mypage/password",
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  return response.data;
 };

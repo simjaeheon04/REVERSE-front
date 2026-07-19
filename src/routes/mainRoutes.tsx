@@ -5,6 +5,7 @@ import BoardPage from "../pages/BoardPage";
 import HomePage from "../pages/HomePage/HomePage";
 import ItIssuePage from "../pages/ItIssuePage/ItIssuePage";
 import MyPage from "../pages/MyPage/MyPage";
+import MyPagePasswordPage from "../pages/MyPagePasswordPage/MyPagePasswordPage";
 import MyProjectManagePage from "../pages/MyActivityManagePage/MyProjectManagePage";
 import MyStudyManagePage from "../pages/MyActivityManagePage/MyStudyManagePage";
 import MyVoteManagePage from "../pages/MyActivityManagePage/MyVoteManagePage";
@@ -21,6 +22,7 @@ import RecruitApplyPage from "../pages/RecruitApplyPage/RecruitApplyPage";
 import RecruitPage from "../pages/RecruitPage/RecruitPage";
 import StudyApplyCompletePage from "../pages/StudyApplyCompletePage/StudyApplyCompletePage";
 import StudyApplyPage from "../pages/StudyApplyPage/StudyApplyPage";
+import StudyApplicationsPage from "../pages/StudyApplicationsPage/StudyApplicationsPage";
 import StudyDetailPage from "../pages/StudyDetailPage/StudyDetailPage";
 import StudyPage from "../pages/StudyPage/StudyPage";
 import StudyWritePage from "../pages/StudyWritePage/StudyWritePage";
@@ -154,6 +156,14 @@ export const mainRoutes = [
     element: <StudyApplyCompletePage />,
   },
   {
+    path: "/study/:studyId/applications",
+    element: (
+      <AuthRouteGuard>
+        <StudyApplicationsPage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
     path: "/recruit/apply",
     element: <RecruitApplyPage />,
   },
@@ -174,6 +184,14 @@ export const mainRoutes = [
     element: (
       <AuthRouteGuard>
         <VoteWritePage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/mypage/password",
+    element: (
+      <AuthRouteGuard>
+        <MyPagePasswordPage />
       </AuthRouteGuard>
     ),
   },
