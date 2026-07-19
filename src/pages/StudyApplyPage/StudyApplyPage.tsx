@@ -2,11 +2,28 @@ import { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
 import { applyStudy, getStudyDetail, type StudyRecord } from "../../services/studyApi";
+import { useAuthStore } from "../../stores/authStore";
+import { canApplyAsMember } from "../../utils/memberPermission";
 import * as S from "./StudyApplyPage.styles";
 
-const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-const AVAILABLE_TIMES = ["오후 5시", "오후 6시", "오후 7시", "오후 8시"];
+const WEEKDAYS = [
+  { label: "MON", value: 1 },
+  { label: "TUE", value: 2 },
+  { label: "WED", value: 3 },
+  { label: "THU", value: 4 },
+  { label: "FRI", value: 5 },
+  { label: "SAT", value: 6 },
+  { label: "SUN", value: 0 },
+] as const;
+
+const AVAILABLE_TIMES = [
+  { label: "오후 5시", value: "17:00" },
+  { label: "오후 6시", value: "18:00" },
+  { label: "오후 7시", value: "19:00" },
+  { label: "오후 8시", value: "20:00" },
+] as const;
 
 const getApplyErrorMessage = (error: unknown) => {
   if (error instanceof AxiosError) {
@@ -91,14 +108,15 @@ function StudyApplyInfo() {
 
 function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: string }) {
   const navigate = useNavigate();
-  const [weekday, setWeekday] = useState(WEEKDAYS[0]);
+  const [dayOfWeek, setDayOfWeek] = useState<number>(WEEKDAYS[0].value);
   const [isWeekdayOpen, setIsWeekdayOpen] = useState(false);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [isAgreed, setIsAgreed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canSubmit = Boolean(weekday && selectedTimes.length > 0 && isAgreed);
+  const selectedWeekday = WEEKDAYS.find((day) => day.value === dayOfWeek) ?? WEEKDAYS[0];
+  const canSubmit = selectedTimes.length > 0 && isAgreed;
 
   const toggleTime = (time: string) => {
     setSelectedTimes((prev) =>
@@ -107,7 +125,7 @@ function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: st
   };
 
   const handleSubmit = async () => {
-    if (!weekday || selectedTimes.length === 0) {
+    if (selectedTimes.length === 0) {
       setErrorMessage("요일과 시간은 필수 입력해야 합니다.");
       return;
     }
@@ -120,7 +138,12 @@ function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: st
     try {
       setIsSubmitting(true);
       setErrorMessage("");
-      await applyStudy(studyId);
+      await applyStudy(studyId, {
+        availabilities: selectedTimes.map((availableTime) => ({
+          dayOfWeek,
+          availableTime,
+        })),
+      });
       navigate(`/study/${studyId}/apply/complete`);
     } catch (error) {
       setErrorMessage(getApplyErrorMessage(error));
@@ -141,7 +164,7 @@ function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: st
           aria-expanded={isWeekdayOpen}
           onClick={() => setIsWeekdayOpen((prev) => !prev)}
         >
-          {weekday}
+          {selectedWeekday.label}
         </S.WeekdayButton>
 
         {isWeekdayOpen ? (
@@ -150,14 +173,14 @@ function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: st
             <S.WeekdayMenu>
               {WEEKDAYS.map((day) => (
                 <S.WeekdayOption
-                  key={day}
+                  key={day.value}
                   type="button"
                   onClick={() => {
-                    setWeekday(day);
+                    setDayOfWeek(day.value);
                     setIsWeekdayOpen(false);
                   }}
                 >
-                  {day}
+                  {day.label}
                 </S.WeekdayOption>
               ))}
             </S.WeekdayMenu>
@@ -172,13 +195,13 @@ function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: st
             ⌄
           </S.TimeHeader>
           {AVAILABLE_TIMES.map((time) => (
-            <S.TimeOption key={time} $active={selectedTimes.includes(time)}>
+            <S.TimeOption key={time.value} $active={selectedTimes.includes(time.value)}>
               <input
                 type="checkbox"
-                checked={selectedTimes.includes(time)}
-                onChange={() => toggleTime(time)}
+                checked={selectedTimes.includes(time.value)}
+                onChange={() => toggleTime(time.value)}
               />
-              <span>{time}</span>
+              <span>{time.label}</span>
             </S.TimeOption>
           ))}
         </S.TimeBox>
@@ -210,8 +233,16 @@ function StudyApplyForm({ studyId, studyName }: { studyId: string; studyName: st
 export default function StudyApplyPage() {
   const navigate = useNavigate();
   const { studyId } = useParams();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const roleId = useAuthStore((state) => state.roleId);
+  const roleName = useAuthStore((state) => state.roleName);
+  const isProfileLoading = useAuthStore((state) => state.isProfileLoading);
   const [study, setStudy] = useState<StudyRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const hasApplyPermission = canApplyAsMember({ isAuthenticated, roleId, roleName });
+  const permissionModal =
+    !isAuthenticated ? "login" : !isProfileLoading && !hasApplyPermission ? "member" : null;
 
   useEffect(() => {
     if (!studyId) {
@@ -232,6 +263,40 @@ export default function StudyApplyPage() {
 
     void loadStudy();
   }, [studyId]);
+
+  if (isProfileLoading || permissionModal) {
+    return (
+      <S.Page>
+        <S.ApplySection>
+          <S.Content>
+            <S.NotFoundBox>
+              <p>
+                {isProfileLoading
+                  ? "신청 권한을 확인하는 중입니다."
+                  : "스터디 신청 권한이 없습니다."}
+              </p>
+              {!isProfileLoading ? (
+                <S.BackButton type="button" onClick={() => navigate("/study")}>
+                  스터디 목록으로 돌아가기
+                </S.BackButton>
+              ) : null}
+            </S.NotFoundBox>
+          </S.Content>
+        </S.ApplySection>
+        <LoginRequiredModal
+          isOpen={permissionModal === "login"}
+          onConfirm={() => navigate("/login")}
+        />
+        <LoginRequiredModal
+          isOpen={permissionModal === "member"}
+          title="현부원 이상 신청할 수 있습니다."
+          description="스터디 신청은 멤버 권한부터 이용할 수 있습니다."
+          onConfirm={() => navigate("/study")}
+        />
+        <Footer />
+      </S.Page>
+    );
+  }
 
   if (!study) {
     return (

@@ -58,7 +58,6 @@ export default function NoticeManagePage() {
       setIsLoadingList(true);
       setListMessage("");
       const result = await getNoticeList({ page });
-      console.log(result);
       setNotices(Array.isArray(result.content) ? result.content : []);
       setTotalPages(result.totalPages);
       setCurrentPage(result.number);
@@ -185,13 +184,8 @@ export default function NoticeManagePage() {
     try {
       setIsSaving(true);
       setSaveMessage("");
-      console.log("[notice/manage] submit", {
-        mode: form.postId ? "edit" : "create",
-        payload: form,
-      });
 
       const result = await saveNotice(form);
-      console.log("[notice/manage] save result", result);
       setSaveResult(result);
       setSaveMessage(
         form.postId
@@ -202,7 +196,7 @@ export default function NoticeManagePage() {
       handleReset();
     } catch (error) {
       if (error instanceof AxiosError) {
-        console.log("[notice/manage] save error", {
+        console.error("[notice/manage] save error", {
           status: error.response?.status,
           data: error.response?.data,
         });

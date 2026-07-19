@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   registerUser,
   sendEmailCode,
@@ -43,6 +44,7 @@ const initialValues: SignUpValues = {
 };
 
 export default function SignUpForm() {
+  const navigate = useNavigate();
   const [values, setValues] = useState<SignUpValues>(initialValues);
   const [terms, setTerms] = useState<TermsState>({
     all: false,
@@ -56,9 +58,18 @@ export default function SignUpForm() {
     text: string;
     type?: "error" | "success";
   }>({ text: "", type: undefined });
+  const [emailMessage, setEmailMessage] = useState<{
+    text: string;
+    type?: "error" | "success";
+  }>({ text: "", type: undefined });
+  const [codeMessage, setCodeMessage] = useState<{
+    text: string;
+    type?: "error" | "success";
+  }>({ text: "", type: undefined });
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const userEmail =
     values.emailId && values.emailDomain
@@ -75,6 +86,12 @@ export default function SignUpForm() {
 
       if (key === "emailId" || key === "emailDomain") {
         setIsEmailVerified(false);
+        setEmailMessage({ text: "", type: undefined });
+        setCodeMessage({ text: "", type: undefined });
+      }
+
+      if (key === "authCode") {
+        setCodeMessage({ text: "", type: undefined });
       }
     };
 
@@ -104,17 +121,20 @@ export default function SignUpForm() {
 
   const handleSendCode = async () => {
     if (!userEmail) {
-      setMessage({ text: "이메일을 입력해 주세요.", type: "error" });
+      setEmailMessage({ text: "이메일을 입력해 주세요.", type: "error" });
+      setCodeMessage({ text: "", type: undefined });
       return;
     }
 
     try {
       setIsSendingCode(true);
+      setMessage({ text: "", type: undefined });
+      setCodeMessage({ text: "", type: undefined });
       const result = await sendEmailCode({ email: userEmail });
-      setMessage({ text: result || "인증번호가 전송되었습니다.", type: "success" });
+      setEmailMessage({ text: result || "인증번호가 전송되었습니다.", type: "success" });
     } catch (error) {
       console.error("signup email send failed", error);
-      setMessage({ text: "인증번호 전송에 실패했습니다.", type: "error" });
+      setEmailMessage({ text: "인증번호 전송에 실패했습니다.", type: "error" });
     } finally {
       setIsSendingCode(false);
     }
@@ -122,22 +142,23 @@ export default function SignUpForm() {
 
   const handleVerifyCode = async () => {
     if (!userEmail || !values.authCode.trim()) {
-      setMessage({ text: "이메일과 인증번호를 입력해 주세요.", type: "error" });
+      setCodeMessage({ text: "이메일과 인증번호를 입력해 주세요.", type: "error" });
       return;
     }
 
     try {
       setIsVerifyingCode(true);
+      setMessage({ text: "", type: undefined });
       const result = await verifyEmailCode({
         email: userEmail,
         code: values.authCode.trim(),
       });
       setIsEmailVerified(true);
-      setMessage({ text: result || "이메일 인증이 완료되었습니다.", type: "success" });
+      setCodeMessage({ text: result || "이메일 인증이 완료되었습니다.", type: "success" });
     } catch (error) {
       console.error("signup email verify failed", error);
       setIsEmailVerified(false);
-      setMessage({ text: "인증번호 확인에 실패했습니다.", type: "error" });
+      setCodeMessage({ text: "인증번호 확인에 실패했습니다.", type: "error" });
     } finally {
       setIsVerifyingCode(false);
     }
@@ -160,7 +181,7 @@ export default function SignUpForm() {
     }
 
     if (!isEmailVerified) {
-      setMessage({ text: "이메일 인증을 완료해 주세요.", type: "error" });
+      setCodeMessage({ text: "이메일 인증을 완료해 주세요.", type: "error" });
       return;
     }
 
@@ -187,17 +208,25 @@ export default function SignUpForm() {
         ],
       };
 
-      const result = await registerUser(payload);
-      setMessage({ text: result || "회원가입이 완료되었습니다.", type: "success" });
+      await registerUser(payload);
+      setMessage({ text: "", type: undefined });
+      setEmailMessage({ text: "", type: undefined });
+      setCodeMessage({ text: "", type: undefined });
       setValues(initialValues);
       setIsEmailVerified(false);
       handleAllChange(false);
+      setIsSuccessModalOpen(true);
     } catch (error) {
       console.error("signup failed", error);
       setMessage({ text: "회원가입에 실패했습니다.", type: "error" });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSuccessConfirm = () => {
+    setIsSuccessModalOpen(false);
+    navigate("/login");
   };
 
   return (
@@ -263,10 +292,19 @@ export default function SignUpForm() {
               <option value="naver.com">naver.com</option>
               <option value="daum.net">daum.net</option>
             </C.Select>
-            <C.GhostButton type="button" onClick={handleSendCode}>
+            <C.GhostButton
+              type="button"
+              onClick={handleSendCode}
+              disabled={isSendingCode || isEmailVerified}
+            >
               {isSendingCode ? "전송 중..." : "전송"}
             </C.GhostButton>
           </C.EmailRow>
+          {emailMessage.text ? (
+            <C.FieldMessage $type={emailMessage.type}>
+              {emailMessage.text}
+            </C.FieldMessage>
+          ) : null}
         </FormField>
 
         <FormField label="인증번호" htmlFor="signup-code">
@@ -278,10 +316,19 @@ export default function SignUpForm() {
               value={values.authCode}
               onChange={handleValueChange("authCode")}
             />
-            <C.GhostButton type="button" onClick={handleVerifyCode}>
+            <C.GhostButton
+              type="button"
+              onClick={handleVerifyCode}
+              disabled={isVerifyingCode || isEmailVerified}
+            >
               {isVerifyingCode ? "확인 중..." : "인증번호 확인"}
             </C.GhostButton>
           </C.Row>
+          {codeMessage.text ? (
+            <C.FieldMessage $type={codeMessage.type}>
+              {codeMessage.text}
+            </C.FieldMessage>
+          ) : null}
         </FormField>
 
         <FormField label="자기소개" htmlFor="signup-introduce">
@@ -365,6 +412,23 @@ export default function SignUpForm() {
           {isSubmitting ? "가입 중..." : "회원가입"}
         </C.PrimaryButton>
       </C.Form>
+      {isSuccessModalOpen ? (
+        <S.ModalOverlay role="presentation">
+          <S.ModalCard
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="signup-success-title"
+          >
+            <S.ModalTitle id="signup-success-title">
+              회원가입이 완료되었습니다.
+            </S.ModalTitle>
+            <S.ModalText>로그인 페이지로 이동합니다.</S.ModalText>
+            <S.ModalConfirmButton type="button" onClick={handleSuccessConfirm}>
+              확인
+            </S.ModalConfirmButton>
+          </S.ModalCard>
+        </S.ModalOverlay>
+      ) : null}
     </AuthShell>
   );
 }

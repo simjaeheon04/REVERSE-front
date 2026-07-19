@@ -5,6 +5,7 @@ import BoardPage from "../pages/BoardPage";
 import HomePage from "../pages/HomePage/HomePage";
 import ItIssuePage from "../pages/ItIssuePage/ItIssuePage";
 import MyPage from "../pages/MyPage/MyPage";
+import MyPagePasswordPage from "../pages/MyPagePasswordPage/MyPagePasswordPage";
 import MyProjectManagePage from "../pages/MyActivityManagePage/MyProjectManagePage";
 import MyStudyManagePage from "../pages/MyActivityManagePage/MyStudyManagePage";
 import MyVoteManagePage from "../pages/MyActivityManagePage/MyVoteManagePage";
@@ -21,6 +22,7 @@ import RecruitApplyPage from "../pages/RecruitApplyPage/RecruitApplyPage";
 import RecruitPage from "../pages/RecruitPage/RecruitPage";
 import StudyApplyCompletePage from "../pages/StudyApplyCompletePage/StudyApplyCompletePage";
 import StudyApplyPage from "../pages/StudyApplyPage/StudyApplyPage";
+import StudyApplicationsPage from "../pages/StudyApplicationsPage/StudyApplicationsPage";
 import StudyDetailPage from "../pages/StudyDetailPage/StudyDetailPage";
 import StudyPage from "../pages/StudyPage/StudyPage";
 import StudyWritePage from "../pages/StudyWritePage/StudyWritePage";
@@ -30,6 +32,7 @@ import VotePage from "../pages/VotePage";
 import VoteStatusPage from "../pages/VoteStatusPage";
 import VoteWritePage from "../pages/VoteWritePage";
 import AuthRouteGuard from "./AuthRouteGuard";
+import MemberRouteGuard from "./MemberRouteGuard";
 
 export const mainRoutes = [
   {
@@ -50,7 +53,11 @@ export const mainRoutes = [
   },
   {
     path: "/project/write",
-    element: <ProjectWritePage />,
+    element: (
+      <AuthRouteGuard>
+        <ProjectWritePage />
+      </AuthRouteGuard>
+    ),
   },
   {
     path: "/project/manage",
@@ -82,7 +89,11 @@ export const mainRoutes = [
   },
   {
     path: "/board/write",
-    element: <BoardWritePage />,
+    element: (
+      <AuthRouteGuard>
+        <BoardWritePage />
+      </AuthRouteGuard>
+    ),
   },
   {
     path: "/recruit",
@@ -126,7 +137,11 @@ export const mainRoutes = [
   },
   {
     path: "/study/write",
-    element: <StudyWritePage />,
+    element: (
+      <AuthRouteGuard>
+        <StudyWritePage />
+      </AuthRouteGuard>
+    ),
   },
   {
     path: "/study/:studyId",
@@ -139,6 +154,14 @@ export const mainRoutes = [
   {
     path: "/study/:studyId/apply/complete",
     element: <StudyApplyCompletePage />,
+  },
+  {
+    path: "/study/:studyId/applications",
+    element: (
+      <AuthRouteGuard>
+        <StudyApplicationsPage />
+      </AuthRouteGuard>
+    ),
   },
   {
     path: "/recruit/apply",
@@ -158,7 +181,19 @@ export const mainRoutes = [
   },
   {
     path: "/vote/write",
-    element: <VoteWritePage />,
+    element: (
+      <AuthRouteGuard>
+        <VoteWritePage />
+      </AuthRouteGuard>
+    ),
+  },
+  {
+    path: "/mypage/password",
+    element: (
+      <AuthRouteGuard>
+        <MyPagePasswordPage />
+      </AuthRouteGuard>
+    ),
   },
   {
     path: "/vote/manage",
@@ -166,11 +201,19 @@ export const mainRoutes = [
   },
   {
     path: "/vote/:voteId/status",
-    element: <VoteStatusPage />,
+    element: (
+      <MemberRouteGuard fallbackPath="/vote">
+        <VoteStatusPage />
+      </MemberRouteGuard>
+    ),
   },
   {
     path: "/vote/:voteId",
-    element: <VoteDetailPage />,
+    element: (
+      <MemberRouteGuard fallbackPath="/vote">
+        <VoteDetailPage />
+      </MemberRouteGuard>
+    ),
   },
   {
     path: "/board",

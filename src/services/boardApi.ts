@@ -11,8 +11,7 @@ const unwrapApiData = <T>(payload: ApiSuccessResponse<T> | T): T => {
   if (
     payload &&
     typeof payload === "object" &&
-    "data" in payload &&
-    ("success" in payload || "status" in payload)
+    "data" in payload
   ) {
     return (payload as ApiSuccessResponse<T>).data;
   }
@@ -139,6 +138,8 @@ export type AdminBoard = {
   boardName: string;
   boardDescription: string;
 };
+
+export type BoardCategory = AdminBoard;
 
 export type AdminBoardPayload = {
   boardName: string;
@@ -281,12 +282,14 @@ export const getBoardPostList = async (page = 0): Promise<BoardPostListPage> => 
   const response = await axiosInstance.get<ApiSuccessResponse<RawBoardPostPage> | RawBoardPostPage>(
     "/api/posts/board",
     {
-      params: { page },
+      params: { page, size: 10 },
     }
   );
 
   const payload = unwrapApiData(response.data);
-  const rawContent = Array.isArray(payload.content) ? payload.content : [];
+  const rawContent = Array.isArray(payload)
+    ? payload
+    : payload.content ?? payload.posts ?? payload.list ?? payload.items ?? [];
   const normalizedContent = rawContent.map(normalizeBoardPostListItem);
 
   console.log("[board/list] raw response", response.data);
@@ -295,9 +298,13 @@ export const getBoardPostList = async (page = 0): Promise<BoardPostListPage> => 
 
   return {
     content: normalizedContent,
-    totalPages: payload.totalPages ?? 0,
-    totalElements: payload.totalElements ?? 0,
-    number: payload.number ?? 0,
+    totalPages: Array.isArray(payload) ? 1 : payload.totalPages ?? payload.totalPage ?? 1,
+    totalElements: Array.isArray(payload)
+      ? payload.length
+      : payload.totalElements ?? rawContent.length,
+    number: Array.isArray(payload)
+      ? page
+      : payload.number ?? payload.currentPage ?? payload.page ?? page,
   };
 };
 
@@ -619,11 +626,23 @@ export const getAdminBoards = async (): Promise<AdminBoard[]> => {
     : [];
 };
 
+export const getBoardCategories = async (): Promise<BoardCategory[]> => {
+  const response = await axiosInstance.get<ApiSuccessResponse<RawAdminBoard[]> | RawAdminBoard[]>(
+    "/api/posts/board/categories"
+  );
+
+  const payload = unwrapApiData(response.data);
+
+  return Array.isArray(payload)
+    ? payload.map(normalizeAdminBoard).filter((board) => board.boardId && board.boardName)
+    : [];
+};
+
 export const getAvailableBoards = async (): Promise<AdminBoard[]> => {
   try {
-    return await getAdminBoards();
+    return await getBoardCategories();
   } catch (error) {
-    console.warn("[board] admin board list unavailable, falling back to post list", error);
+    console.warn("[board] category list unavailable, falling back to post list", error);
   }
 
   const postPage = await getBoardPostList(0);
@@ -651,7 +670,7 @@ export const getAvailableBoards = async (): Promise<AdminBoard[]> => {
 
 export const getAllBoardPosts = async (page = 0): Promise<BoardPostListPage> => {
   try {
-    const boards = await getAdminBoards();
+    const boards = await getBoardCategories();
 
     if (!boards.length) {
       return await getBoardPostList(page);

@@ -3,6 +3,8 @@ import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import fallbackProjectImage from "../../assets/images/project-main.jpg";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
+import { useLoginRequiredNavigation } from "../../hooks/useLoginRequiredNavigation";
 import {
   getProjects,
   type ProjectListItem,
@@ -22,6 +24,8 @@ const getProjectImage = (project: ProjectListItem) =>
 
 export default function ProjectPage() {
   const navigate = useNavigate();
+  const { isLoginRequiredOpen, moveToLogin, navigateWithAuth } =
+    useLoginRequiredNavigation();
   const [status, setStatus] = useState<ProjectStatus | "">("");
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,7 +101,7 @@ export default function ProjectPage() {
           <S.ControlRow>
             <S.SemesterSelect
               value={status}
-              onChange={(event) => handleStatusChange(event.target.value)}
+              onChange={(event) => handleStatusChange(event.target.value as ProjectStatus | "")}
               aria-label="프로젝트 상태 선택"
             >
               {STATUS_OPTIONS.map((option) => (
@@ -189,19 +193,13 @@ export default function ProjectPage() {
           <S.WriteButton
             type="button"
             aria-label="프로젝트 모집 게시글 작성"
-            onClick={() => navigate("/project/write")}
+            onClick={() => navigateWithAuth("/project/write")}
           >
             작성
           </S.WriteButton>
-          <S.ManageButton
-            type="button"
-            aria-label="내 프로젝트 관리"
-            onClick={() => navigate("/project/manage")}
-          >
-            관리
-          </S.ManageButton>
         </S.Inner>
       </S.Page>
+      <LoginRequiredModal isOpen={isLoginRequiredOpen} onConfirm={moveToLogin} />
       <Footer />
     </>
   );

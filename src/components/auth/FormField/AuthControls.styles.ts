@@ -92,6 +92,12 @@ export const GhostButton = styled.button`
   &:hover {
     background: #aeb8dc;
   }
+
+  &:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    background: #9fa8c7;
+  }
 `;
 
 export const Row = styled.div`
@@ -136,4 +142,16 @@ export const Message = styled.p<{ $type?: "error" | "success" }>`
   font-size: 13px;
   line-height: 1.4;
   text-align: center;
+`;
+
+export const FieldMessage = styled.p<{ $type?: "error" | "success" }>`
+  margin: -2px 0 12px;
+  color: ${({ $type }) =>
+    $type === "error"
+      ? "#ff8f8f"
+      : $type === "success"
+      ? "#aebcff"
+      : "rgba(255, 255, 255, 0.72)"};
+  font-size: 12px;
+  line-height: 1.45;
 `;

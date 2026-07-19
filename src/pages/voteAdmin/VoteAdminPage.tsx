@@ -1,4 +1,4 @@
-import { AxiosError } from "axios";
+﻿import { AxiosError } from "axios";
 import { useState, type ChangeEvent } from "react";
 import * as S from "../clubIntroManage/ClubIntroManagePage.styles";
 import {
@@ -8,7 +8,6 @@ import {
   updateVote,
   type VoteCreatePayload,
 } from "../../services/voteApi";
-import { useAuthStore } from "../../stores/authStore";
 
 const DEFAULT_UPDATE_JSON = `{
   "title": "투표 제목",
@@ -18,7 +17,7 @@ const DEFAULT_UPDATE_JSON = `{
   "isSecret": false,
   "participantRole": 3,
   "resultViewRole": 3,
-  "options": ["항목1", "항목2"]
+  "options": ["항목 1", "항목 2"]
 }`;
 
 const stringifyError = (error: unknown, fallback: string) => {
@@ -81,8 +80,6 @@ const parseVotePayload = (value: string): VoteCreatePayload => {
 };
 
 export default function VoteAdminPage() {
-  const userId = useAuthStore((state) => state.userId);
-  const roleName = useAuthStore((state) => state.roleName);
   const [page, setPage] = useState("0");
   const [size, setSize] = useState("10");
   const [voteId, setVoteId] = useState("");
@@ -139,11 +136,6 @@ export default function VoteAdminPage() {
   const removeVote = () =>
     runRequest(async () => {
       assertVoteId();
-      console.log("[vote/admin] delete clicked", {
-        voteId: numericVoteId,
-        userId,
-        roleName,
-      });
       return deleteVote(numericVoteId);
     }, "투표 삭제에 실패했습니다.");
 
@@ -154,14 +146,17 @@ export default function VoteAdminPage() {
           <S.Eyebrow>관리자</S.Eyebrow>
           <S.Title>투표 관리</S.Title>
           <S.Description>
-            투표 API는 별도 admin 경로가 아니라 /api/votes 경로에서 관리자 권한을
-            함께 사용합니다. 관리자 토큰으로 결과 조회, 수정, 삭제를 처리합니다.
+            투표 목록, 결과 조회, 수정, 삭제를 한 화면에서 처리합니다. 기존
+            투표 API 호출 방식은 유지합니다.
           </S.Description>
         </S.Header>
 
         <S.Grid>
           <S.Card>
             <S.CardTitle>투표 목록 / 대상 선택</S.CardTitle>
+            <S.CardText>
+              페이지 조건을 입력하고 수정 또는 삭제할 투표 ID를 지정합니다.
+            </S.CardText>
             <S.InlineFields>
               <S.Field>
                 <S.FieldLabel>page</S.FieldLabel>

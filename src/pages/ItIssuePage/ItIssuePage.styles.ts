@@ -68,11 +68,29 @@ export const IssueGrid = styled.section`
   }
 `;
 
-export const IssueCard = styled.article`
+export const IssueCard = styled.button`
   overflow: hidden;
+  padding: 0;
+  border: none;
   border-radius: 10px;
   background: #5a5f69;
   box-shadow: 0 16px 28px rgba(0, 0, 0, 0.18);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 34px rgba(0, 0, 0, 0.24);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.86);
+    outline-offset: 4px;
+  }
 `;
 
 export const CardImage = styled.img`
@@ -108,18 +126,15 @@ export const CardFooter = styled.div`
   justify-content: flex-end;
 `;
 
-export const LinkButton = styled.button`
+export const LinkButton = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 0;
-  border: none;
-  background: transparent;
   color: #ffffff;
   font-family: "Jersey 25", "Noto Sans KR", sans-serif;
   font-size: 12px;
   font-weight: 400;
-  cursor: pointer;
 `;
 
 export const EmptyState = styled.div`

@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getVotes, type VoteListItem, type VoteListPage } from "../../services/voteApi";
+import { useLoginRequiredNavigation } from "../../hooks/useLoginRequiredNavigation";
+import LoginRequiredModal from "../common/LoginRequiredModal/LoginRequiredModal";
+import { useAuthStore } from "../../stores/authStore";
+import { canApplyAsMember } from "../../utils/memberPermission";
 import * as S from "./VoteSection.styles";
 
 const PAGE_SIZE = 10;
@@ -40,6 +44,13 @@ const getPageNumbers = (currentPage: number, totalPages: number) => {
 
 export default function VoteSection() {
   const navigate = useNavigate();
+  const { isLoginRequiredOpen, moveToLogin, navigateWithAuth } =
+    useLoginRequiredNavigation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const roleId = useAuthStore((state) => state.roleId);
+  const roleName = useAuthStore((state) => state.roleName);
+  const isProfileLoading = useAuthStore((state) => state.isProfileLoading);
+  const [isMemberRequiredOpen, setIsMemberRequiredOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [votePage, setVotePage] = useState<VoteListPage>({
     content: [],
@@ -96,6 +107,24 @@ export default function VoteSection() {
   const canMoveNext =
     votePage.totalPages > 0 && votePage.number < votePage.totalPages - 1;
 
+  const handleOpenVoteDetail = (voteId: number) => {
+    if (!isAuthenticated) {
+      navigateWithAuth(`/vote/${voteId}`);
+      return;
+    }
+
+    if (isProfileLoading) {
+      return;
+    }
+
+    if (!canApplyAsMember({ isAuthenticated, roleId, roleName })) {
+      setIsMemberRequiredOpen(true);
+      return;
+    }
+
+    navigate(`/vote/${voteId}`);
+  };
+
   return (
     <>
       <S.HeroSection>
@@ -120,7 +149,7 @@ export default function VoteSection() {
                 <S.VoteCard
                   key={vote.voteId}
                   type="button"
-                  onClick={() => navigate(`/vote/${vote.voteId}`)}
+                  onClick={() => handleOpenVoteDetail(vote.voteId)}
                 >
                   <S.VoteInfo>
                     <S.VoteIcon aria-hidden="true" />
@@ -185,12 +214,19 @@ export default function VoteSection() {
           <S.WriteButton
             type="button"
             aria-label="투표 작성"
-            onClick={() => navigate("/vote/write")}
+            onClick={() => navigateWithAuth("/vote/write")}
           >
             <S.WriteIcon aria-hidden="true" />
           </S.WriteButton>
         </S.Inner>
       </S.Section>
+      <LoginRequiredModal isOpen={isLoginRequiredOpen} onConfirm={moveToLogin} />
+      <LoginRequiredModal
+        isOpen={isMemberRequiredOpen}
+        title="현부원 이상 조회할 수 있습니다."
+        description="투표 상세 조회는 멤버 권한부터 이용할 수 있습니다."
+        onConfirm={() => setIsMemberRequiredOpen(false)}
+      />
     </>
   );
 }

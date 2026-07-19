@@ -144,6 +144,25 @@ export const InfoValue = styled.dd`
   word-break: break-all;
 `;
 
+export const PasswordButton = styled.button`
+  width: fit-content;
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+`;
+
 export const IntroBox = styled.div`
   align-self: start;
   min-height: 170px;

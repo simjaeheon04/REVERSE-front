@@ -102,6 +102,9 @@ export type ProjectCreateSchedule = {
 
 export type ProjectCreatePayload = {
   projectName: string;
+  leaderId?: string;
+  leaderName?: string;
+  photoUrl?: string;
   description: string;
   goal: string;
   location: string;
@@ -117,7 +120,8 @@ type ProjectCreateResponse = {
 };
 
 export type ProjectUpdatePayload = ProjectCreatePayload & {
-  leaderName: string;
+  leaderId?: string;
+  leaderName?: string;
 };
 
 type ProjectMutationResponse = {

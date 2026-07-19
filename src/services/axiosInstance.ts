@@ -58,7 +58,6 @@ axiosInstance.interceptors.request.use((config) => {
   const isPublicProjectReadRequest =
     requestMethod === "get" &&
     /^\/api\/projects(?:\/[^/]+)?$/.test(requestUrl.split("?")[0]);
-
   removeHeader(config.headers, "X-Require-Auth");
 
   console.log("[axios/request]", {
@@ -109,11 +108,14 @@ const getRefreshedAccessToken = async () => {
         refreshTokenExpiry: string;
       })
       .then((tokens) => {
+        const storedAuthTokens = getStoredAuthTokens();
+
         setStoredAuthTokens({
           ...tokens,
-          userId: getStoredAuthTokens()?.userId ?? null,
-          userName: getStoredAuthTokens()?.userName ?? null,
-          roleName: getStoredAuthTokens()?.roleName ?? null,
+          userId: storedAuthTokens?.userId ?? null,
+          userName: storedAuthTokens?.userName ?? null,
+          roleName: storedAuthTokens?.roleName ?? null,
+          roleId: storedAuthTokens?.roleId ?? null,
         });
         return tokens.accessToken;
       })

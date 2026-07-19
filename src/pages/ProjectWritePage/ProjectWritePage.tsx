@@ -11,9 +11,11 @@ import {
   createProjectPost,
   getProjectDetail,
   updateProjectPost,
+  uploadProjectImage,
   type ProjectCreatePayload,
   type ProjectUpdatePayload,
 } from "../../services/projectAPI";
+import { useAuthStore } from "../../stores/authStore";
 import * as S from "./ProjectWritePage.styles";
 
 const DAYS = [
@@ -40,6 +42,7 @@ const TIMES = [
 type FormValues = {
   projectName: string;
   leaderName: string;
+  photoUrl: string;
   description: string;
   goal: string;
   memberCount: string;
@@ -52,6 +55,7 @@ type FormValues = {
 const initialValues: FormValues = {
   projectName: "",
   leaderName: "",
+  photoUrl: "",
   description: "",
   goal: "",
   memberCount: "4",
@@ -78,12 +82,14 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 
 export default function ProjectWritePage() {
   const navigate = useNavigate();
+  const currentUserId = useAuthStore((state) => state.userId);
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode");
   const projectId = searchParams.get("projectId");
   const isEditMode = mode === "edit" && Boolean(projectId);
   const [values, setValues] = useState<FormValues>(initialValues);
   const [photoName, setPhotoName] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [message, setMessage] = useState<{
     text: string;
     type: "error" | "success";
@@ -106,6 +112,7 @@ export default function ProjectWritePage() {
         setValues({
           projectName: project.projectName,
           leaderName: project.leaderName || project.leaderId,
+          photoUrl: project.photoUrl,
           description: project.description,
           goal: project.goal,
           memberCount: String(project.memberCount || 4),
@@ -140,6 +147,7 @@ export default function ProjectWritePage() {
 
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    setPhotoFile(file ?? null);
     setPhotoName(file?.name ?? "");
   };
 
@@ -153,15 +161,22 @@ export default function ProjectWritePage() {
       return "필수 항목(프로젝트명, 소개, 목표, 장소)을 입력해 주세요.";
     }
 
-    if (isEditMode && !values.leaderName.trim()) {
+    if (!values.leaderName.trim()) {
       return "팀장 이름을 입력해 주세요.";
+    }
+
+    if (!currentUserId) {
+      return "로그인 정보를 확인할 수 없습니다. 다시 로그인해 주세요.";
     }
 
     return null;
   };
 
-  const getBasePayload = (): ProjectCreatePayload => ({
+  const getBasePayload = (photoUrl = values.photoUrl.trim()): ProjectCreatePayload => ({
     projectName: values.projectName.trim(),
+    leaderId: currentUserId ?? undefined,
+    leaderName: values.leaderName.trim(),
+    photoUrl,
     description: values.description.trim(),
     goal: values.goal.trim(),
     location: values.location.trim(),
@@ -187,11 +202,13 @@ export default function ProjectWritePage() {
     try {
       setIsSubmitting(true);
       setMessage(null);
+      const uploadedPhotoUrl = photoFile
+        ? await uploadProjectImage(photoFile)
+        : values.photoUrl.trim();
 
       if (isEditMode && projectId) {
         const updatePayload: ProjectUpdatePayload = {
-          ...getBasePayload(),
-          leaderName: values.leaderName.trim(),
+          ...getBasePayload(uploadedPhotoUrl),
         };
         const result = await updateProjectPost(projectId, updatePayload);
         setMessage({
@@ -202,7 +219,7 @@ export default function ProjectWritePage() {
         return;
       }
 
-      const result = await createProjectPost(getBasePayload());
+      const result = await createProjectPost(getBasePayload(uploadedPhotoUrl));
       setMessage({
         text: result.message || "프로젝트 모집글이 등록되었습니다.",
         type: "success",
@@ -245,17 +262,15 @@ export default function ProjectWritePage() {
               />
             </S.Row>
 
-            {isEditMode ? (
-              <S.Row>
-                <S.Label htmlFor="project-leader">팀장 이름:</S.Label>
-                <S.Input
-                  id="project-leader"
-                  value={values.leaderName}
-                  onChange={handleTextChange("leaderName")}
-                  placeholder="팀장 이름을 입력하세요"
-                />
-              </S.Row>
-            ) : null}
+            <S.Row>
+              <S.Label htmlFor="project-leader-name">팀장 이름:</S.Label>
+              <S.Input
+                id="project-leader-name"
+                value={values.leaderName}
+                onChange={handleTextChange("leaderName")}
+                placeholder="팀장 이름을 입력하세요"
+              />
+            </S.Row>
 
             <S.Row>
               <S.Label htmlFor="project-photo">사진 첨부:</S.Label>

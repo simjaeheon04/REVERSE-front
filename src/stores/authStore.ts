@@ -11,11 +11,13 @@ import {
   getStoredAuthTokens,
   setStoredAuthTokens,
 } from "../utils/tokenStorage";
+import { resolveRoleIdFromName } from "../utils/memberPermission";
 
 type AuthState = {
   userId: string | null;
   userName: string | null;
   roleName: string | null;
+  roleId: number | null;
   accessToken: string | null;
   refreshToken: string | null;
   accessTokenExpiry: string | null;
@@ -67,6 +69,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userId: initialStoredTokens?.userId ?? null,
   userName: initialStoredTokens?.userName ?? null,
   roleName: initialStoredTokens?.roleName ?? null,
+  roleId: initialStoredTokens?.roleId ?? null,
   accessToken: initialStoredTokens?.accessToken ?? null,
   refreshToken: initialStoredTokens?.refreshToken ?? null,
   accessTokenExpiry: initialStoredTokens?.accessTokenExpiry ?? null,
@@ -106,6 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       userId: resolvedUserId,
       userName: current.userName,
       roleName: current.roleName,
+      roleId: current.roleId,
     });
 
     set({
@@ -120,6 +124,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   applyCurrentUser: (user) => {
     const current = get();
+    const resolvedRoleId = user.roleId ?? resolveRoleIdFromName(user.roleName);
 
     setStoredAuthTokens({
       accessToken: current.accessToken ?? "",
@@ -129,12 +134,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       userId: user.userId,
       userName: user.userName,
       roleName: user.roleName,
+      roleId: resolvedRoleId,
     });
 
     set({
       userId: user.userId,
       userName: user.userName,
       roleName: user.roleName,
+      roleId: resolvedRoleId,
       error: null,
     });
   },
@@ -158,6 +165,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           ...prev,
           userName: null,
           roleName: null,
+          roleId: null,
         }));
         return null;
       }
@@ -175,6 +183,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       userId: null,
       userName: null,
       roleName: null,
+      roleId: null,
       accessToken: null,
       refreshToken: null,
       accessTokenExpiry: null,

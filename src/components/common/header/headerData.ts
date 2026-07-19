@@ -32,8 +32,8 @@ export const headerMenus: HeaderMenuItem[] = [
       {
         title: "프로젝트",
         items: [
-          { label: "메인 프로젝트", path: "/" },
-          { label: "프로젝트 소개", path: "/" },
+          { label: "메인 프로젝트", path: "/project" },
+          { label: "프로젝트 소개", path: "/project" },
         ],
       },
       {

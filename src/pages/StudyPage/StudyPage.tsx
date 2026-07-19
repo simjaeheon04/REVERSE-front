@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import studyImage from "../../assets/images/project-study.jpg";
 import Footer from "../../components/common/footer/Footer";
+import LoginRequiredModal from "../../components/common/LoginRequiredModal/LoginRequiredModal";
+import { useLoginRequiredNavigation } from "../../hooks/useLoginRequiredNavigation";
 import { getStudies, type StudyRecord } from "../../services/studyApi";
 import { STUDY_SEMESTERS } from "./studyDummyData";
 import * as S from "./StudyPage.styles";
 
 export default function StudyPage() {
   const navigate = useNavigate();
+  const { isLoginRequiredOpen, moveToLogin, navigateWithAuth } =
+    useLoginRequiredNavigation();
   const [studies, setStudies] = useState<StudyRecord[]>([]);
   const [semester, setSemester] = useState(STUDY_SEMESTERS[0]);
   const [keyword, setKeyword] = useState("");
@@ -149,13 +153,14 @@ export default function StudyPage() {
             <S.WriteButton
               type="button"
               aria-label="스터디 작성"
-              onClick={() => navigate("/study/write")}
+              onClick={() => navigateWithAuth("/study/write")}
             >
               ✎
             </S.WriteButton>
           </S.ContentArea>
         </S.Inner>
       </S.Page>
+      <LoginRequiredModal isOpen={isLoginRequiredOpen} onConfirm={moveToLogin} />
       <Footer />
     </>
   );
