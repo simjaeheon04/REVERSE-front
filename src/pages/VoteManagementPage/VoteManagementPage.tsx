@@ -98,10 +98,6 @@ export default function VoteManagementPage() {
     try {
       setIsDeleting(true);
       setErrorMessage("");
-      console.log("[vote/manage] delete target", {
-        currentUserId,
-        deleteTarget,
-      });
       await deleteVote(deleteTarget.voteId);
       setDeleteTarget(null);
       await loadVotes();

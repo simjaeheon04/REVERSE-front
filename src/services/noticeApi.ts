@@ -119,19 +119,12 @@ export const getNoticeList = async (
     page: params.page ?? 0,
   };
 
-  console.log("[notice/list] request", {
-    url: "/api/notices",
-    params: requestParams,
-  });
-
   const response = await axiosInstance.get<ApiSuccessResponse<RawNoticeListPage>>(
     "/api/notices",
     {
       params: requestParams,
     }
   );
-
-  console.log("[notice/list] response", response.data);
 
   return {
     ...response.data.data,
@@ -151,12 +144,6 @@ export const getNoticeDetail = async (
   noticeId: number | string,
   options: { requiresAuth?: boolean } = {}
 ): Promise<NoticeDetail> => {
-  console.log("[notice/detail] request", {
-    url: `/api/notices/${noticeId}`,
-    noticeId,
-    requiresAuth: Boolean(options.requiresAuth),
-  });
-
   const response = await axiosInstance.get<ApiSuccessResponse<RawNoticeDetail>>(
     `/api/notices/${noticeId}`,
     {
@@ -167,8 +154,6 @@ export const getNoticeDetail = async (
         : undefined,
     }
   );
-
-  console.log("[notice/detail] response", response.data);
 
   const notice = response.data.data;
 
@@ -189,11 +174,6 @@ export const getNoticeDetail = async (
 export const saveNotice = async (
   payload: NoticeUpsertPayload
 ): Promise<NoticeUpsertResult> => {
-  console.log("[notice/save] request", {
-    url: "/api/posts/notices",
-    payload,
-  });
-
   const response = await axiosInstance.post<ApiSuccessResponse<NoticeUpsertResult>>(
     "/api/posts/notices",
     payload,
@@ -203,8 +183,6 @@ export const saveNotice = async (
       },
     }
   );
-
-  console.log("[notice/save] response", response.data);
 
   return response.data.data;
 };

@@ -1,5 +1,4 @@
 import { axiosInstance } from "./axiosInstance";
-import { AxiosError } from "axios";
 
 export interface EmailPayload {
   email: string;
@@ -100,30 +99,16 @@ export const login = async (
 };
 
 export const sendEmailCode = async (payload: EmailPayload) => {
-  try {
-    console.log("[auth/email/send] payload", payload);
-    const response = await axiosInstance.post<string>(
-      "/api/auth/email/send",
-      payload,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    console.log("[auth/email/send] response", response.data);
-    return response.data;
-  } catch (error) {
-    if (error instanceof AxiosError) {
-      console.log("[auth/email/send] error", {
-        status: error.response?.status,
-        data: error.response?.data,
-        headers: error.response?.headers,
-      });
+  const response = await axiosInstance.post<string>(
+    "/api/auth/email/send",
+    payload,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
     }
-
-    throw error;
-  }
+  );
+  return response.data;
 };
 
 export const verifyEmailCode = async (payload: EmailVerifyPayload) => {

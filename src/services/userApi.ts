@@ -86,8 +86,6 @@ export const updateAdminUserRole = async (
 ): Promise<AdminUserMutationResponse> => {
   const requestBody = { roleId: Number(roleId) };
 
-  console.log("[admin/users/role] request body", requestBody);
-
   const response = await axiosInstance.patch(
     `/api/admin/users/${encodeURIComponent(targetUserId)}/role`,
     requestBody,

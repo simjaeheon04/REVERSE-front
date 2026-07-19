@@ -14,7 +14,6 @@ import {
   type BoardMyPostItem,
   type BoardMyStats,
 } from "../../services/boardApi";
-import { useAuthStore } from "../../stores/authStore";
 import * as S from "./PostManagementPage.styles";
 
 const getSafeText = (value: unknown, fallback: string) => {
@@ -25,7 +24,6 @@ export default function PostManagementPage() {
   const navigate = useNavigate();
   const { isLoginRequiredOpen, moveToLogin, navigateWithAuth } =
     useLoginRequiredNavigation();
-  const currentUserId = useAuthStore((state) => state.userId);
   const [posts, setPosts] = useState<BoardMyPostItem[]>([]);
   const [stats, setStats] = useState<BoardMyStats>({
     postCount: 0,
@@ -80,21 +78,10 @@ export default function PostManagementPage() {
     try {
       setIsDeleting(true);
       setErrorMessage("");
-      console.log("[board/manage] delete target", {
-        currentUserId,
-        deleteTarget,
-      });
       await deleteBoardPost(deleteTarget.id);
       setDeleteTarget(null);
       await loadPosts();
     } catch (error) {
-      if (error instanceof AxiosError) {
-        console.log("[board/manage] delete error", {
-          status: error.response?.status,
-          data: error.response?.data,
-        });
-      }
-
       if (error instanceof AxiosError && error.response?.status === 403) {
         setErrorMessage("작성자 본인만 게시글을 삭제할 수 있습니다.");
       } else if (error instanceof AxiosError && error.response?.status === 401) {

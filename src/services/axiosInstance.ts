@@ -4,6 +4,7 @@ import {
   getStoredAccessToken,
   getStoredAuthTokens,
   getStoredRefreshToken,
+  isStoredAccessTokenExpired,
   setStoredAuthTokens,
 } from "../utils/tokenStorage";
 
@@ -49,8 +50,8 @@ const removeHeader = (headers: unknown, key: string) => {
   delete (headers as Record<string, unknown>)[key];
 };
 
-axiosInstance.interceptors.request.use((config) => {
-  const accessToken = getStoredAccessToken();
+axiosInstance.interceptors.request.use(async (config) => {
+  let accessToken = getStoredAccessToken();
   const requestUrl = config.url ?? "";
   const requestMethod = config.method?.toLowerCase() ?? "get";
   const requiresAuth = getHeaderValue(config.headers, "X-Require-Auth") === "true";
@@ -58,26 +59,15 @@ axiosInstance.interceptors.request.use((config) => {
   const isPublicProjectReadRequest =
     requestMethod === "get" &&
     /^\/api\/projects(?:\/[^/]+)?$/.test(requestUrl.split("?")[0]);
+  const shouldAttachAuthorization =
+    !isAuthRequest && (!isPublicProjectReadRequest || requiresAuth);
   removeHeader(config.headers, "X-Require-Auth");
 
-  console.log("[axios/request]", {
-    method: requestMethod,
-    url: requestUrl,
-    hasAccessToken: Boolean(accessToken),
-    requiresAuth,
-    isAuthRequest,
-    isPublicProjectReadRequest,
-    willAttachAuthorization:
-      Boolean(accessToken) &&
-      !isAuthRequest &&
-      (!isPublicProjectReadRequest || requiresAuth),
-  });
+  if (accessToken && shouldAttachAuthorization && isStoredAccessTokenExpired()) {
+    accessToken = await getRefreshedAccessToken();
+  }
 
-  if (
-    accessToken &&
-    !isAuthRequest &&
-    (!isPublicProjectReadRequest || requiresAuth)
-  ) {
+  if (accessToken && shouldAttachAuthorization) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 

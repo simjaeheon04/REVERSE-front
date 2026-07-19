@@ -1,32 +1,6 @@
-﻿import { useState, type ChangeEvent } from "react";
-import { subscribeRecruitNotification } from "../../../services/recruitApi";
 import * as S from "./RecruitContactSection.styles";
 
 export default function RecruitContactSection() {
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubscribe = async () => {
-    if (!email.trim()) {
-      setMessage("알림 받을 이메일을 입력해 주세요.");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      setMessage("");
-      const responseMessage = await subscribeRecruitNotification(email.trim());
-      setMessage(responseMessage || "모집 알림 구독이 완료되었습니다.");
-      setEmail("");
-    } catch (error) {
-      console.error("recruit notification subscribe failed", error);
-      setMessage("모집 알림 구독에 실패했습니다.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <S.Section>
       <S.Header>
@@ -95,33 +69,6 @@ export default function RecruitContactSection() {
           <S.Strong>남서울대학교 컴퓨터소프트웨어학과</S.Strong>
         </S.Item>
       </S.Grid>
-
-      <S.NotifyCard>
-        <S.NotifyTitle>모집 알림 구독</S.NotifyTitle>
-        <S.NotifyDescription>
-          다음 모집이 열리면 이메일로 소식을 받아볼 수 있습니다.
-        </S.NotifyDescription>
-
-        <S.NotifyRow>
-          <S.NotifyInput
-            type='email'
-            value={email}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setEmail(event.target.value)
-            }
-            placeholder='example@email.com'
-          />
-          <S.NotifyButton
-            type='button'
-            onClick={handleSubscribe}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "구독 중..." : "알림 받기"}
-          </S.NotifyButton>
-        </S.NotifyRow>
-
-        {message ? <S.NotifyMessage>{message}</S.NotifyMessage> : null}
-      </S.NotifyCard>
     </S.Section>
   );
 }
