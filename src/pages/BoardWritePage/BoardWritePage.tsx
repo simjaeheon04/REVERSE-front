@@ -165,11 +165,6 @@ export default function BoardWritePage() {
       setErrorMessage("");
 
       if (isEditMode && postId !== null) {
-        console.log("[board/write] update payload", {
-          postId,
-          title: title.trim(),
-          content: content.trim(),
-        });
         await updateBoardPost(postId, {
           title: title.trim(),
           content: content.trim(),
@@ -186,24 +181,11 @@ export default function BoardWritePage() {
           isExternal: false,
         };
 
-        console.log("[board/write] create payload", {
-          boardId: targetBoardId,
-          payload: createPayload,
-        });
-
         await createBoardPost(targetBoardId, createPayload);
       }
 
       navigate("/board/manage");
     } catch (error) {
-      if (error instanceof AxiosError) {
-        console.log("[board/write] submit error", {
-          mode: isEditMode ? "edit" : "create",
-          status: error.response?.status,
-          data: error.response?.data,
-        });
-      }
-
       if (error instanceof AxiosError && error.response?.status === 403) {
         setErrorMessage(
           isEditMode
@@ -263,8 +245,6 @@ export default function BoardWritePage() {
       const uploadedUrls = await Promise.all(
         files.map((file) => uploadBoardFile(file))
       );
-
-      console.log("[board/write] uploaded file urls", uploadedUrls);
 
       setAttachments((prev) => [...normalizeAttachments(prev), ...uploadedUrls]);
     } catch {

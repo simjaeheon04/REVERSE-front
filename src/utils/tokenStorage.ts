@@ -20,6 +20,21 @@ export type StoredAuthTokens = {
 
 const isBrowser = typeof window !== "undefined";
 
+const isExpired = (expiry: string, skewMs = 0) => {
+  const expiresAt = Date.parse(expiry);
+
+  return Number.isFinite(expiresAt) && expiresAt <= Date.now() + skewMs;
+};
+
+export const isStoredAccessTokenExpired = (skewMs = 5_000) => {
+  if (!isBrowser) {
+    return false;
+  }
+
+  const expiry = window.localStorage.getItem(ACCESS_TOKEN_EXPIRY_KEY);
+  return expiry ? isExpired(expiry, skewMs) : false;
+};
+
 export const getStoredAccessToken = () =>
   isBrowser ? window.localStorage.getItem(ACCESS_TOKEN_KEY) : null;
 
@@ -55,6 +70,10 @@ export const getStoredAuthTokens = (): StoredAuthTokens | null => {
   const roleId = getStoredRoleId();
 
   if (!accessToken || !refreshToken || !accessTokenExpiry || !refreshTokenExpiry) {
+    return null;
+  }
+
+  if (isExpired(refreshTokenExpiry)) {
     return null;
   }
 

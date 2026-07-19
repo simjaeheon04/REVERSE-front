@@ -186,12 +186,7 @@ export default function BoardDetailPage() {
       link.click();
       link.remove();
       URL.revokeObjectURL(objectUrl);
-    } catch (error) {
-      console.log("[board/detail] file download fallback", {
-        fileUrl,
-        error,
-      });
-
+    } catch {
       const link = document.createElement("a");
       link.href = fileUrl;
       link.download = fileName;

@@ -150,8 +150,6 @@ export const getVoteResult = async (voteId: number): Promise<VoteResult> => {
     `/api/votes/${voteId}/result`
   );
 
-  console.log("[vote/result] raw response data", response.data);
-
   return {
     ...response.data,
     content: response.data.content ?? "",
@@ -188,12 +186,6 @@ export const updateVote = async (
 export const deleteVote = async (
   voteId: number
 ): Promise<VoteMutationResponse> => {
-  console.log("[vote/delete] request", {
-    method: "DELETE",
-    url: `/api/votes/${voteId}`,
-    voteId,
-  });
-
   const response = await axiosInstance.delete<VoteMutationResponse>(
     `/api/votes/${voteId}`,
     {
@@ -203,7 +195,6 @@ export const deleteVote = async (
     }
   );
 
-  console.log("[vote/delete] response", response.data);
   return response.data;
 };
 

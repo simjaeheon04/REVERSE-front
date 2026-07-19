@@ -89,7 +89,6 @@ export default function VoteStatusSection() {
           };
         });
         if (!ignore) {
-          console.log("[vote/status] loaded vote data", result);
           setVote(result);
         }
       } catch (error) {
@@ -142,15 +141,6 @@ export default function VoteStatusSection() {
                   {vote.options.map((option) => {
                     const voteCount = option.voteCount ?? 0;
                     const visibleVoters = getVisibleVoters(option);
-                    console.log("[vote/status] option raw data", option);
-                    console.log("[vote/status] option parsed voters", {
-                      optionId: option.optionId,
-                      optionText: option.optionText,
-                      voteCount,
-                      rawVoters: option.voters,
-                      visibleVoters,
-                    });
-
                     return (
                       <S.ResultRow key={option.optionId}>
                         <S.OptionPill>{option.optionText}</S.OptionPill>

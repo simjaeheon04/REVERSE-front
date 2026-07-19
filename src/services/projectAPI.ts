@@ -165,11 +165,6 @@ export const getProjects = async (
     size: params.size ?? 6,
   };
 
-  console.log("[project/list] request", {
-    url: "/api/projects",
-    params: requestParams,
-  });
-
   const response = await axiosInstance.get<ApiProjectPageResponse>("/api/projects", {
     params: requestParams,
   });
@@ -178,14 +173,6 @@ export const getProjects = async (
   const payload: ApiProjectPage = isWrappedProjectPageResponse(responsePayload)
     ? responsePayload.projects ?? {}
     : responsePayload;
-
-  console.log("[project/list] response", {
-    raw: responsePayload,
-    normalized: payload,
-    normalizedContentLength: Array.isArray(payload.content)
-      ? payload.content.length
-      : 0,
-  });
 
   return {
     content: Array.isArray(payload.content) ? payload.content.map(normalizeProject) : [],
@@ -224,13 +211,6 @@ export const getMyProjects = async (
   const myContent = currentUserId
     ? content.filter((project) => project.leaderId === currentUserId)
     : [];
-
-  console.log("[project/manage] response", {
-    currentUserId,
-    totalContentLength: content.length,
-    myContentLength: myContent.length,
-    raw: responsePayload,
-  });
 
   return {
     content: myContent,

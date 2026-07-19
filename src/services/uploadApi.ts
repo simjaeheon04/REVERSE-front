@@ -19,14 +19,6 @@ export const uploadBoardFile = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
 
-  console.log("[board/file] upload request", {
-    url: "/api/posts/board/file",
-    key: "file",
-    fileName: file.name,
-    fileType: file.type,
-    fileSize: file.size,
-  });
-
   const response = await axiosInstance.post<string>(
     "/api/posts/board/file",
     formData,
@@ -40,10 +32,6 @@ export const uploadBoardFile = async (file: File): Promise<string> => {
   );
 
   const uploadedUrl = String(response.data).trim();
-
-  console.log("[board/file] upload response", {
-    url: uploadedUrl,
-  });
 
   return uploadedUrl;
 };

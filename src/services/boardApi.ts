@@ -292,10 +292,6 @@ export const getBoardPostList = async (page = 0): Promise<BoardPostListPage> => 
     : payload.content ?? payload.posts ?? payload.list ?? payload.items ?? [];
   const normalizedContent = rawContent.map(normalizeBoardPostListItem);
 
-  console.log("[board/list] raw response", response.data);
-  console.log("[board/list] raw content", rawContent);
-  console.log("[board/list] normalized content", normalizedContent);
-
   return {
     content: normalizedContent,
     totalPages: Array.isArray(payload) ? 1 : payload.totalPages ?? payload.totalPage ?? 1,
@@ -440,9 +436,6 @@ export const getBoardPostDetail = async (
 
   const payload = unwrapApiData(response.data);
   const normalizedDetail = normalizeBoardPostDetail(payload);
-
-  console.log("[board/detail] raw response", response.data);
-  console.log("[board/detail] normalized", normalizedDetail);
 
   return normalizedDetail;
 };
