@@ -41,8 +41,8 @@ export default function RecruitContactSection() {
           <S.Description>
             모집 관련 문의는 회장단에게 편하게 연락해 주세요.
           </S.Description>
-          <S.Strong>회장 박시연 010-000-0000</S.Strong>
-          <S.Strong>부회장 홍정민 010-000-0000</S.Strong>
+          <S.Strong>회장 심재헌 010-2264-3031</S.Strong>
+          <S.Strong>부회장 황정민 010-5428-8562</S.Strong>
         </S.Item>
 
         <S.Item>

@@ -6,7 +6,7 @@ export default function RecruitApplyInfo() {
       <S.Year>2026</S.Year>
       <S.Title>REVERSE 부원 모집</S.Title>
       <S.Description>저희 동아리에 지원해 주셔서 감사합니다!</S.Description>
-
+      <S.Description>면접 일정 및 면접 시간은 임의로 선택 부탁드립니다.</S.Description>
       <S.ContactList aria-label='REVERSE 지원 안내'>
         <S.ContactItem>
           <S.ContactIcon viewBox='0 0 24 24' fill='none' aria-hidden='true'>
@@ -36,9 +36,9 @@ export default function RecruitApplyInfo() {
             />
           </S.ContactIcon>
           <span>
-            회장 박시연: 010-000-0000
+            회장 심재헌: 010-2264-3031
             <br />
-            부회장 홍정민: 010-000-0000
+            부회장 황정민: 010-5428-8562
           </span>
         </S.ContactItem>
 
@@ -58,7 +58,7 @@ export default function RecruitApplyInfo() {
               strokeWidth='1.7'
             />
           </S.ContactIcon>
-          <span>123 Sample St, Sydney NSW 2000 AU</span>
+          <span>충남 천안시 서북구 대학로 91 (구)농협건물 2층</span>
         </S.ContactItem>
       </S.ContactList>
 

@@ -77,10 +77,9 @@ export const WeekGrid = styled.div`
 `;
 
 export const WeekLabel = styled.span`
-  color: rgba(20, 22, 28, 0.34);
+  color: #ffffff;
   font-size: ${scaled(14)};
-  font-weight: 500;
-  line-height: 1;
+  font-weight: 600;
   text-align: center;
 `;
 
