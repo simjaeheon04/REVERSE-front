@@ -36,9 +36,9 @@ export default function RecruitApplyInfo() {
             />
           </S.ContactIcon>
           <span>
-            회장 박시연: 010-000-0000
+            회장 심재헌: 010-2264-3031
             <br />
-            부회장 홍정민: 010-000-0000
+            부회장 황정민: 010-5428-8562
           </span>
         </S.ContactItem>
 
@@ -58,7 +58,7 @@ export default function RecruitApplyInfo() {
               strokeWidth='1.7'
             />
           </S.ContactIcon>
-          <span>123 Sample St, Sydney NSW 2000 AU</span>
+          <span>충남 천안시 서북구 대학로 91 (구)농협건물 2층</span>
         </S.ContactItem>
       </S.ContactList>
 
