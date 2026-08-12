@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { useRecruitStore } from "../../../stores/recruitStore";
 import RecruitInterviewCalendar from "../RecruitInterviewCalendar/RecruitInterviewCalendar";
@@ -14,13 +15,18 @@ import useRecruitApplyForm, {
 const getErrorMessage = (message: unknown) =>
   typeof message === "string" ? message : null;
 
-const toValidDate = (value?: string | null) => {
-  if (!value) {
-    return null;
-  }
+// 이번 모집 회차의 면접 가능일입니다. 지원 기간은 모집 공고 API에서 관리합니다.
+const INTERVIEW_DATE_RANGE = {
+  start: "2026-09-07",
+  end: "2026-09-08",
+} as const;
 
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+const formatPhoneNumber = (value: string) => {
+  const digits = value.replace(/\D/g, "");
+
+  return digits.length === 11
+    ? `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+    : value.trim();
 };
 
 export default function RecruitApplyForm() {
@@ -57,18 +63,6 @@ export default function RecruitApplyForm() {
     void fetchRecruitments();
   }, [clearApplicationState, fetchRecruitments]);
 
-  const applyStartDate = toValidDate(activeRecruitment?.applyStartDate);
-  const applyEndDate = toValidDate(activeRecruitment?.applyEndDate);
-  const now = new Date();
-  const isApplyPeriodKnown = Boolean(applyStartDate && applyEndDate);
-  const isWithinApplyPeriod = isApplyPeriodKnown
-    ? now >= applyStartDate! && now <= applyEndDate!
-    : true;
-  const applyPeriodMessage =
-    isApplyPeriodKnown && !isWithinApplyPeriod
-      ? `현재는 지원 기간이 아닙니다. 지원 가능 기간은 ${activeRecruitment?.applyStartDate?.slice(0, 10)} ~ ${activeRecruitment?.applyEndDate?.slice(0, 10)} 입니다.`
-      : null;
-
   const isCustomEmailDomain = values.emailDomain === CUSTOM_EMAIL_DOMAIN;
   const domainDisplayText = values.emailDomain || "선택";
   const interviewTimeDisplayText = values.interviewTime || "선택";
@@ -84,10 +78,6 @@ export default function RecruitApplyForm() {
   };
 
   const handleSubmitClick = async () => {
-    if (!isWithinApplyPeriod) {
-      return;
-    }
-
     const isValid = await validate();
 
     if (!isValid || !activeRecruitment) {
@@ -112,19 +102,28 @@ export default function RecruitApplyForm() {
       applicantName: values.name.trim(),
       department: values.major.trim(),
       studentNumber: values.studentId.trim(),
-      phoneNumber: values.phone.trim(),
+      phoneNumber: formatPhoneNumber(values.phone),
       grade: Number(values.grade.replace(/\D/g, "")),
       email: `${values.emailLocal.trim()}@${emailDomain}`,
       termsAgreed: values.isPrivacyAgreed,
-      applyFields: values.supportFields,
+      categories: values.supportFields,
     };
 
     try {
+      console.log("[Recruit application] request payload", payload);
       await submitApplication(payload);
 
       setIsSubmitConfirmOpen(false);
       navigate("/recruit/apply/complete");
-    } catch {
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error("[Recruit application] failed response", {
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+      } else {
+        console.error("[Recruit application] failed", error);
+      }
       setIsSubmitConfirmOpen(false);
     }
   };
@@ -178,6 +177,9 @@ export default function RecruitApplyForm() {
               type="tel"
               {...register("phone", {
                 required: "전화번호를 입력해 주세요.",
+                validate: (value) =>
+                  value.replace(/\D/g, "").length === 11 ||
+                  "전화번호 11자리를 입력해 주세요.",
               })}
             />
             {errors.phone ? (
@@ -308,8 +310,8 @@ export default function RecruitApplyForm() {
           <RecruitInterviewCalendar
             selectedDate={values.interviewDate}
             onSelectDate={(date) => setField("interviewDate", date)}
-            availableStartDate={activeRecruitment?.applyStartDate}
-            availableEndDate={activeRecruitment?.applyEndDate}
+            availableStartDate={INTERVIEW_DATE_RANGE.start}
+            availableEndDate={INTERVIEW_DATE_RANGE.end}
             error={getErrorMessage(errors.interviewDate?.message) ?? undefined}
           />
 
@@ -383,16 +385,10 @@ export default function RecruitApplyForm() {
           <S.ErrorMessage>{applicationError}</S.ErrorMessage>
         ) : null}
 
-        {applyPeriodMessage ? (
-          <S.ErrorMessage>{applyPeriodMessage}</S.ErrorMessage>
-        ) : null}
-
         <S.SubmitButton
           type="button"
           onClick={handleSubmitClick}
-          disabled={
-            !activeRecruitment || isSubmittingApplication || !isWithinApplyPeriod
-          }
+          disabled={!activeRecruitment || isSubmittingApplication}
         >
           {isSubmittingApplication ? "제출 중..." : "제출"}
         </S.SubmitButton>

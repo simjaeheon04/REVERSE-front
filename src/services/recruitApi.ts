@@ -34,7 +34,7 @@ export type RecruitApplicationPayload = {
   grade: number;
   email: string;
   termsAgreed: boolean;
-  applyFields: string[];
+  categories: string[];
 };
 
 export type RecruitApplicationStatus = "PENDING" | "PASS" | "FAIL";
@@ -151,13 +151,17 @@ const normalizeRecruitmentItem = (
 });
 
 export const getRecruitmentList = async (): Promise<RecruitmentItem[]> => {
-  const response = await axiosInstance.get<RecruitmentApiResponse<RecruitmentApiRecord[]>>(
+  const response = await axiosInstance.get<
+    RecruitmentApiResponse<RecruitmentApiRecord[] | RecruitmentApiRecord>
+  >(
     "/api/recruit"
   );
   const unwrapped = unwrapRecruitmentResponse(response.data);
-  const items = Array.isArray(unwrapped) ? unwrapped : [];
+  const items = Array.isArray(unwrapped) ? unwrapped : [unwrapped];
 
-  return items.map(normalizeRecruitmentItem);
+  return items
+    .filter((item): item is RecruitmentApiRecord => Boolean(item))
+    .map(normalizeRecruitmentItem);
 };
 
 export const getRecruitmentDetail = async (
