@@ -8,7 +8,7 @@ import {
 } from "react-hook-form";
 
 export const SUPPORT_FIELDS = [
-  { label: "메인 프로젝트", value: "메인프로젝트" },
+  // { label: "메인 프로젝트", value: "메인프로젝트" },
   { label: "토이 프로젝트", value: "토이프로젝트" },
   { label: "스터디", value: "스터디" },
 ] as const;

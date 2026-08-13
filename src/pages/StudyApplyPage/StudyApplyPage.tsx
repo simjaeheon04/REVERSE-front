@@ -84,9 +84,9 @@ function StudyApplyInfo() {
             />
           </S.ContactIcon>
           <span>
-            회장 박시연: 010-000-0000
+            회장 심재헌: 010-2264-3031
             <br />
-            부회장 홍정민: 010-000-0000
+            부회장 황정민: 010-5428-8562
           </span>
         </S.ContactItem>
         <S.ContactItem>
