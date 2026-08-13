@@ -10,12 +10,30 @@ export default function Header({
   menus,
   logo = "REVERSE",
   loginText = "LOGIN",
+  myPageText,
+  loginDisabled = false,
+  canAccessAdmin = false,
   onLogoClick,
+  onMyPageClick,
   onLoginClick,
 }: HeaderProps) {
   const navigate = useNavigate();
   const [hoveredMenuKey, setHoveredMenuKey] = useState<string | null>(null);
   const [isMegaMenuOpen, setIsMegaMenuOpen] = useState(false);
+
+  const filteredMenus = menus
+    .map((menu) => ({
+      ...menu,
+      sections: menu.sections
+        ?.map((section) => ({
+          ...section,
+          items: section.items.filter(
+            (item) => canAccessAdmin || !item.path?.startsWith("/admin")
+          ),
+        }))
+        .filter((section) => section.items.length > 0),
+    }))
+    .filter((menu) => canAccessAdmin || !menu.path?.startsWith("/admin"));
 
   const handleNavigate = (path?: string) => {
     if (!path) {
@@ -54,7 +72,7 @@ export default function Header({
             }}
           >
             <S.Nav>
-              {menus.map((menu) => (
+              {filteredMenus.map((menu) => (
                 <S.MenuItem
                   key={menu.key}
                   onMouseEnter={() => setHoveredMenuKey(menu.key)}
@@ -73,7 +91,7 @@ export default function Header({
             {isMegaMenuOpen && (
               <S.MegaMenuWrap>
                 <S.MegaMenuInner>
-                  {menus.map((menu) => (
+                  {filteredMenus.map((menu) => (
                     <S.Column key={menu.key}>
                       <S.ColumnTitle>{menu.label}</S.ColumnTitle>
 
@@ -112,9 +130,20 @@ export default function Header({
             )}
           </S.NavArea>
 
-          <S.LoginButton type="button" onClick={onLoginClick}>
-            {loginText}
-          </S.LoginButton>
+          <S.AuthButtonGroup>
+            {myPageText ? (
+              <S.LoginButton type="button" onClick={onMyPageClick}>
+                {myPageText}
+              </S.LoginButton>
+            ) : null}
+            <S.LoginButton
+              type="button"
+              onClick={onLoginClick}
+              disabled={loginDisabled}
+            >
+              {loginText}
+            </S.LoginButton>
+          </S.AuthButtonGroup>
         </S.RightArea>
       </S.Container>
     </S.Wrapper>

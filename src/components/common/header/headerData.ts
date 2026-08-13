@@ -27,17 +27,17 @@ export const headerMenus: HeaderMenuItem[] = [
     sections: [
       {
         title: "스터디",
-        items: [{ label: "스터디 소개", path: "/recruit" }],
+        items: [{ label: "스터디 소개", path: "/study" }],
       },
       {
         title: "프로젝트",
         items: [
-          { label: "메인 프로젝트", path: "/" },
-          { label: "프로젝트 소개", path: "/" },
+          { label: "메인 프로젝트", path: "/project" },
+          { label: "프로젝트 소개", path: "/project" },
         ],
       },
       {
-        title: "출석 관리",
+        title: "관리",
         items: [{ label: "관리자 임시 페이지", path: "/admin" }],
       },
     ],
@@ -51,34 +51,36 @@ export const headerMenus: HeaderMenuItem[] = [
         title: "정보",
         items: [
           { label: "공지사항", path: "/notice" },
+          { label: "IT 이슈", path: "/it-issue" },
           { label: "캘린더", path: "/calendar" },
         ],
       },
       {
         title: "교류",
-        items: [],
+        items: [{ label: "투표", path: "/vote" }],
       },
     ],
   },
   {
     key: "board",
     label: "게시판",
+    path: "/board",
     sections: [
       {
-        title: "자유 게시판",
-        items: [],
+        title: "자유게시판",
+        items: [{ label: "자유게시판", path: "/board" }],
       },
       {
         title: "대외활동 게시판",
-        items: [],
+        items: [{ label: "대외활동 게시판", path: "/board" }],
       },
       {
         title: "나눔 게시판",
-        items: [],
+        items: [{ label: "나눔 게시판", path: "/board" }],
       },
       {
         title: "질의응답 게시판",
-        items: [],
+        items: [{ label: "질의응답 게시판", path: "/board" }],
       },
     ],
   },

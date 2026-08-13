@@ -8,34 +8,39 @@ export const Form = styled.form`
 
 export const Input = styled.input`
   width: 100%;
-  height: 44px;
+  height: 36px;
   padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(237, 241, 255, 0.34);
-  background: rgba(255, 255, 255, 0.04);
-  color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.88);
+  color: #222222;
   font-size: 12px;
   outline: none;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
   &::placeholder {
-    color: rgba(235, 239, 255, 0.38);
+    color: rgba(52, 56, 68, 0.28);
   }
 
   &:focus {
-    border-color: rgba(184, 156, 255, 0.92);
+    border-color: rgba(214, 217, 255, 0.92);
   }
 `;
 
 export const Select = styled.select`
   width: 100%;
-  height: 44px;
-  padding: 0 14px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
   border-radius: 10px;
   border: 1px solid rgba(237, 241, 255, 0.34);
-  background: rgba(255, 255, 255, 0.04);
-  color: #ffffff;
-  font-size: 12px;
+  background: #ffffff;
+  color: rgba(114, 123, 135, 0.6);
+  font-size: 10px;
   outline: none;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
   option {
     color: #111111;
@@ -48,76 +53,105 @@ export const Select = styled.select`
 
 export const PrimaryButton = styled.button`
   width: 100%;
-  height: 42px;
-  margin-top: 38px;
+  height: 36px;
+  margin-top: 34px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: #ffffff;
-  background: #6f3bf4;
+  background: #bac2ea;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.22);
 
   &:hover {
-    opacity: 0.96;
+    filter: brightness(1.02);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 `;
 
 export const GhostButton = styled.button`
-  height: 44px;
-  padding: 0 16px;
+  width: 100%;
+  height: 32px;
+  padding: 0 12px;
   border-radius: 10px;
   border: 1px solid rgba(237, 241, 255, 0.34);
-  background: rgba(255, 255, 255, 0.3);
+  background: #bbc4e5;
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: #aeb8dc;
+  }
+
+  &:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
+    background: #9fa8c7;
   }
 `;
 
 export const Row = styled.div`
   display: grid;
-  grid-template-columns: 1fr 124px;
+  grid-template-columns: 1fr 140px;
   gap: 12px;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+  align-items: center;
 `;
 
 export const EmailRow = styled.div`
   display: grid;
-  grid-template-columns: 1fr 24px 1fr 104px;
+  grid-template-columns: 140px 20px minmax(0, 1fr) 140px;
   gap: 12px;
   align-items: center;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
 `;
 
 export const At = styled.span`
   text-align: center;
   color: #ffffff;
-  font-size: 18px;
-  font-weight: 700;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
+  font-size: 10px;
+  font-weight: 300;
 `;
 
 export const TextButton = styled.button`
   border: none;
   background: none;
-  padding: 0 0 0 6px;
+  padding-left: 6px;
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 400;
+  font-size: 12px;
+  font-weight: 500;
   color: #ffffff;
+`;
+
+export const Message = styled.p<{ $type?: "error" | "success" }>`
+  margin: 12px 0 0;
+  color: ${({ $type }) =>
+    $type === "error"
+      ? "#ff7b7b"
+      : $type === "success"
+      ? "#7ea6ff"
+      : "rgba(255, 255, 255, 0.74)"};
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+`;
+
+export const FieldMessage = styled.p<{ $type?: "error" | "success" }>`
+  margin: -2px 0 12px;
+  color: ${({ $type }) =>
+    $type === "error"
+      ? "#ff8f8f"
+      : $type === "success"
+      ? "#aebcff"
+      : "rgba(255, 255, 255, 0.72)"};
+  font-size: 12px;
+  line-height: 1.45;
 `;

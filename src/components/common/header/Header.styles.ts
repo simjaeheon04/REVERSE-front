@@ -61,6 +61,13 @@ export const Nav = styled.nav`
   transform: translateY(2px);
 `;
 
+export const AuthButtonGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+`;
+
 export const MenuItem = styled.div`
   height: 100%;
   display: flex;
@@ -109,6 +116,12 @@ export const LoginButton = styled.button`
     background: #ffffff;
     color: #373b4c;
     transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
   }
 `;
 

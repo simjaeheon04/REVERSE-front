@@ -1,0 +1,3054 @@
+# REVERSE 백엔드 API 명세서
+
+- **Base URL**: `http://localhost:8080`
+- **응답 형식**: JSON (이미지 업로드 응답은 plain text)
+- **작성일**: 2026.04.09
+- **최종 수정일**: 2026.06.05 (회원 관리 Admin 추가)
+
+---
+
+## 목차
+
+1. [서버 상태](#1-서버-상태)
+2. [인증 (Auth)](#2-인증-auth)
+3. [내 정보 (Me)](#3-내-정보-me)
+4. [동아리 소개 (Club Intro)](#4-동아리-소개-club-intro)
+5. [프로젝트 소개 (Club Project)](#5-프로젝트-소개-club-project)
+6. [임원진 소개 (Officer)](#6-임원진-소개-officer)
+7. [약관 (Terms)](#7-약관-terms)
+8. [R2 스토리지 테스트 (R2)](#8-r2-스토리지-테스트-r2)
+9. [모집 공고 (Recruitment)](#9-모집-공고-recruitment)
+10. [일정 (Schedule)](#10-일정-schedule)
+11. [공휴일 (Holiday)](#11-공휴일-holiday)
+12. [공지사항 (Notice)](#12-공지사항-notice)
+13. [커뮤니티 게시판 (Community Board)](#13-커뮤니티-게시판-community-board)
+14. [모집 관리자 (Recruitment Admin)](#14-모집-관리자-recruitment-admin)
+15. [활동 프로젝트 (Projects)](#15-활동-프로젝트-projects)
+16. [다중 게시판 (Multi-Board)](#16-다중-게시판-multi-board)
+17. [스터디 (Study)](#17-스터디-study)
+18. [IT 이슈 (IT Issue)](#18-it-이슈-it-issue)
+19. [투표 (Vote)](#19-투표-vote)
+20. [게시판 관리 Admin (Board Admin)](#20-게시판-관리-admin-board-admin)
+21. [마이페이지 (My Page)](#21-마이페이지-my-page)
+22. [프로젝트 관리자 (Project Admin)](#22-프로젝트-관리자-project-admin)
+23. [회원 관리 Admin (User Admin)](#23-회원-관리-admin-user-admin)
+
+---
+
+## 1. 서버 상태
+
+### GET /test
+서버 동작 여부를 확인한다.
+
+- **응답**: `200 OK` — HTML 페이지 반환
+
+---
+
+### GET /api/deploy-check
+배포 상태 및 버전을 확인한다.
+
+**응답 `200 OK`**
+```json
+{
+  "status": "ok",
+  "version": "deploy-check-2026-05-19-01"
+}
+```
+
+---
+
+## 2. 인증 (Auth)
+
+Base Path: `/api/auth`
+
+> 액세스 토큰 유효기간: **5분** / 리프레시 토큰 유효기간: **20분**
+> 서명 알고리즘: **HS256**
+
+---
+
+### POST /api/auth/email/send
+인증번호를 이메일로 전송한다. 기존 미인증 코드는 자동으로 폐기된다.
+인증번호 유효시간은 **5분**이다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `email` | String | Y | 인증번호를 받을 이메일 주소 |
+
+```json
+{ "email": "hong@example.com" }
+```
+
+**응답 `200 OK`** (plain text)
+```
+인증번호가 전송되었습니다.
+```
+
+---
+
+### POST /api/auth/email/resend
+인증번호를 재전송한다. 이전 코드는 폐기되고 새 코드가 발급된다.
+
+**요청 Body** — `POST /api/auth/email/send`와 동일
+
+**응답 `200 OK`** (plain text)
+```
+인증번호가 재전송되었습니다.
+```
+
+---
+
+### POST /api/auth/email/verify
+입력한 인증번호가 맞는지 확인한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `email` | String | Y | 인증 대상 이메일 |
+| `code` | String | Y | 수신한 6자리 인증번호 |
+
+```json
+{
+  "email": "hong@example.com",
+  "code": "382910"
+}
+```
+
+**응답 `200 OK`** (plain text)
+```
+이메일 인증이 완료되었습니다.
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 인증번호 없음 | `500` — 인증번호를 찾을 수 없습니다. |
+| 인증번호 만료 | `500` — 인증번호가 만료되었습니다. |
+| 인증번호 불일치 | `500` — 인증번호가 올바르지 않습니다. |
+
+---
+
+### POST /api/auth/register
+이메일 인증 완료 후 신규 계정을 생성한다.
+가입 즉시 `GUEST` 역할이 부여된다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `userId` | String | Y | 사용자 ID (최대 15자, 중복 불가) |
+| `userName` | String | Y | 사용자 이름 (최대 34자) |
+| `userEmail` | String | Y | 인증 완료된 이메일 |
+| `userPassword` | String | Y | 비밀번호 (BCrypt 해시로 저장) |
+| `userIntroduce` | String | N | 자기소개 (최대 100자) |
+| `userMbti` | String | N | MBTI (4자) |
+| `consents` | List | Y | 약관 동의 목록 |
+| `consents[].consentItemId` | Integer | Y | 약관 항목 ID |
+| `consents[].isAgreed` | Boolean | Y | 동의 여부 |
+
+```json
+{
+  "userId": "user01",
+  "userName": "홍길동",
+  "userEmail": "hong@example.com",
+  "userPassword": "plainPassword",
+  "userIntroduce": "안녕하세요!",
+  "userMbti": "INFP",
+  "consents": [
+    { "consentItemId": 1, "isAgreed": true },
+    { "consentItemId": 2, "isAgreed": true },
+    { "consentItemId": 3, "isAgreed": false },
+    { "consentItemId": 4, "isAgreed": false }
+  ]
+}
+```
+
+> 약관 항목 ID는 `CONSENT_ITEM` 테이블 기준 (1: 이용약관, 2: 개인정보 수집 및 이용, 3: 마케팅 수신, 4: 이벤트 알림)
+
+**응답 `200 OK`** (plain text)
+```
+회원가입이 완료되었습니다.
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| userId 중복 | `500` — 이미 사용 중인 아이디입니다. |
+| 이메일 미인증 | `500` — 이메일 인증이 완료되지 않았습니다. |
+| 필수 약관 미동의 | `500` — 필수 약관에 동의해야 합니다: {약관명} |
+
+---
+
+### POST /api/auth/login
+아이디와 비밀번호로 로그인하여 액세스 토큰과 리프레시 토큰을 발급한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `userId` | String | Y | 사용자 ID (최대 15자) |
+| `userPassword` | String | Y | 비밀번호 |
+
+```json
+{
+  "userId": "admin01",
+  "userPassword": "plainPassword"
+}
+```
+
+**응답 `200 OK`**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "accessTokenExpiry": "2026-05-12T12:05:00",
+  "refreshTokenExpiry": "2026-05-12T12:20:00"
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 존재하지 않는 userId | `500` — 사용자를 찾을 수 없습니다. |
+| 비밀번호 불일치 | `500` — 비밀번호가 올바르지 않습니다. |
+
+---
+
+### POST /api/auth/refresh
+리프레시 토큰으로 새 액세스 토큰을 재발급한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `refreshToken` | String | Y | 로그인 시 발급받은 리프레시 토큰 |
+
+```json
+{ "refreshToken": "eyJhbGciOiJIUzI1NiJ9..." }
+```
+
+**응답 `200 OK`**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...(새 토큰)",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...(기존 유지)",
+  "accessTokenExpiry": "2026-05-12T12:10:00",
+  "refreshTokenExpiry": "2026-05-12T12:20:00"
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 폐기된 토큰 또는 존재하지 않는 토큰 | `500` — 유효하지 않은 리프레시 토큰입니다. |
+| 리프레시 토큰 만료 | `500` — 리프레시 토큰이 만료되었습니다. |
+
+---
+
+### POST /api/auth/logout
+리프레시 토큰을 폐기하여 로그아웃 처리한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `refreshToken` | String | Y | 폐기할 리프레시 토큰 |
+
+```json
+{ "refreshToken": "eyJhbGciOiJIUzI1NiJ9..." }
+```
+
+**응답 `200 OK`** (plain text)
+```
+로그아웃 완료
+```
+
+---
+
+### POST /api/auth/find-username/send-code
+이름과 이메일로 아이디 찾기 인증번호를 발송한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `userName` | String | Y | 가입 시 등록한 이름 |
+| `email` | String | Y | 가입 시 등록한 이메일 |
+
+```json
+{
+  "userName": "홍길동",
+  "email": "example@email.com"
+}
+```
+
+**응답 `200 OK`**
+```json
+{ "message": "인증번호가 발송되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 이름+이메일 불일치 | `400` — 해당 이메일로 가입된 아이디가 없습니다. |
+
+---
+
+### POST /api/auth/find-username/verify
+인증번호 확인 후 가입된 아이디를 반환한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `email` | String | Y | 인증번호를 받은 이메일 |
+| `authCode` | String | Y | 수신한 6자리 인증번호 |
+
+```json
+{
+  "email": "example@email.com",
+  "authCode": "123456"
+}
+```
+
+**응답 `200 OK`**
+```json
+{
+  "message": "아이디 찾기에 성공했습니다.",
+  "userId": "gildong123"
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 인증번호 불일치 | `400` — 인증코드가 일치하지 않습니다. |
+| 인증 정보 없음/만료 | `400` — 유효한 인증 정보가 없거나 시간이 만료되었습니다. |
+
+---
+
+### POST /api/auth/find-password/send-code
+아이디와 이메일로 비밀번호 찾기 인증번호를 발송한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `userId` | String | Y | 가입한 아이디 |
+| `email` | String | Y | 가입 시 등록한 이메일 |
+
+```json
+{
+  "userId": "gildong123",
+  "email": "example@email.com"
+}
+```
+
+**응답 `200 OK`**
+```json
+{ "message": "인증번호가 발송되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 아이디+이메일 불일치 | `400` — 입력하신 정보와 일치하는 회원이 없습니다. |
+
+---
+
+### POST /api/auth/find-password/verify
+비밀번호 찾기 인증번호를 확인한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `email` | String | Y | 인증번호를 받은 이메일 |
+| `authCode` | String | Y | 수신한 6자리 인증번호 |
+
+```json
+{
+  "email": "example@email.com",
+  "authCode": "123456"
+}
+```
+
+**응답 `200 OK`**
+```json
+{ "message": "인증에 성공했습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 인증번호 불일치 | `400` — 인증번호가 일치하지 않습니다. |
+| 인증 정보 없음/만료 | `400` — 유효한 인증 정보가 없거나 시간이 만료되었습니다. |
+
+---
+
+### POST /api/auth/find-password/issue
+인증 완료 후 임시 비밀번호를 발급하여 이메일로 전송한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `userId` | String | Y | 가입한 아이디 |
+| `email` | String | Y | 가입 시 등록한 이메일 |
+
+```json
+{
+  "userId": "gildong123",
+  "email": "example@email.com"
+}
+```
+
+**응답 `200 OK`**
+```json
+{ "message": "임시 비밀번호가 메일로 전송되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 이메일 인증 미완료 | `403` — 이메일 인증이 완료되지 않았습니다. |
+| 회원 정보 없음 | `403` — 회원 정보를 찾을 수 없습니다. |
+
+---
+
+## 3. 내 정보 (Me)
+
+Base Path: `/api/user`
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+---
+
+### GET /api/user/me
+현재 로그인한 사용자의 정보를 조회한다.
+
+**응답 `200 OK`**
+```json
+{
+  "userId": "admin01",
+  "userName": "홍길동",
+  "roleName": "ADMIN",
+  "userIntroduce": "안녕하세요",
+  "userMbti": "INTJ"
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — UNAUTHORIZED |
+
+---
+
+## 4. 동아리 소개 (Club Intro)
+
+Base Path: `/api/club-intro`
+
+---
+
+### GET /api/club-intro/main
+노출 중인(`isActive: true`) 동아리 소개 목록을 조회한다.
+
+**응답 `200 OK`**
+```json
+[
+  {
+    "clubIntroId": 1,
+    "title": "REVERSE",
+    "subTitle": "남서울대학교 컴퓨터소프트웨어학과 동아리",
+    "bannerUrl": "https://cdn.example.com/intro/banner.png",
+    "isActive": true
+  }
+]
+```
+
+---
+
+### GET /api/club-intro
+동아리 소개 전체 목록을 조회한다 (숨김 포함).
+
+**응답 `200 OK`** — 위와 동일한 구조
+
+---
+
+### POST /api/club-intro/image
+배너 이미지를 Cloudflare R2에 업로드하고 URL을 반환한다.
+
+**요청** `multipart/form-data`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `file` | MultipartFile | Y | 업로드할 이미지 파일 |
+
+**응답 `200 OK`** (plain text)
+```
+https://cdn.example.com/intro/uuid-filename.png
+```
+
+---
+
+### POST /api/club-intro
+동아리 소개 데이터를 저장한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `title` | String | Y | 동아리 이름 |
+| `subTitle` | String | Y | 부제목 |
+| `bannerUrl` | String | N | 이미지 업로드 후 받은 URL |
+| `isActive` | Boolean | N | 노출 여부 (기본값: `true`) |
+| `updatedBy` | String | Y | 등록 관리자 ID |
+
+**응답 `200 OK`** — 저장된 ClubIntro 단건 반환
+
+---
+
+### PUT /api/club-intro/{id}/image
+수정할 배너 이미지를 업로드하고 URL을 반환한다.
+
+**요청** `multipart/form-data` — POST /image와 동일
+
+**응답 `200 OK`** (plain text) — URL 반환
+
+---
+
+### PUT /api/club-intro/{id}
+동아리 소개 데이터를 수정한다. 이미지 변경 시 기존 R2 이미지 자동 삭제.
+
+**요청 Body** `application/json` — POST와 동일한 구조
+
+**응답 `200 OK`** — 수정된 ClubIntro 단건 반환
+
+---
+
+### DELETE /api/club-intro/{id}
+동아리 소개 데이터를 삭제한다. R2 이미지도 함께 삭제.
+
+**응답 `200 OK`** (plain text)
+```
+삭제 완료: 1
+```
+
+---
+
+## 5. 프로젝트 소개 (Club Project)
+
+Base Path: `/api/club-project`
+
+---
+
+### GET /api/club-project
+프로젝트 목록을 `sortOrder` 오름차순으로 전체 조회한다.
+
+**응답 `200 OK`**
+```json
+[
+  {
+    "projectId": 1,
+    "sortOrder": 0,
+    "projectName": "REVERSE 웹사이트",
+    "thumbnailUrl": "https://cdn.example.com/project/uuid-filename.png",
+    "projectUrl": "https://github.com/example/reverse",
+    "updatedBy": "admin01",
+    "createdDate": "2026-04-01T12:00:00",
+    "modifiedDate": "2026-04-01T12:00:00"
+  }
+]
+```
+
+---
+
+### POST /api/club-project/image
+프로젝트 썸네일 이미지를 업로드하고 URL을 반환한다.
+
+**요청** `multipart/form-data`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `file` | MultipartFile | Y | 업로드할 이미지 파일 |
+
+**응답 `200 OK`** (plain text) — URL 반환
+
+---
+
+### POST /api/club-project
+프로젝트 데이터를 저장한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `projectName` | String | Y | 프로젝트 이름 |
+| `thumbnailUrl` | String | N | 이미지 업로드 후 받은 URL |
+| `projectUrl` | String | N | 외부 링크 |
+| `sortOrder` | Integer | N | 노출 순서 (기본값: `0`) |
+| `updatedBy` | String | Y | 등록 관리자 ID |
+
+**응답 `200 OK`** — 저장된 ClubProject 단건 반환
+
+---
+
+### PUT /api/club-project/{id}/image
+수정할 썸네일 이미지를 업로드하고 URL을 반환한다.
+
+**응답 `200 OK`** (plain text) — URL 반환
+
+---
+
+### PUT /api/club-project/{id}
+프로젝트 데이터를 수정한다. 이미지 변경 시 기존 R2 이미지 자동 삭제.
+
+**요청 Body** `application/json` — POST와 동일한 구조
+
+**응답 `200 OK`** — 수정된 ClubProject 단건 반환
+
+---
+
+### DELETE /api/club-project/{id}
+프로젝트 데이터를 삭제한다. R2 썸네일도 함께 삭제.
+
+**응답 `200 OK`** (plain text)
+```
+삭제 완료: 1
+```
+
+---
+
+## 6. 임원진 소개 (Officer)
+
+Base Path: `/api/officer`
+
+---
+
+### GET /api/officer
+임원진 전체 목록을 조회한다.
+
+**응답 `200 OK`**
+```json
+[
+  {
+    "officerId": 1,
+    "name": "홍길동",
+    "generation": 5,
+    "role": "회장",
+    "department": "개발",
+    "email": "hong@example.com",
+    "photoUrl": "https://cdn.example.com/officer/uuid-filename.png",
+    "sortOrder": 0,
+    "isVisible": true,
+    "updatedBy": "admin01",
+    "createdDate": "2026-04-01T12:00:00",
+    "modifiedDate": "2026-04-01T12:00:00"
+  }
+]
+```
+
+---
+
+### POST /api/officer/image
+임원진 프로필 사진을 업로드하고 URL을 반환한다.
+
+**요청** `multipart/form-data`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `file` | MultipartFile | Y | 업로드할 이미지 파일 |
+
+**응답 `200 OK`** (plain text) — URL 반환
+
+---
+
+### POST /api/officer
+임원진 데이터를 저장한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `name` | String | Y | 이름 |
+| `generation` | Integer | Y | 기수 (예: `5`) |
+| `role` | String | Y | 직책 (예: `회장`) |
+| `department` | String | N | 소속 파트 |
+| `email` | String | N | 연락용 이메일 |
+| `photoUrl` | String | N | 이미지 업로드 후 받은 URL |
+| `sortOrder` | Integer | N | 노출 순서 (기본값: `0`) |
+| `isVisible` | Boolean | N | 노출 여부 (기본값: `true`) |
+| `updatedBy` | String | Y | 등록 관리자 ID |
+
+**응답 `200 OK`** — 저장된 Officer 단건 반환
+
+---
+
+### PUT /api/officer/{id}/image
+수정할 프로필 사진을 업로드하고 URL을 반환한다.
+
+**응답 `200 OK`** (plain text) — URL 반환
+
+---
+
+### PUT /api/officer/{id}
+임원진 데이터를 수정한다. 이미지 변경 시 기존 R2 이미지 자동 삭제.
+
+**요청 Body** `application/json` — POST와 동일한 구조
+
+**응답 `200 OK`** — 수정된 Officer 단건 반환
+
+---
+
+### DELETE /api/officer/{id}
+임원진 데이터를 삭제한다. R2 프로필 사진도 함께 삭제.
+
+**응답 `200 OK`** (plain text)
+```
+삭제 완료: 1
+```
+
+---
+
+## 7. 약관 (Terms)
+
+Base Path: `/api/terms`
+
+---
+
+### GET /api/terms/current
+현재 적용 중인(`isCurrent: true`) 약관을 조회한다.
+
+**응답 `200 OK`** — Terms 단건 반환
+
+---
+
+### GET /api/terms
+약관 전체 목록을 조회한다.
+
+**응답 `200 OK`**
+```json
+[
+  {
+    "termsId": 1,
+    "sortOrder": 0,
+    "version": "v1.0",
+    "title": "개인정보 처리방침",
+    "contents": "...",
+    "isCurrent": true,
+    "updatedBy": "admin01",
+    "createdDate": "2026-04-01T12:00:00"
+  }
+]
+```
+
+---
+
+### GET /api/terms/{id}
+약관 단건을 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `id` | Long | 조회할 약관 ID |
+
+**응답 `200 OK`** — Terms 단건 반환
+
+---
+
+### POST /api/terms
+새 약관을 저장한다. `version` 중복 불가.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `sortOrder` | Integer | N | 조항 노출 순서 |
+| `version` | String | Y | 약관 버전 (예: `v1.0`) — 중복 불가 |
+| `title` | String | Y | 약관 제목 |
+| `contents` | String | Y | 약관 본문 |
+| `isCurrent` | Boolean | N | 현재 적용 버전 여부 (기본값: `false`) |
+| `updatedBy` | String | Y | 등록 관리자 ID |
+
+**응답 `200 OK`** — 저장된 Terms 단건 반환
+
+---
+
+### PUT /api/terms/{id}
+약관 내용을 수정한다.
+
+**요청 Body** `application/json` — POST와 동일한 구조
+
+**응답 `200 OK`** — 수정된 Terms 단건 반환
+
+---
+
+### DELETE /api/terms/{id}
+약관을 삭제한다.
+
+**응답 `200 OK`**
+```json
+{ "message": "1번 약관이 성공적으로 삭제되었습니다." }
+```
+
+---
+
+## 8. R2 스토리지 테스트 (R2)
+
+Base Path: `/api/r2`
+
+> 개발/테스트 용도. 운영 환경에서는 사용하지 않는다.
+
+---
+
+### POST /api/r2/upload
+이미지를 Cloudflare R2의 지정 폴더에 업로드한다.
+
+**요청** `multipart/form-data`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `file` | MultipartFile | Y | 업로드할 파일 |
+| `folder` | String | N | 저장할 폴더명 (기본값: `test`) |
+
+**응답 `200 OK`** (plain text)
+```
+https://cdn.example.com/test/uuid-filename.png
+```
+
+---
+
+### DELETE /api/r2/delete
+R2에 저장된 파일을 URL로 삭제한다.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `fileUrl` | String | Y | 삭제할 파일의 전체 URL |
+
+**응답 `200 OK`** (plain text)
+```
+삭제 완료: https://cdn.example.com/test/uuid-filename.png
+```
+
+---
+
+## 9. 모집 공고 (Recruitment)
+
+Base Path: `/api/recruit`
+
+---
+
+### GET /api/recruit
+모집 공고 전체 목록을 조회한다.
+
+**응답 `200 OK`**
+```json
+[
+  {
+    "id": 1,
+    "title": "2026년 1학기 신입 부원 모집",
+    "description": "REVERSE 동아리 신입 부원을 모집합니다.",
+    "isActive": true,
+    "createdAt": "2026-04-01T12:00:00",
+    "updatedAt": "2026-04-01T12:00:00"
+  }
+]
+```
+
+---
+
+### GET /api/recruit/{id}
+모집 공고 단건을 상세 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `id` | Integer | 조회할 공고 ID |
+
+**응답 `200 OK`** — 단건 반환
+
+---
+
+### GET /api/recruit/{id}/status
+모집 공고의 지원 가능 여부를 조회한다.
+
+**응답 `200 OK`**
+```json
+{ "isAvailable": true }
+```
+
+---
+
+### GET /api/recruit/{id}/gallery
+모집 공고의 갤러리 이미지를 조회한다.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `tag` | String | N | 태그 필터 |
+
+**응답 `200 OK`** — 갤러리 목록 반환
+
+---
+
+### POST /api/recruit/subscribe
+새 모집 공고 알림 이메일을 구독한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `email` | String | Y | 알림을 받을 이메일 주소 |
+
+```json
+{ "email": "hong@example.com" }
+```
+
+**응답 `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "hong@example.com 주소로 알림 구독이 완료되었습니다."
+}
+```
+
+---
+
+### POST /api/recruit/apply
+모집 공고에 지원서를 제출한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `recruitmentId` | Integer | Y | 지원할 공고 ID |
+| `applicantName` | String | Y | 지원자 이름 |
+| `department` | String | Y | 학과 |
+| `studentNumber` | String | Y | 학번 |
+| `phoneNumber` | String | Y | 전화번호 (`000-0000-0000` 형식) |
+| `grade` | Byte | Y | 학년 (1~5) |
+| `email` | String | Y | 이메일 |
+| `portfolioUrl` | String | N | 포트폴리오 URL |
+| `termsAgreed` | Boolean | Y | 개인정보 수집 동의 여부 |
+| `categories` | List\<String\> | N | 지원 분야 목록 (예: `["메인프로젝트", "스터디"]`) |
+
+```json
+{
+  "recruitmentId": 1,
+  "applicantName": "홍길동",
+  "department": "컴퓨터소프트웨어학과",
+  "studentNumber": "20210001",
+  "phoneNumber": "010-1234-5678",
+  "grade": 3,
+  "email": "hong@example.com",
+  "portfolioUrl": "https://github.com/gildong",
+  "termsAgreed": true,
+  "categories": ["메인프로젝트", "스터디"]
+}
+```
+
+**응답 `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "신청이 완료되었습니다. 화이팅!"
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 중복 신청 / 모집 기간 아님 | `400` — 사유 메시지 반환 |
+| 서버 오류 | `500` — 처리 중 오류가 발생했습니다. |
+
+---
+
+## 10. 일정 (Schedule)
+
+Base Path: `/api/schedule`
+
+---
+
+### GET /api/schedule/category
+노출 중인 카테고리 목록을 `sortOrder` 오름차순으로 조회한다.
+
+**응답 `200 OK`**
+```json
+[
+  {
+    "id": 1,
+    "categoryName": "동아리",
+    "colorCode": "#FF5733",
+    "sortOrder": 0,
+    "isVisible": true,
+    "updatedBy": "admin01",
+    "createdAt": "2026-04-01T12:00:00",
+    "updatedAt": "2026-04-01T12:00:00"
+  }
+]
+```
+
+---
+
+### GET /api/schedule
+월별 공개 일정 목록을 조회한다.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `year` | Integer | N | 조회 연도 (기본값: 현재 연도) |
+| `month` | Integer | N | 조회 월 (기본값: 현재 월) |
+
+**응답 `200 OK`**
+```json
+[
+  {
+    "id": 1,
+    "categoryId": 1,
+    "categoryName": "동아리",
+    "colorCode": "#FF5733",
+    "title": "동아리 OT",
+    "description": "2026년 1학기 OT",
+    "startDate": "2026-04-05",
+    "endDate": "2026-04-05",
+    "startTime": "14:00:00",
+    "endTime": "17:00:00",
+    "isAllDay": false,
+    "isVisible": true,
+    "updatedBy": "admin01",
+    "createdAt": "2026-04-01T12:00:00",
+    "updatedAt": "2026-04-01T12:00:00"
+  }
+]
+```
+
+---
+
+### GET /api/schedule/{id}
+일정 단건을 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `id` | Integer | 조회할 일정 ID |
+
+**응답 `200 OK`** — 위 목록 응답의 단건 형태
+
+---
+
+### GET /api/schedule/admin/category
+카테고리 전체 목록을 조회한다 (숨김 포함).
+
+**응답 `200 OK`** — GET /api/schedule/category와 동일한 구조
+
+---
+
+### POST /api/schedule/admin/category
+카테고리를 생성한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `categoryName` | String | Y | 카테고리 이름 (최대 30자) |
+| `colorCode` | String | N | HEX 색상코드 (기본값: `#FFFFFF`) |
+| `sortOrder` | Integer | N | 노출 순서 (기본값: `0`) |
+| `isVisible` | Boolean | N | 노출 여부 (기본값: `true`) |
+| `updatedBy` | String | Y | 등록 관리자 ID |
+
+**응답 `200 OK`** — 생성된 카테고리 단건 반환
+
+---
+
+### PUT /api/schedule/admin/category/{id}
+카테고리를 수정한다.
+
+**요청 Body** `application/json` — POST와 동일한 구조
+
+**응답 `200 OK`** — 수정된 카테고리 단건 반환
+
+---
+
+### DELETE /api/schedule/admin/category/{id}
+카테고리를 삭제한다.
+
+**응답 `200 OK`** (plain text)
+```
+카테고리가 삭제되었습니다. ID: 1
+```
+
+---
+
+### GET /api/schedule/admin
+월별 전체 일정을 조회한다 (숨김 포함).
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `year` | Integer | Y | 조회 연도 |
+| `month` | Integer | Y | 조회 월 |
+
+**응답 `200 OK`** — GET /api/schedule과 동일한 구조
+
+---
+
+### POST /api/schedule/admin
+일정을 생성한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `categoryId` | Integer | Y | 카테고리 ID |
+| `title` | String | Y | 일정 제목 (최대 100자) |
+| `description` | String | N | 일정 상세 설명 |
+| `startDate` | LocalDate | Y | 시작일 (`yyyy-MM-dd`) |
+| `endDate` | LocalDate | Y | 종료일 (`yyyy-MM-dd`) |
+| `startTime` | LocalTime | N | 시작 시간 (`HH:mm:ss`, 종일이면 생략) |
+| `endTime` | LocalTime | N | 종료 시간 (`HH:mm:ss`, 종일이면 생략) |
+| `isAllDay` | Boolean | N | 종일 일정 여부 (기본값: `true`) |
+| `isVisible` | Boolean | N | 노출 여부 (기본값: `true`) |
+| `updatedBy` | String | Y | 등록 관리자 ID |
+
+**응답 `200 OK`** — 생성된 일정 단건 반환
+
+---
+
+### PUT /api/schedule/admin/{id}
+일정을 수정한다.
+
+**요청 Body** `application/json` — POST와 동일한 구조
+
+**응답 `200 OK`** — 수정된 일정 단건 반환
+
+---
+
+### DELETE /api/schedule/admin/{id}
+일정을 삭제한다.
+
+**응답 `200 OK`** (plain text)
+```
+일정이 삭제되었습니다. ID: 1
+```
+
+---
+
+## 11. 공휴일 (Holiday)
+
+Base Path: `/api/holiday`
+
+> 공공데이터포털 "한국천문연구원 특일 정보" API 연동.
+> 매년 1월 1일 00:05 자동 갱신.
+
+---
+
+### GET /api/holiday
+월별 공휴일 목록을 조회한다.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `year` | Integer | Y | 조회 연도 |
+| `month` | Integer | Y | 조회 월 |
+
+**응답 `200 OK`**
+```json
+[
+  {
+    "id": 1,
+    "holidayDate": "2026-03-01",
+    "holidayName": "삼일절",
+    "isHoliday": true,
+    "year": 2026
+  }
+]
+```
+
+---
+
+### POST /api/holiday/admin/sync
+특정 연도의 공휴일을 공공 API에서 수동으로 동기화한다.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `year` | Integer | Y | 동기화할 연도 |
+
+**응답 `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "2026년 공휴일 동기화가 완료되었습니다."
+}
+```
+
+---
+
+## 12. 공지사항 (Notice)
+
+Base Path: `/api/notices` (조회) / `/api/posts/notices` (관리자 등록·수정·삭제)
+
+> 비로그인 사용자는 외부 공개(`isExternal: true`) 공지사항만 조회 가능.
+> 로그인 사용자는 내부/외부 모두 조회 가능.
+
+---
+
+### POST /api/notices/image
+공지사항 이미지를 업로드하고 URL을 반환한다.
+
+**요청** `multipart/form-data`
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `file` | MultipartFile | Y | 업로드할 이미지 파일 |
+
+**응답 `200 OK`** (plain text) — URL 반환
+
+---
+
+### GET /api/notices
+공지사항 목록을 조회한다. 6개씩 페이징. 비로그인 시 외부 공개 게시글만 반환.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `category` | String | N | 카테고리 필터 (`전체` \| `동아리 활동` \| `대외활동`, 기본값: `전체`) |
+| `page` | Integer | N | 페이지 번호 (기본값: `0`) |
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "title": "공지사항 제목",
+        "createdAt": "2026-05-12",
+        "userId": "admin01",
+        "category": "동아리 활동",
+        "isExternal": true
+      }
+    ],
+    "totalPages": 3,
+    "totalElements": 15,
+    "number": 0,
+    "size": 6
+  }
+}
+```
+
+---
+
+### GET /api/notices/{postId}
+공지사항 단건을 조회한다. 비로그인 사용자가 내부 공지 접근 시 403 반환.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `postId` | Integer | 조회할 공지사항 ID |
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "title": "공지사항 제목",
+    "content": "공지사항 본문 내용",
+    "createdAt": "2026-05-12",
+    "userId": "admin01",
+    "category": "동아리 활동",
+    "isExternal": true,
+    "imageUrls": ["https://cdn.example.com/notice/uuid-filename.png"]
+  }
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 비로그인 + 내부 공지 접근 | `403` — FORBIDDEN |
+| 존재하지 않는 ID | `404` — NOT_FOUND |
+
+---
+
+### POST /api/posts/notices
+공지사항을 등록(`postId` 없음) 또는 수정(`postId` 있음)한다. 관리자 전용.
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `postId` | Integer | N | 수정 시에만 포함 |
+| `title` | String | Y | 제목 (최대 50자) |
+| `content` | String | Y | 본문 (최대 4000자) |
+| `isPinned` | Boolean | N | 상단 고정 여부 (기본값: `false`) |
+| `isExternal` | Boolean | N | 외부 공개 여부 (기본값: `false`) |
+| `category` | String | N | 카테고리 (`동아리 활동` \| `대외활동`, 기본값: `동아리 활동`) |
+| `imageUrls` | List\<String\> | N | 이미지 URL 목록 |
+
+**응답 `201 Created`** (등록)
+```json
+{
+  "success": true,
+  "data": {
+    "postId": 1,
+    "title": "공지사항 제목",
+    "content": "...",
+    "isPinned": false,
+    "isExternal": true,
+    "category": "동아리 활동",
+    "imageUrls": []
+  },
+  "message": "공지사항이 등록되었습니다."
+}
+```
+
+**응답 `200 OK`** (수정)
+```json
+{
+  "success": true,
+  "data": {
+    "postId": 1,
+    "title": "공지사항 제목",
+    "content": "...",
+    "isPinned": false,
+    "isExternal": true,
+    "category": "동아리 활동",
+    "imageUrls": []
+  },
+  "message": "공지사항이 수정되었습니다."
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| title 또는 content 누락 | `400` — BAD_REQUEST |
+| 존재하지 않는 postId | `404` — NOT_FOUND |
+
+---
+
+### DELETE /api/posts/notices/{postId}
+공지사항을 삭제한다. 첨부 이미지도 함께 삭제. 관리자 전용.
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+**응답 `200 OK`**
+```json
+{ "success": true, "data": null, "message": "삭제되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 존재하지 않는 ID | `400` — DELETE_FAILED |
+
+---
+
+## 13. 커뮤니티 게시판 (Community Board)
+
+Base Path: `/api/posts/board`
+
+> 모든 엔드포인트 로그인 필수 — `Authorization: Bearer {token}`
+
+---
+
+### GET /api/posts/board
+게시글 목록을 조회한다. 10개씩 페이징, 최신순 정렬.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `page` | Integer | N | 페이지 번호 (기본값: `0`) |
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": {
+    "content": [
+      {
+        "postId": 42,
+        "title": "첫 번째 게시글",
+        "category": "동아리 활동",
+        "userId": "admin01",
+        "createdAt": "2026-05-12",
+        "commentCount": 0,
+        "likeCount": 0,
+        "imageUrls": []
+      }
+    ],
+    "totalPages": 1,
+    "totalElements": 2,
+    "number": 0
+  }
+}
+```
+
+---
+
+### GET /api/posts/board/{postId}
+게시글 단건을 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `postId` | Integer | 조회할 게시글 ID |
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": {
+    "postId": 42,
+    "title": "첫 번째 게시글",
+    "content": "게시글 내용입니다.",
+    "userId": "admin01",
+    "createdAt": "2026-05-12",
+    "modifiedAt": null,
+    "commentCount": 0,
+    "likeCount": 0,
+    "imageUrls": ["https://pub-xxx.r2.dev/board/uuid/파일명.png"]
+  }
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 존재하지 않는 ID | `404` — NOT_FOUND |
+
+---
+
+### GET /api/posts/board/{postId}/comments
+댓글 목록을 계층형(원댓글 + 대댓글)으로 조회한다.
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "commentId": 1,
+      "userId": "superadmin",
+      "commentDetail": "원댓글입니다.",
+      "parentCommentId": null,
+      "createdAt": "2026-05-12",
+      "modifiedAt": null,
+      "replies": [
+        {
+          "commentId": 6,
+          "userId": "superadmin",
+          "commentDetail": "대댓글입니다.",
+          "parentCommentId": 1,
+          "createdAt": "2026-05-12",
+          "modifiedAt": null,
+          "replies": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### POST /api/posts/board/{postId}/comments
+댓글을 작성한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `commentDetail` | String | Y | 댓글 내용 (최대 1500자) |
+
+```json
+{ "commentDetail": "좋은 게시글이네요!" }
+```
+
+**응답 `201 Created`**
+```json
+{
+  "success": true,
+  "data": {
+    "commentId": 1,
+    "userId": "superadmin",
+    "commentDetail": "좋은 게시글이네요!",
+    "parentCommentId": null,
+    "createdAt": "2026-05-12",
+    "modifiedAt": null,
+    "replies": []
+  },
+  "message": "댓글이 작성되었습니다."
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 존재하지 않는 게시글 | `404` — NOT_FOUND |
+
+---
+
+### POST /api/posts/board/{postId}/comments/{commentId}/reply
+대댓글을 작성한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `postId` | Integer | 게시글 ID |
+| `commentId` | Integer | 원댓글 ID |
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `commentDetail` | String | Y | 대댓글 내용 (최대 1500자) |
+
+**응답 `201 Created`**
+```json
+{
+  "success": true,
+  "data": {
+    "commentId": 6,
+    "userId": "superadmin",
+    "commentDetail": "저도 동의해요!",
+    "parentCommentId": 1,
+    "createdAt": "2026-05-12",
+    "modifiedAt": null,
+    "replies": []
+  },
+  "message": "대댓글이 작성되었습니다."
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 존재하지 않는 게시글/댓글 | `404` — NOT_FOUND |
+| 대댓글에 대댓글 시도 | `404` — INVALID_PARENT |
+
+---
+
+### PUT /api/posts/board/comments/{commentId}
+댓글을 수정한다. 본인만 가능.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `commentDetail` | String | Y | 수정할 내용 |
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": { "commentId": 1, "commentDetail": "수정된 댓글입니다.", "..." : "..." },
+  "message": "댓글이 수정되었습니다."
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 본인 아님 | `403` — FORBIDDEN |
+| 존재하지 않는 댓글 | `404` — NOT_FOUND |
+
+---
+
+### DELETE /api/posts/board/comments/{commentId}
+댓글을 삭제한다. 본인만 가능.
+
+**응답 `200 OK`**
+```json
+{ "success": true, "data": null, "message": "댓글이 삭제되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 본인 아님 | `403` — FORBIDDEN |
+| 존재하지 않는 댓글 | `404` — NOT_FOUND |
+
+---
+
+### POST /api/posts/board/{postId}/like
+좋아요를 토글한다. 누르면 +1, 다시 누르면 -1. 계정당 1회 제한.
+
+**응답 `200 OK` — 좋아요 추가**
+```json
+{ "success": true, "data": true, "message": "좋아요를 눌렀습니다." }
+```
+
+**응답 `200 OK` — 좋아요 취소**
+```json
+{ "success": true, "data": false, "message": "좋아요를 취소했습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 존재하지 않는 게시글 | `404` — NOT_FOUND |
+
+---
+
+### POST /api/posts/board/file
+파일을 R2에 업로드하고 URL을 반환한다. 이미지·txt·pdf 등 모든 파일 가능. URL 접속 시 자동 다운로드.
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+**Request — form-data**
+
+| Key | Type | 필수 | 설명 |
+|---|---|---|---|
+| `file` | File | Y | 업로드할 파일 |
+
+**응답 `200 OK`**
+```
+"https://pub-xxx.r2.dev/board/uuid/파일명.txt"
+```
+
+반환된 URL을 게시글 작성 시 `imageUrls` 배열에 포함해서 전송한다.
+
+---
+
+## 14. 모집 관리자 (Recruitment Admin)
+
+Base Path: `/api/recruit/admin`
+
+> 모든 엔드포인트 관리자 권한 필요 — 요청 파라미터 또는 Body에 `roleId` 포함.
+
+---
+
+### POST /api/recruit/admin
+모집 공고와 상세 페이지를 동시에 생성한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+| `title` | String | Y | 공고 제목 |
+| `description` | String | N | 공고 본문 |
+| `applyStartDate` | LocalDateTime | Y | 지원 시작일시 |
+| `applyEndDate` | LocalDateTime | Y | 지원 마감일시 |
+| `isActive` | Boolean | N | 활성화 여부 (기본값: `true`) |
+| `updatedBy` | String | Y | 등록 관리자 ID |
+
+**응답 `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "공고 및 상세 페이지 등록 완료",
+  "recruitmentId": 1,
+  "pageId": 1
+}
+```
+
+---
+
+### PUT /api/recruit/admin/{id}
+모집 공고 기본 정보를 수정한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `id` | Integer | 수정할 공고 ID |
+
+**요청 Body** `application/json` — POST와 동일한 구조
+
+**응답 `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "공고 수정 완료",
+  "recruitmentId": 1
+}
+```
+
+---
+
+### DELETE /api/recruit/admin/{id}
+모집 공고를 삭제한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `id` | Integer | 삭제할 공고 ID |
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+
+**응답 `200 OK`** (plain text)
+```
+공고 삭제 완료. ID: 1
+```
+
+---
+
+### GET /api/recruit/admin/applications
+특정 공고의 지원자 목록을 조회한다.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `recruitmentId` | Integer | Y | 조회할 공고 ID |
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+| `name` | String | N | 지원자 이름 검색 필터 |
+| `status` | String | N | 지원 상태 필터 (`PENDING`, `PASS`, `FAIL` 등) |
+
+**응답 `200 OK`** — 지원자 목록 반환
+
+---
+
+### GET /api/recruit/admin/applications/{applicationId}
+지원서 상세 내용을 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `applicationId` | Integer | 조회할 지원서 ID |
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+
+**응답 `200 OK`** — 지원서 단건 반환
+
+---
+
+### PATCH /api/recruit/admin/applications/status
+지원서 상태를 변경한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+| `applicationId` | Integer | Y | 상태를 변경할 지원서 ID |
+| `status` | String | Y | 변경할 상태 (`PENDING` \| `PASS` \| `FAIL` 등) |
+
+```json
+{
+  "roleId": 1,
+  "applicationId": 5,
+  "status": "PASS"
+}
+```
+
+**응답 `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "지원서 상태가 PASS(으)로 변경되었습니다."
+}
+```
+
+---
+
+### POST /api/recruit/admin/applications/interview
+지원자에게 면접 스케줄을 배정한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "면접 배정 완료" }
+```
+
+---
+
+### GET /api/recruit/admin/applications/excel
+지원자 목록을 엑셀 파일로 다운로드한다.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `recruitmentId` | Integer | Y | 조회할 공고 ID |
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+
+**응답 `200 OK`**
+- Content-Type: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- Content-Disposition: `attachment; filename=applications_recruit_{recruitmentId}.xlsx`
+
+---
+
+### PATCH /api/recruit/admin/{id}/page
+모집 상세 페이지 내용을 수정한다 (Hero, Intros, Cards, Galleries, Contacts 통합).
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `id` | Integer | 수정할 공고 ID |
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+| `adminId` | String | N | 관리자 ID |
+| `heroYear` | String | N | Hero 섹션 연도 |
+| `heroTitle` | String | N | Hero 섹션 제목 |
+| `heroSubTitle` | String | N | Hero 섹션 부제목 |
+| `heroBtnText` | String | N | Hero 버튼 텍스트 |
+| `heroBgUrl` | String | N | Hero 배경 이미지 URL |
+| `intros` | List | N | 소개 항목 목록 (`contents`, `sortOrder`) |
+| `cards` | List | N | 분야 카드 목록 (`applyField`, `cardTitle`, `cardSubTitle`, `cardDesc`, `imageUrl`, `sortOrder`) |
+| `galleries` | List | N | 갤러리 목록 (`imageUrl`, `imageDesc`, `tag`, `sortOrder`) |
+| `contacts` | List | N | 연락처 목록 (`contactType`, `label`, `value`, `subValue`, `sortOrder`) |
+
+**응답 `200 OK`**
+```json
+{
+  "status": "success",
+  "message": "상세 페이지 정보 수정 완료",
+  "recruitmentId": 1
+}
+```
+
+---
+
+### POST /api/recruit/admin/{id}/slots
+면접 날짜 및 정원 슬롯을 설정한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `id` | Integer | 대상 공고 ID |
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roleId` | Integer | Y | 요청자 역할 ID (권한 검증) |
+| `adminId` | String | N | 관리자 ID |
+| `slots` | List | Y | 슬롯 목록 |
+| `slots[].slotDate` | LocalDate | Y | 면접 날짜 (`yyyy-MM-dd`) |
+| `slots[].capacity` | Integer | Y | 해당 날짜 정원 수 |
+
+```json
+{
+  "roleId": 1,
+  "adminId": "admin01",
+  "slots": [
+    { "slotDate": "2026-06-01", "capacity": 10 },
+    { "slotDate": "2026-06-02", "capacity": 8 }
+  ]
+}
+```
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "면접 날짜 및 정원 설정 완료" }
+```
+
+---
+
+## 15. 활동 프로젝트 (Projects)
+
+Base Path: `/api/projects`
+
+---
+
+### GET /api/projects
+프로젝트 목록을 조회한다. 키워드 검색 및 상태 필터링 지원. 비로그인 사용자 접근 가능.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `keyword` | String | N | 프로젝트명 검색 키워드 |
+| `status` | String | N | 프로젝트 상태 필터 (`PENDING` \| `ACTIVE` \| `CLOSED`) |
+| `page` | Integer | N | 페이지 번호 (기본값: `0`, 6개씩 페이징) |
+
+**응답 `200 OK`** (Page)
+```json
+{
+  "content": [
+    {
+      "projectId": 1,
+      "projectName": "웹 개발 스터디",
+      "leaderId": "user01",
+      "leaderName": "홍길동",
+      "photoUrl": "https://cdn.example.com/project/uuid.png",
+      "description": "프로젝트 설명입니다.",
+      "goal": "목표",
+      "memberCount": 3,
+      "location": "동아리방",
+      "notice": "공지사항",
+      "status": "ACTIVE",
+      "schedules": [
+        { "dayOfWeek": 3, "meetTime": "18:00" }
+      ]
+    }
+  ],
+  "totalPages": 1,
+  "totalElements": 5,
+  "number": 0
+}
+```
+
+---
+
+### GET /api/projects/{projectId}
+프로젝트 상세 정보를 조회한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `projectId` | Integer | 조회할 프로젝트 ID |
+
+**응답 `200 OK`** — GET /api/projects 목록 응답의 단건 형태
+
+---
+
+### POST /api/projects
+프로젝트 게시글을 작성한다.
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `projectName` | String | Y | 프로젝트 이름 |
+| `leaderId` | String | N | 리더 ID |
+| `leaderName` | String | N | 리더 이름 |
+| `photoUrl` | String | N | 대표 이미지 URL |
+| `description` | String | N | 프로젝트 설명 |
+| `goal` | String | N | 프로젝트 목표 |
+| `location` | String | N | 활동 장소 |
+| `notice` | String | N | 공지사항 |
+| `status` | String | N | 상태 (`PENDING` \| `ACTIVE` \| `CLOSED`) |
+| `schedules` | List | N | 활동 일정 목록 |
+| `schedules[].dayOfWeek` | Integer | N | 요일 (0=일 ~ 6=토) |
+| `schedules[].meetTime` | String | N | 모임 시간 (예: `18:00`) |
+
+```json
+{
+  "projectName": "웹 개발 스터디",
+  "description": "React와 Spring Boot로 풀스택 개발",
+  "goal": "실무 프로젝트 경험",
+  "location": "동아리방",
+  "status": "ACTIVE",
+  "schedules": [
+    { "dayOfWeek": 3, "meetTime": "18:00" }
+  ]
+}
+```
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "projectId": 1,
+  "message": "프로젝트 모집 글이 성공적으로 등록되었습니다."
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 로그인이 필요합니다. |
+
+---
+
+### POST /api/projects/{projectId}/apply
+프로젝트 모집에 지원서를 제출한다.
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `projectId` | Integer | 지원할 프로젝트 ID |
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `email` | String | Y | 지원자 이메일 |
+| `availableDate` | String | Y | 면접 가능 날짜 (`yyyy-MM-dd` 형식) |
+| `availableTime` | String | Y | 면접 가능 시간 (예: `오후 6시`) |
+| `privacyAgreement` | Boolean | N | 개인정보 동의 여부 |
+
+```json
+{
+  "email": "hong@example.com",
+  "availableDate": "2026-05-20",
+  "availableTime": "오후 6시",
+  "privacyAgreement": true
+}
+```
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "message": "지원서가 성공적으로 접수되었습니다 🙌"
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 다시 로그인해 주세요. |
+| 필수 필드 누락 | `400` — 요일과 시간, 이메일은 필수입니다. |
+| 중복 지원 / 기타 검증 실패 | `400` — 사유 메시지 반환 |
+
+---
+
+## 16. 다중 게시판 (Multi-Board)
+
+Base Path: `/api/board`
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+> boardId로 여러 게시판을 구분한다.
+
+---
+
+### POST /api/board/{boardId}
+게시글을 작성한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `boardId` | Integer | 게시판 ID |
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `title` | String | Y | 제목 |
+| `content` | String | Y | 본문 |
+| `isPinned` | Boolean | N | 상단 고정 여부 |
+| `isExternal` | Boolean | N | 외부 공개 여부 |
+| `category` | String | N | 카테고리 |
+| `imageUrls` | List\<String\> | N | 첨부 파일/이미지 URL 목록 |
+
+**응답 `200 OK`**
+```json
+{
+  "status": "success",
+  "postId": 1,
+  "message": "등록되었습니다."
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+
+---
+
+### PATCH /api/board/post/{postId}
+게시글을 수정한다. 본인만 가능.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `postId` | Integer | 수정할 게시글 ID |
+
+**요청 Body** `application/json` — POST와 동일한 구조
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "수정되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 본인 아님 / 권한 없음 | `403` — 사유 메시지 반환 |
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+
+---
+
+### DELETE /api/board/post/{postId}
+게시글을 삭제한다. 본인만 가능.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `postId` | Integer | 삭제할 게시글 ID |
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "삭제되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 본인 아님 / 권한 없음 | `403` — 사유 메시지 반환 |
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+
+---
+
+### GET /api/board/{boardId}
+게시글 목록을 조회한다. 카테고리 필터링 및 키워드 검색 지원. 6개씩 페이징.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `boardId` | Integer | 게시판 ID |
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `category` | String | N | 카테고리 필터 |
+| `type` | String | N | 검색 타입 (예: `title`, `content`) |
+| `keyword` | String | N | 검색 키워드 |
+| `page` | Integer | N | 페이지 번호 (기본값: `0`) |
+
+**응답 `200 OK`** (Page)
+```json
+{
+  "content": [
+    {
+      "postId": 1,
+      "title": "게시글 제목",
+      "category": "동아리 활동",
+      "userId": "user01",
+      "createdAt": "2026-05-19",
+      "commentCount": 0,
+      "likeCount": 0,
+      "imageUrls": []
+    }
+  ],
+  "totalPages": 1,
+  "totalElements": 3,
+  "number": 0
+}
+```
+
+---
+
+### GET /api/board/my/stats
+현재 로그인한 사용자의 게시글 통계 정보를 조회한다.
+
+**응답 `200 OK`** — 통계 정보 반환 (게시글 수 등)
+
+---
+
+### GET /api/board/my/posts
+현재 로그인한 사용자의 게시글 목록을 조회한다. 6개씩 페이징.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `page` | Integer | N | 페이지 번호 (기본값: `0`) |
+
+**응답 `200 OK`** (Page) — GET /api/board/{boardId} 응답과 동일한 구조
+
+---
+
+## 17. 스터디 (Study)
+
+Base Path: `/api/studies`
+
+---
+
+### GET /api/studies
+스터디 목록을 조회한다. 키워드 검색 및 상태 필터링 지원. 비로그인 가능. 6개씩 페이징.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `keyword` | String | N | 스터디명·소개·목표 검색 키워드 |
+| `status` | String | N | 상태 필터 (`PENDING` \| `ACTIVE` \| `CLOSED`) |
+| `page` | Integer | N | 페이지 번호 (기본값: `0`) |
+
+**응답 `200 OK`** (Page)
+```json
+{
+  "content": [
+    {
+      "studyId": 1,
+      "studyName": "알고리즘 스터디",
+      "leaderId": "user01",
+      "leaderName": "홍길동",
+      "language": "Python",
+      "techStack": "알고리즘, 자료구조",
+      "description": "코딩테스트 대비 알고리즘 스터디입니다.",
+      "goal": "백준 골드 달성",
+      "memberCount": 1,
+      "location": "동아리방",
+      "notice": "결석 시 사전 공지 필수",
+      "status": "ACTIVE",
+      "createdBy": "user01",
+      "createdDate": "2026-05-20T10:00:00",
+      "modifiedDate": "2026-05-20T10:00:00",
+      "schedules": [
+        { "dayOfWeek": 3, "meetTime": "18:00" }
+      ],
+      "curriculums": [
+        { "week": 1, "contents": "그리디 알고리즘" },
+        { "week": 2, "contents": "BFS / DFS" }
+      ]
+    }
+  ],
+  "totalPages": 1,
+  "totalElements": 3,
+  "number": 0
+}
+```
+
+---
+
+### GET /api/studies/{studyId}
+스터디 상세 정보를 조회한다. 비로그인 가능.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `studyId` | Integer | 조회할 스터디 ID |
+
+**응답 `200 OK`** — GET /api/studies 목록 응답의 단건 형태
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 존재하지 않는 ID | `404` — 스터디를 찾을 수 없습니다. |
+
+---
+
+### POST /api/studies
+스터디를 생성한다. 팀장(`leaderId`)이 자동으로 LEADER 권한 멤버로 등록된다.
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `studyName` | String | Y | 스터디명 (최대 100자) |
+| `leaderId` | String | Y | 팀장 userId |
+| `leaderName` | String | Y | 팀장 이름 |
+| `language` | String | N | 사용 언어 |
+| `techStack` | String | N | 기술 스택 |
+| `description` | String | N | 활동 소개 (최대 500자) |
+| `goal` | String | N | 활동 목표 (최대 500자) |
+| `location` | String | N | 진행 장소 및 방법 |
+| `notice` | String | N | 유의사항 (최대 500자) |
+| `status` | String | N | 상태 (`PENDING` \| `ACTIVE` \| `CLOSED`, 기본값: `ACTIVE`) |
+| `schedules` | List | N | 진행 요일·시간 목록 |
+| `schedules[].dayOfWeek` | Integer | Y | 요일 (0=일 ~ 6=토) |
+| `schedules[].meetTime` | String | Y | 진행 시간 (`HH:mm`, 예: `18:00`) |
+| `curriculums` | List | N | 주차별 커리큘럼 목록 |
+| `curriculums[].week` | Integer | Y | 주차 번호 (1, 2, 3 …) |
+| `curriculums[].contents` | String | Y | 해당 주차 내용 (최대 500자) |
+
+```json
+{
+  "studyName": "알고리즘 스터디",
+  "leaderId": "user01",
+  "leaderName": "홍길동",
+  "language": "Python",
+  "techStack": "알고리즘, 자료구조",
+  "description": "코딩테스트 대비 스터디",
+  "goal": "백준 골드 달성",
+  "location": "동아리방",
+  "status": "ACTIVE",
+  "schedules": [
+    { "dayOfWeek": 3, "meetTime": "18:00" }
+  ],
+  "curriculums": [
+    { "week": 1, "contents": "그리디 알고리즘" },
+    { "week": 2, "contents": "BFS / DFS" }
+  ]
+}
+```
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "studyId": 1,
+  "message": "스터디가 성공적으로 등록되었습니다."
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 로그인이 필요합니다. |
+| 필수 필드 누락 | `400` — 필수 항목이 누락되었습니다. |
+
+---
+
+### PUT /api/studies/{studyId}
+스터디 정보를 수정한다. 팀장만 가능. `schedules`·`curriculums` 전달 시 기존 데이터를 교체한다.
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `studyId` | Integer | 수정할 스터디 ID |
+
+**요청 Body** `application/json` — POST와 동일한 구조 (수정할 필드만 포함 가능)
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": { "studyId": 1, "studyName": "수정된 스터디명", "..." : "..." },
+  "message": "스터디가 수정되었습니다."
+}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 로그인이 필요합니다. |
+| 팀장 아님 | `403` — 스터디 팀장만 수정할 수 있습니다. |
+| 존재하지 않는 ID | `404` — 스터디를 찾을 수 없습니다. |
+
+---
+
+### DELETE /api/studies/{studyId}
+스터디를 삭제한다. 팀장만 가능. 연관된 일정·커리큘럼·멤버 데이터도 함께 삭제된다.
+
+> 로그인 필수 — `Authorization: Bearer {token}`
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `studyId` | Integer | 삭제할 스터디 ID |
+
+**응답 `200 OK`**
+```json
+{ "success": true, "message": "스터디가 삭제되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 로그인이 필요합니다. |
+| 팀장 아님 | `403` — 스터디 팀장만 삭제할 수 있습니다. |
+| 존재하지 않는 ID | `404` — 스터디를 찾을 수 없습니다. |
+
+---
+
+---
+
+## 18. IT 이슈 (IT Issue)
+
+### GET /api/it-issues
+AI Times 최신 IT 이슈 6개를 조회한다. 비로그인 접근 가능.
+
+- **인증**: 불필요
+- **갱신 주기**: 서버 시작 시 즉시 수집, 이후 매일 05:00 자동 갱신
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "title": "엔비디아, 'RTX 5090' 한장으로 1분 영상 생성하는 월드 모델 오픈 공개",
+      "imageUrl": "https://cdn.aitimes.com/news/photo/202605/210609_213000_1234.jpg",
+      "articleUrl": "https://www.aitimes.com/news/articleView.html?idxno=210609"
+    }
+  ],
+  "code": null,
+  "message": null
+}
+```
+
+**응답 (데이터 없음)**
+```json
+{
+  "success": false,
+  "data": null,
+  "code": "NO_DATA",
+  "message": "현재 이슈를 불러올 수 없습니다."
+}
+```
+
+---
+
+## 19. 투표 (Vote)
+
+Base Path: `/api/votes`
+
+> **역할(roleId) 체계**: 1=최고관리자, 2=관리자, 3=정회원, 4=준회원, 5=게스트
+
+---
+
+### POST /api/votes
+투표를 생성한다.
+
+- **인증**: 필요
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `title` | String | Y | 투표 제목 (최대 100자) |
+| `content` | String | N | 투표 설명 |
+| `deadline` | LocalDateTime | N | 마감 일시 (예: `2026-06-10T23:59:00`) |
+| `isMultiple` | Boolean | N | 복수 선택 여부 (기본값: `false`) |
+| `isSecret` | Boolean | N | 비밀투표 여부 (기본값: `false`) |
+| `participantRole` | Integer | N | 투표 참가 가능 최소 roleId (기본값: `3` = 정회원 이상) |
+| `resultViewRole` | Integer | N | 결과 조회 가능 최소 roleId (기본값: `3`, 공개투표일 때만 적용) |
+| `options` | String[] | Y | 투표 항목 목록 (최소 2개) |
+
+```json
+{
+  "title": "이번 주 모임 장소",
+  "content": "이번 주 동아리 모임 장소를 투표해주세요.",
+  "deadline": "2026-06-10T23:59:00",
+  "isMultiple": false,
+  "isSecret": false,
+  "participantRole": 3,
+  "resultViewRole": 3,
+  "options": ["강의실 302호", "도서관 세미나실", "카페 스터디룸"]
+}
+```
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "voteId": 1, "message": "투표가 등록되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+
+---
+
+### GET /api/votes
+투표 목록을 조회한다. 10개씩 페이징.
+
+- **인증**: 불필요
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `page` | Integer | N | 페이지 번호 (기본값: `0`) |
+| `size` | Integer | N | 페이지 크기 (기본값: `10`) |
+
+**응답 `200 OK`** (Page)
+```json
+{
+  "content": [
+    {
+      "voteId": 1,
+      "userId": "user01",
+      "title": "이번 주 모임 장소",
+      "deadline": "2026-06-10T23:59:00",
+      "isClosed": false,
+      "isSecret": false,
+      "participantRole": 3,
+      "resultViewRole": 3,
+      "optionCount": 3,
+      "totalVoteCount": 5,
+      "createdDate": "2026-05-30T21:58:42"
+    }
+  ],
+  "totalPages": 1,
+  "totalElements": 1,
+  "number": 0
+}
+```
+
+---
+
+### GET /api/votes/{voteId}
+투표 상세 정보를 조회한다.
+
+- **인증**: 선택 (로그인 시 `myVotedOptionId` 포함 및 결과 가시성 적용)
+- 결과 가시성(`voteCount`):
+  - 관리자·최고관리자: 항상 표시
+  - 생성자: 항상 표시
+  - 비밀투표: 위 두 경우 외에는 `voteCount = null`
+  - 공개투표: `resultViewRole` 이하 roleId 사용자에게 표시, 그 외 `null`
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `voteId` | Integer | 조회할 투표 ID |
+
+**응답 `200 OK`**
+```json
+{
+  "voteId": 1,
+  "userId": "user01",
+  "title": "이번 주 모임 장소",
+  "content": "이번 주 동아리 모임 장소를 투표해주세요.",
+  "deadline": "2026-06-10T23:59:00",
+  "isMultiple": false,
+  "isSecret": false,
+  "participantRole": 3,
+  "resultViewRole": 3,
+  "isClosed": false,
+  "createdDate": "2026-05-30T21:58:42",
+  "modifiedDate": null,
+  "myVotedOptionId": 2,
+  "options": [
+    { "optionId": 1, "optionText": "강의실 302호", "sortOrder": 0, "voteCount": 0 },
+    { "optionId": 2, "optionText": "도서관 세미나실", "sortOrder": 1, "voteCount": 3 },
+    { "optionId": 3, "optionText": "카페 스터디룸", "sortOrder": 2, "voteCount": 2 }
+  ]
+}
+```
+
+> `myVotedOptionId`: 미로그인 또는 미투표 시 `null`
+> `voteCount`: 결과 조회 권한 없을 경우 `null`
+
+---
+
+### GET /api/votes/{voteId}/result
+투표 상세 결과를 조회한다. 옵션별 voteCount와 투표자 목록을 반환한다.
+
+- **인증**: 필요
+- **접근 권한**:
+  - 비밀투표: 생성자 또는 관리자·최고관리자만
+  - 공개투표: 생성자·관리자 항상, 그 외 `resultViewRole` 이하 roleId 사용자
+- **투표자 목록(`voters`)**: 관리자·최고관리자에게만 포함, 그 외 `null`
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `voteId` | Integer | 조회할 투표 ID |
+
+**응답 `200 OK`**
+```json
+{
+  "voteId": 1,
+  "creatorId": "user01",
+  "title": "이번 주 모임 장소",
+  "content": "이번 주 동아리 모임 장소를 투표해주세요.",
+  "isSecret": false,
+  "participantRole": 3,
+  "resultViewRole": 3,
+  "deadline": "2026-06-10T23:59:00",
+  "isClosed": false,
+  "totalVoteCount": 5,
+  "options": [
+    {
+      "optionId": 1,
+      "optionText": "강의실 302호",
+      "sortOrder": 0,
+      "voteCount": 0,
+      "voters": null
+    },
+    {
+      "optionId": 2,
+      "optionText": "도서관 세미나실",
+      "sortOrder": 1,
+      "voteCount": 3,
+      "voters": ["admin01", "user02", "user03"]
+    }
+  ]
+}
+```
+
+> `voters`: 관리자만 포함됨, 그 외 `null`
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+| 결과 조회 권한 없음 | `403` — 비밀투표의 결과는 투표 생성자와 관리자만 조회할 수 있습니다. |
+| 존재하지 않는 투표 | `404` |
+
+---
+
+### POST /api/votes/{voteId}/vote
+투표한다. 1인 1표 제한.
+
+- **인증**: 필요
+- **참가 권한**: 관리자는 항상 가능. 그 외 사용자는 `participantRole` 이하 roleId 필요
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `voteId` | Integer | 투표 ID |
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `optionId` | Integer | Y | 선택한 항목 ID |
+
+```json
+{ "optionId": 2 }
+```
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "투표가 완료되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 참가 권한 없음 | `403` — 이 투표에 참가할 권한이 없습니다. |
+| 이미 투표한 경우 | `400` — 이미 투표하셨습니다. |
+| 마감된 투표 | `400` — 마감된 투표입니다. |
+| optionId 누락 | `400` — optionId는 필수입니다. |
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+
+---
+
+### DELETE /api/votes/{voteId}/vote
+투표를 취소한다. 마감된 투표는 취소 불가.
+
+- **인증**: 필요
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `voteId` | Integer | 투표 ID |
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "투표가 취소되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 투표 기록 없음 | `400` — 투표 기록이 없습니다. |
+| 마감된 투표 | `400` — 마감된 투표는 취소할 수 없습니다. |
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+
+---
+
+### PATCH /api/votes/{voteId}
+투표를 수정한다. 생성자 또는 관리자만 가능. 투표가 시작된 후(투표 기록 존재)에는 수정 불가.
+
+- **인증**: 필요
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `voteId` | Integer | 수정할 투표 ID |
+
+**요청 Body** — POST /api/votes 와 동일한 구조
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "수정되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 본인 아님 / 관리자 아님 | `403` — 수정 권한이 없습니다. |
+| 투표 시작 후 수정 시도 | `403` — 투표가 시작된 후에는 수정할 수 없습니다. |
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+
+---
+
+### DELETE /api/votes/{voteId}
+투표를 삭제한다. 생성자 또는 관리자만 가능.
+
+- **인증**: 필요
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `voteId` | Integer | 삭제할 투표 ID |
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "삭제되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음/만료 | `401` — 로그인이 필요한 서비스입니다. |
+| 본인 아님 / 관리자 아님 | `403` — 삭제 권한이 없습니다. |
+
+---
+
+## 20. 게시판 관리 Admin (Board Admin)
+
+Base Path: `/api/admin`
+
+> 모든 엔드포인트 JWT 인증 필요 (`Authorization: Bearer {token}`) — 관리자 권한 필요
+
+---
+
+### DELETE /api/admin/posts/{postId}
+관리자가 게시글을 강제 삭제한다. 작성자 무관하게 삭제 가능.
+
+**응답 `200 OK`**
+```json
+{ "success": true, "data": null, "message": "게시글이 삭제되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음 | `401` |
+| 관리자 아님 | `403` |
+| 존재하지 않는 게시글 | `404` |
+
+---
+
+### GET /api/admin/boards
+게시판 목록 전체 조회.
+
+**응답 `200 OK`**
+```json
+{
+  "success": true,
+  "data": [
+    { "boardId": 1, "boardName": "공지사항", "boardDescription": "공지사항 게시판" }
+  ]
+}
+```
+
+---
+
+### POST /api/admin/boards
+새 게시판 추가.
+
+**Request Body**
+```json
+{ "boardName": "자유게시판", "boardDescription": "자유롭게 작성하는 게시판" }
+```
+
+**응답 `201 Created`**
+```json
+{ "success": true, "data": { "boardId": 5, "boardName": "자유게시판", "boardDescription": "자유롭게 작성하는 게시판" }, "message": "게시판이 추가되었습니다." }
+```
+
+---
+
+### DELETE /api/admin/boards/{boardId}
+게시판 삭제.
+
+**응답 `200 OK`**
+```json
+{ "success": true, "data": null, "message": "게시판이 삭제되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 토큰 없음 | `401` |
+| 관리자 아님 | `403` |
+| 존재하지 않는 게시판 | `404` |
+
+---
+
+## 21. 마이페이지 (My Page)
+
+Base Path: `/api/mypage`
+
+> 모든 엔드포인트 로그인 필수 — `Authorization: Bearer {token}`
+
+---
+
+### GET /api/mypage/{targetUserId}
+특정 사용자의 마이페이지 정보를 조회한다. 본인 여부(`isOwner`)를 함께 반환하여 수정 UI를 제어한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `targetUserId` | String | 조회할 사용자 ID |
+
+**응답 `200 OK`**
+```json
+{
+  "userId": "user01",
+  "userName": "홍길동",
+  "userEmail": "hong@example.com",
+  "userMbti": "INTJ",
+  "userIntroduce": "안녕하세요!",
+  "userPhotoUrl": "https://pub-xxx.r2.dev/photo/uuid.png",
+  "roleName": "부원",
+  "isOwner": true
+}
+```
+
+> `userPhotoUrl`: 프로필 사진 미등록 시 `null`
+
+---
+
+### PATCH /api/mypage/introduce
+본인의 한 줄 자기소개를 수정한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `userIntroduce` | String | Y | 수정할 자기소개 (글자 수 제한 있음) |
+
+```json
+{ "userIntroduce": "새로운 한 줄 소개입니다." }
+```
+
+**응답 `200 OK`**
+```json
+{ "success": true, "message": "자기소개가 성공적으로 수정되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 글자 수 초과 등 유효성 실패 | `400` — 사유 메시지 반환 |
+
+---
+
+### POST /api/mypage/photo
+본인의 프로필 사진을 변경한다. R2에 이미지 업로드 후 반환된 메타데이터를 전달한다.
+
+**요청 Body** `application/json`
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `attachedName` | String | Y | 업로드된 파일명 |
+| `attachedUrl` | String | Y | R2 업로드 후 반환된 이미지 URL |
+| `attachedSize` | Integer | N | 파일 크기 (bytes) |
+
+```json
+{
+  "attachedName": "profile.png",
+  "attachedUrl": "https://pub-xxx.r2.dev/photo/uuid-profile.png",
+  "attachedSize": 204800
+}
+```
+
+**응답 `200 OK`**
+```json
+{ "success": true, "message": "프로필 사진이 성공적으로 변경되었습니다." }
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 이미지 주소 누락 등 유효성 실패 | `400` — 사유 메시지 반환 |
+
+---
+
+## 22. 프로젝트 관리자 (Project Admin)
+
+Base Path: `/api/admin/projects`
+
+> 모든 엔드포인트 JWT 인증 필요 — 관리자(roleId 1 또는 2)만 접근 가능
+
+---
+
+### GET /api/admin/projects
+모든 프로젝트를 페이징하여 조회한다.
+
+**Query Parameter**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `page` | Integer | N | 페이지 번호 (기본값: `0`) |
+| `size` | Integer | N | 페이지 크기 (기본값: `10`) |
+
+**응답 `200 OK`** (Page) — `GET /api/projects` 목록 응답과 동일한 구조
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 관리자 아님 | `403` — 관리자만 접근 가능한 페이지입니다. |
+
+---
+
+### PATCH /api/admin/projects/{projectId}/close
+프로젝트를 강제 종료(상태 `CLOSED`) 처리한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `projectId` | Integer | 종료할 프로젝트 ID |
+
+**응답 `200 OK`**
+```json
+{}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 관리자 아님 | `403` — 해당 작업을 수행할 권한이 없습니다. |
+| 존재하지 않는 ID | `400` — 사유 메시지 반환 |
+
+---
+
+### DELETE /api/admin/projects/{projectId}
+프로젝트를 강제 삭제한다. 작성자 무관하게 삭제 가능.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `projectId` | Integer | 삭제할 프로젝트 ID |
+
+**응답 `200 OK`**
+```json
+{}
+```
+
+**에러 응답**
+| 상황 | HTTP 상태 |
+|---|---|
+| 관리자 아님 | `403` — 해당 작업을 수행할 권한이 없습니다. |
+| 존재하지 않는 ID | `400` — 사유 메시지 반환 |
+
+---
+
+## 23. 회원 관리 Admin (User Admin)
+
+> **Base Path**: `/api/admin/users`
+> **인증**: 모든 엔드포인트에 Bearer 토큰 필수
+> **권한**: **최고관리자(roleId=1)만** 접근 가능
+
+---
+
+### PATCH /api/admin/users/{targetUserId}/role
+
+회원 권한을 수정한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `targetUserId` | String | 권한을 변경할 대상 userId |
+
+**Request Body**
+
+```json
+{ "roleId": 3 }
+```
+
+| 필드 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `roleId` | Integer | ✅ | 변경할 roleId (1=최고관리자, 2=관리자, 3=정회원, 4=준회원, 5=게스트) |
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "권한이 수정되었습니다." }
+```
+
+**에러 응답**
+
+| 상황 | HTTP 상태 |
+|---|---|
+| 미인증 | `401` — 로그인이 필요한 서비스입니다. |
+| 최고관리자 아님 | `403` — 최고관리자만 접근할 수 있습니다. |
+| 존재하지 않는 회원 | `404` — 존재하지 않는 회원입니다. |
+| 존재하지 않는 roleId | `404` — 존재하지 않는 권한입니다. |
+| roleId 누락 | `400` — roleId는 필수입니다. |
+
+> 변경 시 최고관리자 메일로 감사 로그(변경자 ID, 변경 내용, 변경 일시)가 자동 발송된다.
+
+---
+
+### DELETE /api/admin/users/{targetUserId}
+
+회원을 강제 탈퇴 처리한다.
+
+**Path Variable**
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `targetUserId` | String | 강제 탈퇴시킬 대상 userId |
+
+**응답 `200 OK`**
+```json
+{ "status": "success", "message": "강제 탈퇴 처리되었습니다." }
+```
+
+**에러 응답**
+
+| 상황 | HTTP 상태 |
+|---|---|
+| 미인증 | `401` — 로그인이 필요한 서비스입니다. |
+| 최고관리자 아님 | `403` — 최고관리자만 접근할 수 있습니다. |
+| 존재하지 않는 회원 | `404` — 존재하지 않는 회원입니다. |
+
+> 처리 후 최고관리자 메일로 감사 로그(변경자 ID, 대상 ID, 변경 일시)가 자동 발송된다.
+
+---
+
+## 이미지 포함 데이터 등록/수정 플로우
+
+이미지가 있는 도메인(동아리 소개, 프로젝트, 임원진)은 2단계로 등록 및 수정한다.
+
+**등록**
+```
+1. POST /api/{domain}/image      → 이미지 업로드 → URL 반환
+2. POST /api/{domain}            → URL 포함한 전체 데이터 저장
+```
+
+**수정**
+```
+1. PUT /api/{domain}/{id}/image  → 새 이미지 업로드 → URL 반환  (이미지 변경 시에만)
+2. PUT /api/{domain}/{id}        → URL 포함한 전체 데이터 수정
+                                    (이미지 미변경 시 기존 URL 그대로 전달)
+```
+
+> 이미지 URL이 변경된 경우, 기존 R2 이미지는 수정 요청 처리 시 자동으로 삭제된다.

@@ -227,6 +227,114 @@ export const DateInput = styled(Input)`
   }
 `;
 
+export const InterviewScheduleRow = styled.div`
+  display: grid;
+  grid-template-columns: 260px minmax(220px, 1fr);
+  align-items: start;
+  gap: 24px;
+  margin-top: 24px;
+
+  > div {
+    margin-top: 0;
+  }
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+`;
+
+export const InterviewTimeField = styled.div`
+  min-width: 0;
+`;
+
+export const InterviewTimeLabel = styled.p`
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+`;
+
+export const InterviewTimeControl = styled.div`
+  position: relative;
+  width: 100%;
+  height: 34px;
+  border: 1px solid rgba(230, 235, 245, 0.66);
+  background: rgba(48, 53, 66, 0.72);
+
+  &:focus-within {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14);
+  }
+`;
+
+export const InterviewTimeSelectButton = styled.button`
+  width: 100%;
+  height: 100%;
+  padding: 0 38px 0 10px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+`;
+
+export const InterviewTimeArrowButton = styled.button`
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 34px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-left: 1px solid rgba(230, 235, 245, 0.22);
+  background: transparent;
+  cursor: pointer;
+`;
+
+export const InterviewTimeArrow = styled.span`
+  display: block;
+  width: 0;
+  height: 0;
+  margin: 0 auto;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid rgba(255, 255, 255, 0.86);
+`;
+
+export const InterviewTimeMenu = styled.div`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: -1px;
+  right: -1px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(230, 235, 245, 0.5);
+  background: rgba(45, 50, 64, 0.98);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+`;
+
+export const InterviewTimeOption = styled.button`
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+  }
+`;
+
 export const AgreeLabel = styled.label`
   display: inline-flex;
   align-items: center;
@@ -284,25 +392,44 @@ export const ModalOverlay = styled.div`
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(9, 12, 18, 0.68);
+  background: rgba(9, 12, 18, 0.32);
 `;
 
 export const ModalCard = styled.div`
-  width: min(100%, 560px);
-  padding: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 8px;
-  background: #252a36;
-  color: #ffffff;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
+  position: relative;
+  width: min(100%, 582px);
+  min-height: 190px;
+  padding: 34px 30px 30px;
+  border: 1px solid #d9d9e1;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #242424;
+  box-shadow: 0 16px 48px rgba(15, 18, 28, 0.18);
+`;
+
+export const ModalCloseButton = styled.button`
+  position: absolute;
+  top: 18px;
+  right: 17px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #222222;
+  font-size: 26px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
 `;
 
 export const ModalTitle = styled.h2`
   margin: 0;
-  color: #ffffff;
-  font-size: 22px;
+  padding-right: 36px;
+  color: #222222;
+  font-size: 24px;
   font-weight: 800;
-  line-height: 1.4;
+  line-height: 1.28;
   white-space: nowrap;
 
   @media (max-width: 640px) {
@@ -313,10 +440,10 @@ export const ModalTitle = styled.h2`
 
 export const ModalText = styled.p`
   margin: 16px 0 0;
-  color: rgba(255, 255, 255, 0.74);
+  color: #222222;
   font-size: 15px;
-  font-weight: 600;
-  line-height: 1.6;
+  font-weight: 500;
+  line-height: 1.5;
   white-space: nowrap;
 
   @media (max-width: 640px) {
@@ -327,30 +454,33 @@ export const ModalText = styled.p`
 export const ModalActions = styled.div`
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 24px;
+  gap: 14px;
+  margin-top: 20px;
 `;
 
 export const ModalSecondaryButton = styled.button`
-  min-width: 84px;
-  height: 36px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 8px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 13px;
-  font-weight: 800;
+  min-width: 54px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d7d5df;
+  border-radius: 6px;
+  background: #e4e2ea;
+  box-shadow: inset 0 10px 10px -8px rgba(118, 116, 132, 0.55);
+  color: #5d5b64;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
 `;
 
 export const ModalPrimaryButton = styled.button`
-  min-width: 84px;
-  height: 36px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
-  background: #50617f;
+  min-width: 54px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid #242424;
+  border-radius: 6px;
+  background: #242424;
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
 `;

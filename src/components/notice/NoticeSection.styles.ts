@@ -50,6 +50,20 @@ export const TopLine = styled.div`
   margin-bottom: 100px;
 `;
 
+export const EmptyState = styled.div`
+  width: 100%;
+  max-width: 580px;
+  min-height: 80px;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(135, 140, 156, 0.16);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 14px;
+  text-align: center;
+`;
+
 export const TabList = styled.div`
   display: flex;
   justify-content: center;
@@ -110,6 +124,11 @@ export const Right = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
+`;
+
+export const MetaText = styled.span`
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 11px;
 `;
 
 export const Title = styled.h3`

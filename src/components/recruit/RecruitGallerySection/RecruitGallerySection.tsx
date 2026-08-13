@@ -29,7 +29,9 @@ export default function RecruitGallerySection() {
       if (!stage || !activeSlide) return;
 
       const nextOffset =
-        activeSlide.offsetLeft + activeSlide.offsetWidth / 2 - stage.clientWidth / 2;
+        activeSlide.offsetLeft +
+        activeSlide.offsetWidth / 2 -
+        stage.clientWidth / 2;
 
       setTrackOffset(nextOffset);
     };
@@ -97,35 +99,22 @@ export default function RecruitGallerySection() {
         </S.Track>
       </S.Stage>
 
-      <S.CategoryList aria-label="갤러리 카테고리">
+      <S.CategoryList aria-label='갤러리 카테고리'>
         {galleryItems.map((item, index) => (
           <S.CategoryChip
             key={item.label}
-            type="button"
+            type='button'
             $active={activeIndex === index}
             onClick={() => handleCategoryClick(index)}
           >
             {activeIndex === index ? (
-              <S.CheckMark aria-hidden="true">✓</S.CheckMark>
+              <S.CheckMark aria-hidden='true'>✓</S.CheckMark>
             ) : null}
             {item.label}
           </S.CategoryChip>
         ))}
-        <S.ChatButton type="button" aria-label="갤러리 문의">
-          <S.ChatIcon viewBox="0 0 24 24" fill="none">
-            <path
-              d="M5 18.5V7.5C5 6.4 5.9 5.5 7 5.5H17C18.1 5.5 19 6.4 19 7.5V14C19 15.1 18.1 16 17 16H10L5 18.5Z"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M8 9H16M8 12H13"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </S.ChatIcon>
+        <S.ChatButton type='button' aria-label='갤러리 문의'>
+          <S.ChatIcon viewBox='0 0 24 24' fill='none'></S.ChatIcon>
         </S.ChatButton>
       </S.CategoryList>
     </S.Section>

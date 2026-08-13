@@ -56,7 +56,7 @@ export default function RuleSection() {
           ) : visibleTerms.length > 0 ? (
             <S.RuleList>
               {visibleTerms.map((term, index) => (
-                <S.RuleItem key={term.id}>
+                <S.RuleItem key={`summary-${term.id ?? "term"}-${index}`}>
                   {index + 1}. {toSingleLine(term.title || term.contents)}
                 </S.RuleItem>
               ))}
@@ -98,7 +98,7 @@ export default function RuleSection() {
 
             <S.ModalList>
               {sortedTerms.map((term, index) => (
-                <S.ModalItem key={term.id}>
+                <S.ModalItem key={`detail-${term.id ?? "term"}-${index}`}>
                   <S.ModalItemTitle>
                     {index + 1}. {term.title}
                   </S.ModalItemTitle>

@@ -6,13 +6,13 @@ export const Field = styled.div`
   gap: 10px;
 
   & + & {
-    margin-top: 26px;
+    margin-top: 20px;
   }
 `;
 
 export const Label = styled.label`
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 700;
   line-height: 1.2;
   color: #ffffff;
 

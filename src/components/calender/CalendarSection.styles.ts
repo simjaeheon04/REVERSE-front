@@ -83,6 +83,13 @@ export const Content = styled.div`
   align-items: center;
 `;
 
+export const MonthHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 8px 0 50px;
+`;
+
 export const YearText = styled.p`
   margin: 0;
   color: #eef2ff;
@@ -90,10 +97,22 @@ export const YearText = styled.p`
 `;
 
 export const MonthText = styled.h2`
-  margin: 8px 0 50px;
+  margin: 0;
   color: #eef2ff;
   font-size: 48px;
   font-weight: 400;
+`;
+
+export const MonthNavButton = styled.button`
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid #8088a7;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef2ff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
 `;
 
 export const CalendarBox = styled.div`
@@ -123,40 +142,44 @@ export const Cell = styled.div`
 
 export const HolidayText = styled.span<{ $variant?: "blue" | "white" }>`
   position: absolute;
-  top: 15px;
-  left: 30px;
+  top: 32px;
+  left: 10px;
+  right: 10px;
 
   color: ${({ $variant }) => ($variant === "blue" ? "#70e0ff" : "#8088a7")};
-  font-size: 7px;
+  font-size: 8px;
   font-weight: 400;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: keep-all;
 `;
 
-export const DayNumber = styled.span<{ $variant?: "blue" | "white" }>`
+export const DayNumber = styled.span<{ $variant?: "blue" | "white"; $color?: string }>`
   position: absolute;
   top: 10px;
   left: 10px;
 
-  color: ${({ $variant }) => ($variant === "blue" ? "#70e0ff" : "#8088a7")};
+  color: ${({ $variant, $color }) =>
+    $variant === "blue" ? "#70e0ff" : $color || "#8088a7"};
   font-size: 18px;
   font-weight: 400;
   line-height: 1;
 `;
 
-export const EventText = styled.p<{ $variant: "blue" | "white" }>`
+export const EventText = styled.p<{ $color?: string }>`
   position: absolute;
   top: 34px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 10px;
+  right: 10px;
 
   margin: 0;
-  color: ${({ $variant }) => ($variant === "blue" ? "#70e0ff" : "#8088a7")};
+  color: ${({ $color }) => $color || "#8088a7"};
   font-size: 10px;
   font-weight: 500;
   line-height: 1.2;
-  white-space: nowrap;
-  text-align: center;
+  white-space: normal;
+  word-break: keep-all;
+  text-align: left;
 `;
 
 export const EventSummaryBox = styled.div`
@@ -173,4 +196,11 @@ export const EventSummaryItem = styled.p`
   color: #b2b2b2;
   font-size: 14px;
   line-height: 1.8;
+`;
+
+export const StateMessage = styled.p`
+  margin: 0 0 24px;
+  color: #d9dcec;
+  font-size: 14px;
+  line-height: 1.6;
 `;

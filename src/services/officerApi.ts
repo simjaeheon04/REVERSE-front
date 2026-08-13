@@ -39,7 +39,22 @@ export const uploadOfficerImage = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await axiosInstance.post("/api/officer/image", formData);
+  const response = await axiosInstance.post("/api/officer/image", formData, {
+    responseType: "text",
+  });
+  return extractImageUrl(response.data);
+};
+
+export const updateOfficerImage = async (
+  id: number | string,
+  file: File
+): Promise<string> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await axiosInstance.put(`/api/officer/${id}/image`, formData, {
+    responseType: "text",
+  });
   return extractImageUrl(response.data);
 };
 
@@ -57,6 +72,19 @@ export const createOfficer = async (
 
 export const getOfficerList = async (): Promise<OfficerResponse[]> => {
   const response = await axiosInstance.get("/api/officer");
+  return response.data;
+};
+
+export const updateOfficer = async (
+  id: number | string,
+  payload: OfficerPayload
+): Promise<OfficerResponse> => {
+  const response = await axiosInstance.put(`/api/officer/${id}`, payload, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
   return response.data;
 };
 

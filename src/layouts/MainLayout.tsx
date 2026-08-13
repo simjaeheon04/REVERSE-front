@@ -1,10 +1,16 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import Header from "../components/common/header/Header";
 import { headerMenus } from "../components/common/header/headerData";
-//Outlet / 접속하면 main페이지 /login 접속하면 outlet이 login페이지로 바뀜
+import { useAuthStore } from "../stores/authStore";
+import { isAdminRole } from "../utils/admin";
 
 export default function MainLayout() {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const isProfileLoading = useAuthStore((state) => state.isProfileLoading);
+  const roleName = useAuthStore((state) => state.roleName);
+  const logout = useAuthStore((state) => state.logout);
 
   const handleLogoClick = () => {
     navigate("/");
@@ -16,12 +22,27 @@ export default function MainLayout() {
     }, 0);
   };
 
+  const handleAuthClick = async () => {
+    if (isAuthenticated) {
+      await logout();
+      navigate("/");
+      return;
+    }
+
+    navigate("/login");
+  };
+
   return (
     <>
       <Header
         menus={headerMenus}
+        loginText={isAuthenticated ? "LOGOUT" : "LOGIN"}
+        myPageText={isAuthenticated ? "MY PAGE" : undefined}
+        loginDisabled={isLoading || isProfileLoading}
+        canAccessAdmin={isAdminRole(roleName)}
         onLogoClick={handleLogoClick}
-        onLoginClick={() => navigate("/login")}
+        onMyPageClick={() => navigate("/mypage")}
+        onLoginClick={() => void handleAuthClick()}
       />
       <Outlet />
     </>

@@ -1,36 +1,86 @@
-import { useState, type ChangeEvent } from "react";
+﻿import { useEffect, useState, type ChangeEvent } from "react";
 import * as S from "./ProjectManagePage.styles";
 import {
   createProject,
   deleteProject,
+  getProjectList,
+  updateProject,
+  updateProjectImage,
   uploadProjectImage,
   type ClubProject,
   type ClubProjectPayload,
 } from "../../services/projectAPI";
+import { useAuthStore } from "../../stores/authStore";
 
 const initialForm: ClubProjectPayload = {
   projectName: "",
   projectUrl: "",
   thumbnailUrl: "",
   sortOrder: 0,
-  updatedBy: "test",
+  updatedBy: "",
 };
 
 export default function ProjectManagePage() {
+  const userId = useAuthStore((state) => state.userId);
   const [form, setForm] = useState<ClubProjectPayload>(initialForm);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState("");
   const [response, setResponse] = useState<ClubProject | null>(null);
+  const [selectedProject, setSelectedProject] = useState<ClubProject | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [projects, setProjects] = useState<ClubProject[]>([]);
   const [deleteResponse, setDeleteResponse] = useState<unknown>(null);
   const [uploadMessage, setUploadMessage] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
+  const [detailMessage, setDetailMessage] = useState("");
   const [deleteMessage, setDeleteMessage] = useState("");
   const [deleteId, setDeleteId] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoadingList, setIsLoadingList] = useState(false);
 
+  const isEditMode = editingId !== null;
   const activeThumbnailUrl = uploadedUrl || form.thumbnailUrl;
+
+  const loadProjects = async () => {
+    try {
+      setIsLoadingList(true);
+      const result = await getProjectList();
+      setProjects(Array.isArray(result) ? result : []);
+    } catch (error) {
+      console.error("project list fetch failed", error);
+      setProjects([]);
+    } finally {
+      setIsLoadingList(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadProjects();
+  }, []);
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      updatedBy: userId ?? "",
+    }));
+  }, [userId]);
+
+  const resetForm = () => {
+    setForm({
+      ...initialForm,
+      updatedBy: userId ?? "",
+    });
+    setSelectedFile(null);
+    setUploadedUrl("");
+    setResponse(null);
+    setSelectedProject(null);
+    setEditingId(null);
+    setUploadMessage("");
+    setSubmitMessage("");
+    setDetailMessage("");
+  };
 
   const handleTextChange =
     (key: keyof ClubProjectPayload) =>
@@ -49,9 +99,26 @@ export default function ProjectManagePage() {
     setUploadMessage("");
   };
 
+  const handleSelectProject = (project: ClubProject) => {
+    setSelectedProject(project);
+    setEditingId(project.projectId);
+    setUploadedUrl(project.thumbnailUrl ?? "");
+    setSelectedFile(null);
+    setUploadMessage("");
+    setSubmitMessage("");
+    setDetailMessage("선택한 프로젝트를 수정 모드로 불러왔습니다.");
+    setForm({
+      projectName: project.projectName ?? "",
+      projectUrl: project.projectUrl ?? "",
+      thumbnailUrl: project.thumbnailUrl ?? "",
+      sortOrder: project.sortOrder ?? 0,
+      updatedBy: userId ?? "",
+    });
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) {
-      setUploadMessage("업로드할 이미지를 먼저 선택해주세요.");
+      setUploadMessage("먼저 이미지 파일을 선택해 주세요.");
       return;
     }
 
@@ -59,7 +126,10 @@ export default function ProjectManagePage() {
       setIsUploading(true);
       setUploadMessage("");
 
-      const imageUrl = await uploadProjectImage(selectedFile);
+      const imageUrl =
+        editingId !== null
+          ? await updateProjectImage(editingId, selectedFile)
+          : await uploadProjectImage(selectedFile);
 
       setUploadedUrl(imageUrl);
       setForm((prev) => ({
@@ -67,7 +137,11 @@ export default function ProjectManagePage() {
         thumbnailUrl: imageUrl,
       }));
 
-      setUploadMessage("이미지 업로드가 완료되었습니다.");
+      setUploadMessage(
+        editingId !== null
+          ? "썸네일 이미지가 수정되었습니다."
+          : "썸네일 이미지가 업로드되었습니다."
+      );
     } catch (error) {
       console.error("image upload failed", error);
       setUploadMessage("이미지 업로드에 실패했습니다.");
@@ -86,12 +160,24 @@ export default function ProjectManagePage() {
         thumbnailUrl: activeThumbnailUrl,
       };
 
-      const result = await createProject(payload);
+      const result =
+        editingId !== null
+          ? await updateProject(editingId, payload)
+          : await createProject(payload);
+
       setResponse(result);
-      setSubmitMessage("프로젝트 등록이 완료되었습니다.");
+      setSubmitMessage(
+        editingId !== null
+          ? "프로젝트가 수정되었습니다."
+          : "프로젝트가 등록되었습니다."
+      );
+      await loadProjects();
+      resetForm();
     } catch (error) {
-      console.error("project create failed", error);
-      setSubmitMessage("프로젝트 등록에 실패했습니다.");
+      console.error("project submit failed", error);
+      setSubmitMessage(
+        editingId !== null ? "프로젝트 수정에 실패했습니다." : "프로젝트 등록에 실패했습니다."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -99,7 +185,7 @@ export default function ProjectManagePage() {
 
   const handleDelete = async () => {
     if (!deleteId.trim()) {
-      setDeleteMessage("삭제할 프로젝트 ID를 입력해주세요.");
+      setDeleteMessage("삭제할 프로젝트 ID를 입력해 주세요.");
       return;
     }
 
@@ -109,7 +195,14 @@ export default function ProjectManagePage() {
 
       const result = await deleteProject(deleteId.trim());
       setDeleteResponse(result);
-      setDeleteMessage("프로젝트 삭제가 완료되었습니다.");
+      setDeleteMessage("프로젝트가 삭제되었습니다.");
+
+      if (editingId === Number(deleteId.trim())) {
+        resetForm();
+      }
+
+      setDeleteId("");
+      await loadProjects();
     } catch (error) {
       console.error("project delete failed", error);
       setDeleteMessage("프로젝트 삭제에 실패했습니다.");
@@ -122,11 +215,10 @@ export default function ProjectManagePage() {
     <S.Page>
       <S.Shell>
         <S.Header>
-          <S.Eyebrow>Project Admin</S.Eyebrow>
+          <S.Eyebrow>프로젝트 관리자</S.Eyebrow>
           <S.Title>프로젝트 관리</S.Title>
           <S.Description>
-            썸네일 이미지를 업로드하고, 프로젝트 등록과 삭제를 한 화면에서
-            처리할 수 있는 관리 페이지입니다.
+            프로젝트 등록, 기존 항목 수정, 이미지 교체까지 한 화면에서 관리할 수 있습니다.
           </S.Description>
         </S.Header>
 
@@ -134,8 +226,7 @@ export default function ProjectManagePage() {
           <S.Card>
             <S.CardTitle>썸네일 업로드</S.CardTitle>
             <S.CardText>
-              이미지를 업로드한 뒤 반환된 URL을 등록 폼의
-              <code> thumbnailUrl </code>값으로 자동 반영합니다.
+              먼저 썸네일 이미지를 업로드해 주세요. 수정 모드에서는 현재 썸네일을 교체합니다.
             </S.CardText>
 
             <S.Field>
@@ -145,43 +236,39 @@ export default function ProjectManagePage() {
 
             <S.ButtonRow>
               <S.PrimaryButton type="button" onClick={handleUpload}>
-                {isUploading ? "업로드 중..." : "이미지 업로드"}
+                {isUploading ? "업로드 중..." : isEditMode ? "이미지 수정" : "이미지 업로드"}
               </S.PrimaryButton>
             </S.ButtonRow>
 
             {uploadMessage ? (
-              <S.StatusText $error={!uploadedUrl}>{uploadMessage}</S.StatusText>
+              <S.StatusText $error={!activeThumbnailUrl}>{uploadMessage}</S.StatusText>
             ) : null}
 
             <S.PreviewPanel>
               {activeThumbnailUrl ? (
-                <S.PreviewImage src={activeThumbnailUrl} alt="thumbnail preview" />
+                <S.PreviewImage src={activeThumbnailUrl} alt="썸네일 미리보기" />
               ) : (
-                <S.EmptyPreview>
-                  업로드 후 미리보기가 여기에 표시됩니다.
-                </S.EmptyPreview>
+                <S.EmptyPreview>썸네일 미리보기가 여기에 표시됩니다.</S.EmptyPreview>
               )}
               <S.MetaList>
-                <S.MetaLabel>선택 파일</S.MetaLabel>
-                <S.MetaValue>
-                  {selectedFile ? selectedFile.name : "선택된 파일이 없습니다."}
-                </S.MetaValue>
-                <S.MetaLabel>업로드 URL</S.MetaLabel>
-                <S.MetaValue>
-                  {activeThumbnailUrl || "아직 URL이 없습니다."}
-                </S.MetaValue>
+                <S.MetaLabel>파일</S.MetaLabel>
+                <S.MetaValue>{selectedFile ? selectedFile.name : "선택된 파일이 없습니다."}</S.MetaValue>
+                <S.MetaLabel>URL</S.MetaLabel>
+                <S.MetaValue>{activeThumbnailUrl || "업로드된 URL이 없습니다."}</S.MetaValue>
               </S.MetaList>
             </S.PreviewPanel>
           </S.Card>
 
           <S.Card>
-            <S.CardTitle>프로젝트 등록</S.CardTitle>
+            <S.CardTitle>{isEditMode ? "프로젝트 수정" : "프로젝트 등록"}</S.CardTitle>
             <S.CardText>
-              <code>/api/club-project</code>로 프로젝트 정보를 등록합니다.
+              {isEditMode
+                ? "선택한 프로젝트 내용을 수정하고 저장합니다."
+                : "새 프로젝트 항목을 등록합니다."}
             </S.CardText>
 
             <S.Field>
-              <S.FieldLabel>프로젝트 이름</S.FieldLabel>
+              <S.FieldLabel>프로젝트명</S.FieldLabel>
               <S.Input
                 value={form.projectName}
                 onChange={handleTextChange("projectName")}
@@ -203,7 +290,7 @@ export default function ProjectManagePage() {
               <S.Input
                 value={activeThumbnailUrl}
                 onChange={handleTextChange("thumbnailUrl")}
-                placeholder="업로드 후 자동 반영됩니다."
+                placeholder="썸네일 이미지 URL"
               />
             </S.Field>
 
@@ -218,48 +305,26 @@ export default function ProjectManagePage() {
 
             <S.Field>
               <S.FieldLabel>수정자</S.FieldLabel>
-              <S.Input
-                value={form.updatedBy}
-                onChange={handleTextChange("updatedBy")}
-                placeholder="예: test"
-              />
+              <S.Input value={form.updatedBy} onChange={handleTextChange("updatedBy")} />
             </S.Field>
 
             <S.ButtonRow>
               <S.PrimaryButton type="button" onClick={handleSubmit}>
-                {isSubmitting ? "등록 중..." : "프로젝트 등록"}
+                {isSubmitting ? "저장 중..." : isEditMode ? "수정 저장" : "프로젝트 등록"}
               </S.PrimaryButton>
 
-              <S.SecondaryButton
-                type="button"
-                onClick={() => {
-                  setForm(initialForm);
-                  setUploadedUrl("");
-                  setResponse(null);
-                  setUploadMessage("");
-                  setSubmitMessage("");
-                  setSelectedFile(null);
-                }}
-              >
-                폼 초기화
+              <S.SecondaryButton type="button" onClick={resetForm}>
+                초기화
               </S.SecondaryButton>
             </S.ButtonRow>
 
-            {submitMessage ? (
-              <S.StatusText $error={!response}>{submitMessage}</S.StatusText>
-            ) : null}
+            {detailMessage ? <S.StatusText>{detailMessage}</S.StatusText> : null}
+            {submitMessage ? <S.StatusText $error={!response}>{submitMessage}</S.StatusText> : null}
 
             <S.PreviewPanel>
               <S.CardTitle as="h3">요청 미리보기</S.CardTitle>
               <S.CodeBlock>
-                {JSON.stringify(
-                  {
-                    ...form,
-                    thumbnailUrl: activeThumbnailUrl,
-                  },
-                  null,
-                  2
-                )}
+                {JSON.stringify({ ...form, thumbnailUrl: activeThumbnailUrl }, null, 2)}
               </S.CodeBlock>
 
               <S.CardTitle as="h3">응답</S.CardTitle>
@@ -270,21 +335,51 @@ export default function ProjectManagePage() {
           </S.Card>
 
           <S.Card>
+            <S.CardTitle>프로젝트 목록</S.CardTitle>
+            <S.CardText>목록을 새로고침하고 수정할 프로젝트를 선택해 주세요.</S.CardText>
+
+            <S.ButtonRow>
+              <S.SecondaryButton type="button" onClick={() => void loadProjects()}>
+                {isLoadingList ? "불러오는 중..." : "목록 새로고침"}
+              </S.SecondaryButton>
+            </S.ButtonRow>
+
+            <S.CardTitle as="h3">수정할 항목 선택</S.CardTitle>
+            <S.ButtonRow>
+              {projects.map((project) => (
+                <S.SecondaryButton
+                  key={project.projectId}
+                  type="button"
+                  onClick={() => handleSelectProject(project)}
+                >
+                  {project.projectId}. {project.projectName}
+                </S.SecondaryButton>
+              ))}
+            </S.ButtonRow>
+
+            <S.CodeBlock>{JSON.stringify(projects, null, 2)}</S.CodeBlock>
+
+            <S.CardTitle as="h3">선택한 항목</S.CardTitle>
+            <S.CodeBlock>
+              {selectedProject
+                ? JSON.stringify(selectedProject, null, 2)
+                : "선택한 프로젝트가 없습니다."}
+            </S.CodeBlock>
+          </S.Card>
+
+          <S.Card>
             <S.CardTitle>프로젝트 삭제</S.CardTitle>
-            <S.CardText>
-              삭제할 프로젝트의 ID를 입력한 뒤{" "}
-              <code>DELETE /api/club-project/{`{id}`}</code> 요청을 보냅니다.
-            </S.CardText>
+            <S.CardText>프로젝트 ID를 입력해 항목을 삭제합니다.</S.CardText>
 
             <S.Field>
               <S.FieldLabel>프로젝트 ID</S.FieldLabel>
               <S.Input
                 value={deleteId}
-                onChange={(e) => {
-                  setDeleteId(e.target.value);
+                onChange={(event) => {
+                  setDeleteId(event.target.value);
                   setDeleteMessage("");
                 }}
-                placeholder="삭제할 프로젝트 ID"
+                placeholder="삭제할 ID"
               />
             </S.Field>
 
@@ -303,14 +398,12 @@ export default function ProjectManagePage() {
               <S.CodeBlock>
                 {deleteId.trim()
                   ? `DELETE /api/club-project/${deleteId.trim()}`
-                  : "삭제할 ID를 입력하면 요청 경로가 여기에 표시됩니다."}
+                  : "ID를 입력하면 삭제 경로가 표시됩니다."}
               </S.CodeBlock>
 
               <S.CardTitle as="h3">응답</S.CardTitle>
               <S.CodeBlock>
-                {deleteResponse
-                  ? JSON.stringify(deleteResponse, null, 2)
-                  : "아직 삭제 응답이 없습니다."}
+                {deleteResponse ? JSON.stringify(deleteResponse, null, 2) : "아직 삭제 응답이 없습니다."}
               </S.CodeBlock>
             </S.PreviewPanel>
           </S.Card>

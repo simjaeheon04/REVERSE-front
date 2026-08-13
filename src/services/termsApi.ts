@@ -6,6 +6,7 @@ export type TermsPayload = {
   isCurrent: boolean;
   sortOrder: number;
   version: string;
+  updatedBy: string;
 };
 
 export type TermsResponse = TermsPayload & {
