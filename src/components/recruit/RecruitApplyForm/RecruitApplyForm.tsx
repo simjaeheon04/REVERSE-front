@@ -107,6 +107,8 @@ export default function RecruitApplyForm() {
       email: `${values.emailLocal.trim()}@${emailDomain}`,
       termsAgreed: values.isPrivacyAgreed,
       categories: values.supportFields,
+      interviewDate: values.interviewDate,
+      interviewTime: values.interviewTime,
     };
 
     try {
