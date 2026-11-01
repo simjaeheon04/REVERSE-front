@@ -94,7 +94,7 @@ export default function ProjectPage() {
       <S.Page>
         <S.Inner>
           <S.Hero>
-            <S.Eyebrow>REVERESSE</S.Eyebrow>
+            <S.Eyebrow>REVERSE</S.Eyebrow>
             <S.Title>PROJECT</S.Title>
           </S.Hero>
 

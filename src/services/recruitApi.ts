@@ -35,6 +35,8 @@ export type RecruitApplicationPayload = {
   email: string;
   termsAgreed: boolean;
   categories: string[];
+  interviewDate: string;
+  interviewTime: string;
 };
 
 export type RecruitApplicationStatus = "PENDING" | "PASS" | "FAIL";
