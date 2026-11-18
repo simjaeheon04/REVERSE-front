@@ -1,17 +1,18 @@
 import { AxiosError } from "axios";
-import { useState, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import * as S from "../clubIntroManage/ClubIntroManagePage.styles";
 import {
-  assignRecruitAdminInterviews,
   downloadRecruitAdminApplicationsExcel,
   getRecruitAdminApplicationDetail,
   getRecruitAdminApplications,
+  getRecruitmentDetail,
   updateRecruitAdminApplicationStatus,
   updateRecruitAdminPage,
   updateRecruitAdminSlots,
   type RecruitApplicationStatus,
 } from "../../services/recruitApi";
 import { useAuthStore } from "../../stores/authStore";
+import { useRecruitStore } from "../../stores/recruitStore";
 
 const DEFAULT_PAGE_JSON = `{
   "heroYear": "2026",
@@ -26,22 +27,26 @@ const DEFAULT_PAGE_JSON = `{
 
 const DEFAULT_SLOTS_JSON = `{
   "slots": [
-    { "slotDate": "2026-06-01", "capacity": 10 }
+    { "slotDate": "", "startTime": "", "endTime": "", "capacity": null, "isActive": true }
   ]
 }`;
 
 const stringifyError = (error: unknown, fallback: string) => {
   if (error instanceof AxiosError) {
+    const conflictMessage = error.response?.status === 409
+      ? "중복되거나 현재 배정할 수 없는 면접 슬롯입니다. "
+      : "";
     const data = error.response?.data;
     if (typeof data === "string" && data.trim()) {
-      return data;
+      return `${conflictMessage}${data}`;
     }
     if (data && typeof data === "object" && "message" in data) {
       const message = (data as { message?: unknown }).message;
       if (typeof message === "string" && message.trim()) {
-        return message;
+        return `${conflictMessage}${message}`;
       }
     }
+    if (conflictMessage) return conflictMessage.trim();
   }
 
   if (error instanceof Error && error.message.trim()) {
@@ -62,8 +67,9 @@ const parseJsonObject = (value: string) => {
 
 export default function RecruitApplicationManagePage() {
   const adminId = useAuthStore((state) => state.userId);
+  const createdRecruitmentId = useRecruitStore((state) => state.createdRecruitmentId);
   const [roleId, setRoleId] = useState("");
-  const [recruitmentId, setRecruitmentId] = useState("");
+  const [recruitmentId, setRecruitmentId] = useState(() => createdRecruitmentId?.toString() ?? "");
   const [applicationId, setApplicationId] = useState("");
   const [name, setName] = useState("");
   const [status, setStatus] = useState<RecruitApplicationStatus | "">("");
@@ -72,6 +78,7 @@ export default function RecruitApplicationManagePage() {
   const [slotsJson, setSlotsJson] = useState(DEFAULT_SLOTS_JSON);
   const [result, setResult] = useState("아직 실행한 요청이 없습니다.");
   const [isLoading, setIsLoading] = useState(false);
+  const requestLockRef = useRef(false);
 
   const numericRoleId = Number(roleId);
   const numericRecruitmentId = Number(recruitmentId);
@@ -96,6 +103,8 @@ export default function RecruitApplicationManagePage() {
   };
 
   const runRequest = async (request: () => Promise<unknown>, fallback: string) => {
+    if (requestLockRef.current) return;
+    requestLockRef.current = true;
     try {
       setIsLoading(true);
       setResult("요청 중입니다...");
@@ -104,6 +113,7 @@ export default function RecruitApplicationManagePage() {
     } catch (error) {
       setResult(stringifyError(error, fallback));
     } finally {
+      requestLockRef.current = false;
       setIsLoading(false);
     }
   };
@@ -140,11 +150,13 @@ export default function RecruitApplicationManagePage() {
 
   const assignInterviews = () =>
     runRequest(async () => {
-      assertRoleId();
-      return assignRecruitAdminInterviews(numericRoleId);
+      assertApplicationId();
+      throw new Error("개별 면접 배정에는 slotId 선택이 필요합니다. 현재 화면에 슬롯 선택 입력이 없어 배정 기능은 보류 중입니다.");
     }, "면접 일정 배정에 실패했습니다.");
 
   const downloadExcel = async () => {
+    if (requestLockRef.current) return;
+    requestLockRef.current = true;
     try {
       setIsLoading(true);
       assertRoleId();
@@ -165,6 +177,7 @@ export default function RecruitApplicationManagePage() {
     } catch (error) {
       setResult(stringifyError(error, "엑셀 다운로드에 실패했습니다."));
     } finally {
+      requestLockRef.current = false;
       setIsLoading(false);
     }
   };
@@ -183,15 +196,18 @@ export default function RecruitApplicationManagePage() {
 
   const saveSlots = () =>
     runRequest(async () => {
-      assertRoleId();
       assertRecruitmentId();
       const payload = parseJsonObject(slotsJson);
-      return updateRecruitAdminSlots(numericRecruitmentId, {
-        ...payload,
-        roleId: numericRoleId,
+      const slots = Array.isArray(payload.slots) ? payload.slots : [];
+      await updateRecruitAdminSlots(numericRecruitmentId, {
         adminId: adminId ?? undefined,
-        slots: Array.isArray(payload.slots) ? payload.slots : [],
+        slots,
       });
+      try {
+        return await getRecruitmentDetail(numericRecruitmentId);
+      } catch (error) {
+        throw new Error(`슬롯은 저장됐지만 최신 조회에 실패했습니다. 다시 조회해 주세요. ${stringifyError(error, "조회 실패")}`);
+      }
     }, "면접 슬롯 설정에 실패했습니다.");
 
   const handleText =
@@ -318,7 +334,7 @@ export default function RecruitApplicationManagePage() {
           <S.Card>
             <S.CardTitle>면접 슬롯 설정</S.CardTitle>
             <S.CardText>
-              <code>POST /api/recruit/admin/{`{id}`}/slots</code>
+              <code>POST /api/recruit/admin/{`{id}`}/slots/v2</code>
             </S.CardText>
             <S.Field>
               <S.FieldLabel>요청 Body JSON</S.FieldLabel>

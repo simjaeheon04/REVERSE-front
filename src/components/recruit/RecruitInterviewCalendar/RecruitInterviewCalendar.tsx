@@ -14,6 +14,7 @@ type RecruitInterviewCalendarProps = {
   onSelectDate: (date: string) => void;
   availableStartDate?: string | null;
   availableEndDate?: string | null;
+  availableDates?: string[];
   error?: string;
 };
 
@@ -85,6 +86,7 @@ export default function RecruitInterviewCalendar({
   onSelectDate,
   availableStartDate,
   availableEndDate,
+  availableDates,
   error,
 }: RecruitInterviewCalendarProps) {
   const startDateKey = getDatePart(availableStartDate);
@@ -93,14 +95,27 @@ export default function RecruitInterviewCalendar({
     ? createDateFromKey(startDateKey)
     : today;
 
-  const [currentYear, setCurrentYear] = useState(initialVisibleDate.getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(initialVisibleDate.getMonth());
+  const [visibleMonth, setVisibleMonth] = useState(() => ({
+    startDateKey,
+    year: initialVisibleDate.getFullYear(),
+    month: initialVisibleDate.getMonth(),
+  }));
+  if (visibleMonth.startDateKey !== startDateKey) {
+    setVisibleMonth({
+      startDateKey,
+      year: startDateKey ? initialVisibleDate.getFullYear() : visibleMonth.year,
+      month: startDateKey ? initialVisibleDate.getMonth() : visibleMonth.month,
+    });
+  }
+  const { year: currentYear, month: currentMonth } = visibleMonth;
 
   const calendarDays = useMemo<CalendarDay[]>(() => {
     const firstDate = new Date(currentYear, currentMonth, 1);
     const firstGridDate = addDays(firstDate, -firstDate.getDay());
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const gridSize = firstDate.getDay() + daysInMonth > 35 ? 42 : 35;
 
-    return Array.from({ length: 35 }, (_, index) => {
+    return Array.from({ length: gridSize }, (_, index) => {
       const date = addDays(firstGridDate, index);
 
       return {
@@ -113,16 +128,15 @@ export default function RecruitInterviewCalendar({
 
   const moveMonth = (amount: number) => {
     const nextDate = new Date(currentYear, currentMonth + amount, 1);
-    setCurrentYear(nextDate.getFullYear());
-    setCurrentMonth(nextDate.getMonth());
+    setVisibleMonth({ startDateKey, year: nextDate.getFullYear(), month: nextDate.getMonth() });
   };
 
   const handleMonthChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    setCurrentMonth(Number(event.target.value));
+    setVisibleMonth({ startDateKey, year: currentYear, month: Number(event.target.value) });
   };
 
   const handleYearChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    setCurrentYear(Number(event.target.value));
+    setVisibleMonth({ startDateKey, year: Number(event.target.value), month: currentMonth });
   };
 
   return (
@@ -148,7 +162,7 @@ export default function RecruitInterviewCalendar({
             </S.Select>
 
             <S.Select aria-label="연도 선택" value={currentYear} onChange={handleYearChange}>
-              {[today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1].map(
+              {[...new Set([today.getFullYear() - 1, today.getFullYear(), today.getFullYear() + 1, currentYear])].map(
                 (year) => (
                   <option key={year} value={year}>
                     {year}
@@ -175,11 +189,9 @@ export default function RecruitInterviewCalendar({
 
         <S.DayGrid>
           {calendarDays.map((item) => {
-            const isAvailableDate = isDateWithinRange(
-              item.key,
-              startDateKey,
-              endDateKey
-            );
+            const isAvailableDate =
+              isDateWithinRange(item.key, startDateKey, endDateKey) &&
+              (availableDates?.includes(item.key) ?? false);
             const isSelected = selectedDate === item.key;
             let variant: DayVariant = "plain";
 

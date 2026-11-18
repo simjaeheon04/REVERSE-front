@@ -1,22 +1,20 @@
-import { AxiosError } from "axios";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Footer from "../../components/common/footer/Footer";
 import {
   createBoardPost,
   getBoardCategories,
+  getBoardErrorMessage,
   getBoardPostDetail,
-  getMultiBoardPosts,
   updateBoardPost,
   type AdminBoard,
+  type BoardPostDetail,
 } from "../../services/boardApi";
 import { uploadBoardFile } from "../../services/uploadApi";
 import * as S from "./BoardWritePage.styles";
 
-const BOARD_ID = 2;
-
 type CategoryOption = {
-  boardId: number;
+  boardId: number | null;
   label: string;
 };
 
@@ -37,8 +35,13 @@ const MODAL_CONTENT = {
   },
 } as const;
 
-const normalizeAttachments = (attachments: string[]) => {
-  return attachments.map((attachment) => attachment.trim()).filter(Boolean);
+const isAttachmentUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
+  }
 };
 
 const getAttachmentName = (attachment: string) => {
@@ -55,6 +58,8 @@ export default function BoardWritePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const submitLockRef = useRef(false);
+  const postContextRef = useRef(0);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [attachmentDraft, setAttachmentDraft] = useState("");
@@ -66,18 +71,23 @@ export default function BoardWritePage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [originalPost, setOriginalPost] = useState<BoardPostDetail | null>(null);
 
   const mode = searchParams.get("mode");
   const rawPostId = searchParams.get("postId");
   const isEditMode = mode === "edit";
   const parsedPostId = rawPostId ? Number(rawPostId) : NaN;
-  const postId = Number.isFinite(parsedPostId) ? parsedPostId : null;
+  const postId = Number.isSafeInteger(parsedPostId) && parsedPostId > 0 ? parsedPostId : null;
+  const isEditReady = !isEditMode || (postId !== null && originalPost?.id === postId && !isLoading);
+  const isSaveBlocked = !isEditReady || isLoading || isUploading || isSubmitting ||
+    (!isEditMode && !selectedCategory?.boardId);
 
   useEffect(() => {
     if (isEditMode) {
       return;
     }
 
+    let cancelled = false;
     const loadCategories = async () => {
       try {
         const boards = await getBoardCategories();
@@ -86,40 +96,40 @@ export default function BoardWritePage() {
           label: board.boardName,
         }));
 
+        if (cancelled) return;
         setCategories(realCategories);
         setSelectedCategory((prev) => prev ?? realCategories[0] ?? null);
       } catch (error) {
-        console.warn("[board/write] category load failed, using board posts", error);
-
-        try {
-          const result = await getMultiBoardPosts(BOARD_ID, { page: 0 });
-          const realCategories = Array.from(
-            new Set(
-              result.content
-                .map((post) => (typeof post.category === "string" ? post.category.trim() : ""))
-                .filter(Boolean)
-            )
-          ).map((category) => ({
-            boardId: BOARD_ID,
-            label: category,
-          }));
-
-          setCategories(realCategories);
-          setSelectedCategory((prev) => prev ?? realCategories[0] ?? null);
-        } catch (fallbackError) {
-          console.error("[board/write] category fallback load failed", fallbackError);
-          setCategories([]);
-          setSelectedCategory(null);
-        }
+        if (cancelled) return;
+        setCategories([]);
+        setSelectedCategory(null);
+        setErrorMessage(getBoardErrorMessage(error, "게시판 목록을 불러오지 못했습니다."));
       }
     };
 
     void loadCategories();
+    return () => { cancelled = true; };
   }, [isEditMode]);
 
   useEffect(() => {
+    let cancelled = false;
+    postContextRef.current += 1;
+    setOriginalPost(null);
+    setModalType(null);
+    setIsLoading(false);
     const loadPost = async () => {
-      if (!isEditMode || postId === null) {
+      if (!isEditMode) {
+        setTitle("");
+        setContent("");
+        setAttachments([]);
+        setAttachmentDraft("");
+        setSelectedCategory(null);
+        setCategories([]);
+        setErrorMessage("");
+        return;
+      }
+      if (postId === null) {
+        setErrorMessage("유효하지 않은 게시글 경로입니다.");
         return;
       }
 
@@ -127,25 +137,41 @@ export default function BoardWritePage() {
         setIsLoading(true);
         setErrorMessage("");
         const result = await getBoardPostDetail(postId);
+        if (cancelled) return;
         setTitle(result.title ?? "");
         setContent(result.content ?? "");
         setAttachments(result.imageUrls ?? []);
+        setAttachmentDraft("");
+        const category = { boardId: result.boardId ?? null, label: result.category ?? "" };
+        setCategories(category.label ? [category] : []);
+        setSelectedCategory(category);
+        setOriginalPost(result);
       } catch (error) {
-        if (error instanceof AxiosError && error.response?.status === 404) {
-          setErrorMessage("수정할 게시글을 찾을 수 없습니다.");
-        } else {
-          setErrorMessage("게시글 정보를 불러오지 못했습니다.");
-        }
+        if (cancelled) return;
+        setErrorMessage(getBoardErrorMessage(error, "게시글 정보를 불러오지 못했습니다."));
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     void loadPost();
+    return () => {
+      cancelled = true;
+      postContextRef.current += 1;
+    };
   }, [isEditMode, postId]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSaveBlocked || submitLockRef.current) return;
+    if (!title.trim() || !content.trim()) {
+      setErrorMessage("제목과 내용을 입력해 주세요.");
+      return;
+    }
+    if (attachmentDraft.trim() && !isAttachmentUrl(attachmentDraft.trim())) {
+      setErrorMessage("첨부파일을 업로드하거나 올바른 http/https URL을 입력해 주세요.");
+      return;
+    }
     setErrorMessage("");
     setModalType("submit");
   };
@@ -160,46 +186,58 @@ export default function BoardWritePage() {
       return;
     }
 
+    if (isSaveBlocked || submitLockRef.current) return;
+    if (!title.trim() || !content.trim()) {
+      setErrorMessage("제목과 내용을 입력해 주세요.");
+      setModalType(null);
+      return;
+    }
+    const draft = attachmentDraft.trim();
+    if (draft && !isAttachmentUrl(draft)) {
+      setErrorMessage("첨부파일을 업로드하거나 올바른 http/https URL을 입력해 주세요.");
+      setModalType(null);
+      return;
+    }
+    const finalAttachments = draft ? [...attachments, draft] : attachments;
+    submitLockRef.current = true;
+
     try {
       setIsSubmitting(true);
       setErrorMessage("");
 
-      if (isEditMode && postId !== null) {
+      if (isEditMode && postId !== null && originalPost) {
+        const attachmentsChanged = JSON.stringify(finalAttachments) !== JSON.stringify(originalPost.imageUrls);
         await updateBoardPost(postId, {
-          title: title.trim(),
-          content: content.trim(),
+          title,
+          content,
+          ...(attachmentsChanged ? { imageUrls: finalAttachments } : {}),
         });
+        setOriginalPost(null);
+        try {
+          const latest = await getBoardPostDetail(postId);
+          navigate(`/board/${postId}${latest.boardId ? `?boardId=${latest.boardId}` : ""}`);
+        } catch (error) {
+          setErrorMessage(`수정은 완료됐지만 최신 게시글을 불러오지 못했습니다. 새로고침해 주세요. ${getBoardErrorMessage(error, "조회에 실패했습니다.")}`);
+        }
       } else {
-        const targetBoardId = selectedCategory?.boardId ?? BOARD_ID;
-        const attachmentList = normalizeAttachments([...attachments, attachmentDraft]);
+        if (isEditMode || !selectedCategory?.boardId) return;
+        const targetBoardId = selectedCategory.boardId;
         const createPayload = {
           title: title.trim(),
           content: content.trim(),
           category: selectedCategory?.label ?? "",
-          imageUrls: attachmentList,
+          imageUrls: finalAttachments,
           isPinned: false,
           isExternal: false,
         };
 
         await createBoardPost(targetBoardId, createPayload);
+        navigate("/board/manage");
       }
-
-      navigate("/board/manage");
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 403) {
-        setErrorMessage(
-          isEditMode
-            ? "작성자 본인만 게시글을 수정할 수 있습니다."
-            : "게시글 작성 권한이 없습니다."
-        );
-      } else if (error instanceof AxiosError && error.response?.status === 401) {
-        setErrorMessage("로그인 후 게시글을 작성하거나 수정할 수 있습니다.");
-      } else {
-        setErrorMessage(
-          isEditMode ? "게시글 수정에 실패했습니다." : "게시글 작성에 실패했습니다."
-        );
-      }
+      setErrorMessage(getBoardErrorMessage(error, isEditMode ? "게시글 수정에 실패했습니다." : "게시글 작성에 실패했습니다."));
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
       setModalType(null);
     }
@@ -219,6 +257,10 @@ export default function BoardWritePage() {
     if (!nextAttachment) {
       return;
     }
+    if (!isAttachmentUrl(nextAttachment)) {
+      setErrorMessage("첨부파일을 업로드하거나 올바른 http/https URL을 입력해 주세요.");
+      return;
+    }
 
     setAttachments((prev) => [...prev, nextAttachment]);
     setAttachmentDraft("");
@@ -234,8 +276,10 @@ export default function BoardWritePage() {
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
+    const input = event.target;
+    const postContext = postContextRef.current;
 
-    if (!files.length) {
+    if (!files.length || !isEditReady || isUploading || isSubmitting) {
       return;
     }
 
@@ -246,12 +290,16 @@ export default function BoardWritePage() {
         files.map((file) => uploadBoardFile(file))
       );
 
-      setAttachments((prev) => [...normalizeAttachments(prev), ...uploadedUrls]);
-    } catch {
-      setErrorMessage("파일 업로드에 실패했습니다.");
+      if (postContext === postContextRef.current) {
+        setAttachments((prev) => [...prev, ...uploadedUrls]);
+      }
+    } catch (error) {
+      if (postContext === postContextRef.current) {
+        setErrorMessage(getBoardErrorMessage(error, "파일 업로드에 실패했습니다."));
+      }
     } finally {
       setIsUploading(false);
-      event.target.value = "";
+      input.value = "";
     }
   };
 
@@ -303,7 +351,7 @@ export default function BoardWritePage() {
                       type="button"
                       $active={selectedCategory?.boardId === category.boardId}
                       onClick={() => setSelectedCategory(category)}
-                      disabled={isLoading || isSubmitting}
+                      disabled={isEditMode || isLoading || isSubmitting}
                     >
                       {category.label}
                     </S.CategoryButton>
@@ -386,7 +434,7 @@ export default function BoardWritePage() {
             <S.Divider />
 
             <S.ActionRow>
-              <S.SubmitButton type="submit" disabled={isLoading || isUploading || isSubmitting}>
+              <S.SubmitButton type="submit" disabled={isSaveBlocked}>
                 {isSubmitting
                   ? isEditMode
                     ? "수정 중..."
@@ -423,7 +471,7 @@ export default function BoardWritePage() {
               <S.ModalPrimaryButton
                 type="button"
                 onClick={() => void handleConfirm()}
-                disabled={isSubmitting}
+                disabled={isSaveBlocked}
               >
                 확인
               </S.ModalPrimaryButton>

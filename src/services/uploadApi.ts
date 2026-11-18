@@ -31,9 +31,20 @@ export const uploadBoardFile = async (file: File): Promise<string> => {
     }
   );
 
-  const uploadedUrl = String(response.data).trim();
+  let uploadedUrl: unknown = response.data;
+  if (typeof uploadedUrl === "string" && uploadedUrl.trim().startsWith('"')) {
+    uploadedUrl = JSON.parse(uploadedUrl);
+  }
+  if (typeof uploadedUrl !== "string") {
+    throw new Error("파일 업로드 응답에 URL이 없습니다.");
+  }
+  const normalizedUrl = uploadedUrl.trim();
+  const url = new URL(normalizedUrl);
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("파일 업로드 응답의 URL이 올바르지 않습니다.");
+  }
 
-  return uploadedUrl;
+  return normalizedUrl;
 };
 
 export const deleteR2File = async (fileUrl: string): Promise<string> => {

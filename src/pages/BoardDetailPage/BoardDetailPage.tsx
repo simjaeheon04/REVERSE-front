@@ -10,6 +10,7 @@ import {
   createBoardReply,
   deleteBoardComment,
   getBoardComments,
+  getBoardErrorMessage,
   getMultiBoardPosts,
   getBoardPostDetail,
   toggleBoardLike,
@@ -81,6 +82,8 @@ export default function BoardDetailPage() {
 
     return {
       id: matchedPost.postId || matchedPost.id,
+      boardId: matchedPost.boardId,
+      category: matchedPost.category,
       title: matchedPost.title,
       content: matchedPost.content ?? "",
       userId:
@@ -110,7 +113,15 @@ export default function BoardDetailPage() {
       const result = await getBoardPostDetail(parsedPostId);
       setPost(result);
     } catch (error) {
-      const fallback = await loadFallbackPost();
+      // 서버가 거부한 조회를 이전 목록 데이터로 성공 처리하지 않습니다.
+      let fallback: BoardPostDetail | null = null;
+      if (error instanceof AxiosError && !error.response) {
+        try {
+          fallback = await loadFallbackPost();
+        } catch {
+          // 원래 상세 조회 오류를 아래에서 표시합니다.
+        }
+      }
 
       if (fallback) {
         setPost(fallback);
@@ -118,13 +129,8 @@ export default function BoardDetailPage() {
         return;
       }
 
-      if (error instanceof AxiosError && error.response?.status === 404) {
-        setPost(null);
-        setErrorMessage("해당 게시글을 찾을 수 없습니다.");
-      } else {
-        setPost(null);
-        setErrorMessage("게시글 상세 정보를 불러오지 못했습니다.");
-      }
+      setPost(null);
+      setErrorMessage(getBoardErrorMessage(error, "게시글 상세 정보를 불러오지 못했습니다."));
     } finally {
       setIsLoading(false);
     }
