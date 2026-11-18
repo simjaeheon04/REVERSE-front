@@ -1,4 +1,3 @@
-import { AxiosError } from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import editIcon from "../../assets/icons/Edit.png";
@@ -9,6 +8,7 @@ import LoginRequiredModal from "../../components/common/LoginRequiredModal/Login
 import { useLoginRequiredNavigation } from "../../hooks/useLoginRequiredNavigation";
 import {
   deleteBoardPost,
+  getBoardErrorMessage,
   getMyBoardPosts,
   getMyBoardStats,
   type BoardMyPostItem,
@@ -56,11 +56,7 @@ export default function PostManagementPage() {
         totalLikes: 0,
       });
 
-      if (error instanceof AxiosError && error.response?.status === 401) {
-        setErrorMessage("로그인 후 내 게시글을 확인할 수 있습니다.");
-      } else {
-        setErrorMessage("내 게시글 목록을 불러오지 못했습니다.");
-      }
+      setErrorMessage(getBoardErrorMessage(error, "내 게시글 목록을 불러오지 못했습니다."));
     } finally {
       setIsLoading(false);
     }
@@ -82,13 +78,7 @@ export default function PostManagementPage() {
       setDeleteTarget(null);
       await loadPosts();
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.status === 403) {
-        setErrorMessage("작성자 본인만 게시글을 삭제할 수 있습니다.");
-      } else if (error instanceof AxiosError && error.response?.status === 401) {
-        setErrorMessage("로그인 후 게시글을 삭제할 수 있습니다.");
-      } else {
-        setErrorMessage("게시글 삭제에 실패했습니다.");
-      }
+      setErrorMessage(getBoardErrorMessage(error, "게시글 삭제에 실패했습니다."));
     } finally {
       setIsDeleting(false);
     }

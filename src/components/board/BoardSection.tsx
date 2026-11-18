@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getBoardCategories,
+  getBoardErrorMessage,
   getAllBoardPosts,
   getMultiBoardPosts,
   type AdminBoard,
@@ -62,26 +63,10 @@ const getPostCategory = (post: BoardPostListItem, boards: AdminBoard[]) => {
   return post.boardType ?? "";
 };
 
-const getFallbackBoardsFromPosts = (posts: BoardPostListItem[]): AdminBoard[] => {
-  const boardMap = new Map<number, AdminBoard>();
-
-  posts.forEach((post) => {
-    if (!post.boardId || boardMap.has(post.boardId)) {
-      return;
-    }
-
-    boardMap.set(post.boardId, {
-      boardId: post.boardId,
-      boardName: getPostCategory(post, []),
-      boardDescription: "",
-    });
-  });
-
-  return Array.from(boardMap.values()).filter((board) => board.boardName);
-};
-
 const toBoardPostDetailFallback = (post: BoardPostListItem): BoardPostDetail => ({
   id: getPostId(post),
+  boardId: post.boardId,
+  category: post.category,
   title: post.title,
   content: post.content ?? "",
   userId: getAuthor(post),
@@ -124,7 +109,7 @@ export default function BoardSection() {
         const result = await getBoardCategories();
         setBoards(result);
       } catch (error) {
-        console.warn("[board] category list failed, fallback will use post list", error);
+        console.warn("[board] category list failed", error);
         setBoards([]);
       } finally {
         setIsLoadingBoards(false);
@@ -149,14 +134,11 @@ export default function BoardSection() {
         setTotalPages(Math.max(1, result.totalPages || 1));
         setStatusMessage(result.content.length ? "" : "게시글이 없습니다.");
 
-        if (activeBoardId === null) {
-          setBoards((prev) => (prev.length ? prev : getFallbackBoardsFromPosts(result.content)));
-        }
       } catch (error) {
         console.error("board posts fetch failed", error);
         setPosts([]);
         setTotalPages(1);
-        setStatusMessage("게시글 목록을 불러오지 못했습니다.");
+        setStatusMessage(getBoardErrorMessage(error, "게시글 목록을 불러오지 못했습니다."));
       } finally {
         setIsLoading(false);
       }

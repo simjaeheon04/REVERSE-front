@@ -1,4 +1,27 @@
+import { AxiosError } from "axios";
 import { axiosInstance } from "./axiosInstance";
+
+export const getBoardErrorMessage = (error: unknown, fallback: string) => {
+  if (!(error instanceof AxiosError)) {
+    return error instanceof Error ? error.message : fallback;
+  }
+
+  const data: unknown = error.response?.data;
+  const message = typeof data === "string"
+    ? data.trim()
+    : data && typeof data === "object" && "message" in data && typeof data.message === "string"
+      ? data.message.trim()
+      : "";
+  const statusMessages: Record<number, string> = {
+    400: "입력 내용을 확인해 주세요.",
+    401: "로그인이 필요합니다. 다시 로그인해 주세요.",
+    403: "게시판 접근 또는 변경 권한이 없습니다.",
+    404: "해당 게시글 또는 게시판을 찾을 수 없습니다.",
+    500: "서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+  };
+  const statusMessage = statusMessages[error.response?.status ?? 0] ?? fallback;
+  return message && message !== statusMessage ? `${statusMessage} ${message}` : statusMessage;
+};
 
 type ApiSuccessResponse<T> = {
   success?: boolean;
@@ -107,8 +130,9 @@ export type BoardMyPostPage = {
 };
 
 export type BoardPostMutationPayload = {
-  title?: string;
-  content?: string;
+  title: string;
+  content: string;
+  imageUrls?: string[];
 };
 
 export type BoardPostCreatePayload = {
@@ -148,6 +172,8 @@ export type AdminBoardPayload = {
 
 export type BoardPostDetail = {
   id: number;
+  boardId?: number | null;
+  category?: string;
   title: string;
   content: string;
   userId: string;
@@ -266,7 +292,9 @@ const normalizeBoardPostDetail = (post: BoardPostDetailRaw): BoardPostDetail => 
     [];
 
   return {
-    id: post.postId ?? post.id ?? post.boardId ?? 0,
+    id: getRawPostId(post),
+    boardId: post.boardId ?? post.boardID ?? post.board_id ?? null,
+    category: post.category ?? post.postCategory,
     title: post.postTitle ?? post.title ?? "",
     content: post.postContents ?? post.content ?? "",
     userId: post.userId ?? "",
@@ -435,7 +463,20 @@ export const getBoardPostDetail = async (
   );
 
   const payload = unwrapApiData(response.data);
+  if (
+    !payload ||
+    typeof (payload.title ?? payload.postTitle) !== "string" ||
+    typeof (payload.content ?? payload.postContents) !== "string" ||
+    !Array.isArray(payload.imageUrls) ||
+    payload.imageUrls.some((url) => typeof url !== "string")
+  ) {
+    throw new Error("게시글 상세 응답을 확인할 수 없습니다. 다시 조회해 주세요.");
+  }
   const normalizedDetail = normalizeBoardPostDetail(payload);
+
+  if (normalizedDetail.id !== Number(postId)) {
+    throw new Error("요청한 게시글과 상세 응답이 일치하지 않습니다.");
+  }
 
   return normalizedDetail;
 };
@@ -662,30 +703,7 @@ export const getAvailableBoards = async (): Promise<AdminBoard[]> => {
 };
 
 export const getAllBoardPosts = async (page = 0): Promise<BoardPostListPage> => {
-  try {
-    const boards = await getBoardCategories();
-
-    if (!boards.length) {
-      return await getBoardPostList(page);
-    }
-
-    const pages = await Promise.all(
-      boards.map((board) => getMultiBoardPosts(board.boardId, { page }))
-    );
-    const content = pages
-      .flatMap((postPage) => postPage.content)
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-    return {
-      content,
-      totalPages: Math.max(...pages.map((postPage) => postPage.totalPages), 1),
-      totalElements: pages.reduce((sum, postPage) => sum + postPage.totalElements, 0),
-      number: page,
-    };
-  } catch (error) {
-    console.warn("[board] all board aggregate failed, falling back to board list", error);
-    return getBoardPostList(page);
-  }
+  return getBoardPostList(page);
 };
 
 export const createAdminBoard = async (

@@ -1,4 +1,10 @@
-import { useEffect, useState } from "react";
+import {
+  getRecruitmentInterviewSlots,
+  formatInterviewSlotTime,
+  isRecruitmentOpen,
+  type InterviewSlot,
+} from "../../../services/recruitApi";
+import { useEffect, useRef, useState } from "react";
 import { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
 import { useRecruitStore } from "../../../stores/recruitStore";
@@ -8,18 +14,11 @@ import useRecruitApplyForm, {
   CUSTOM_EMAIL_DOMAIN,
   EMAIL_DOMAINS,
   GRADES,
-  INTERVIEW_TIMES,
   SUPPORT_FIELDS,
 } from "./useRecruitApplyForm";
 
 const getErrorMessage = (message: unknown) =>
   typeof message === "string" ? message : null;
-
-// 이번 모집 회차의 면접 가능일입니다. 지원 기간은 모집 공고 API에서 관리합니다.
-const INTERVIEW_DATE_RANGE = {
-  start: "2026-09-07",
-  end: "2026-09-08",
-} as const;
 
 const formatPhoneNumber = (value: string) => {
   const digits = value.replace(/\D/g, "");
@@ -32,6 +31,12 @@ const formatPhoneNumber = (value: string) => {
 export default function RecruitApplyForm() {
   const navigate = useNavigate();
   const activeRecruitment = useRecruitStore((state) => state.activeRecruitment);
+  const [interviewSlots, setInterviewSlots] = useState<InterviewSlot[]>([]);
+  const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState<string | null>(null);
+  const [slotsRecruitmentId, setSlotsRecruitmentId] = useState<number | null>(null);
+  const submissionLockRef = useRef(false);
   const isLoadingRecruitments = useRecruitStore(
     (state) => state.isLoadingRecruitments
   );
@@ -63,32 +68,100 @@ export default function RecruitApplyForm() {
     void fetchRecruitments();
   }, [clearApplicationState, fetchRecruitments]);
 
+  useEffect(() => {
+    setInterviewSlots([]);
+    setSelectedSlotId(null);
+    setSlotsRecruitmentId(null);
+    setIsInterviewTimeMenuOpen(false);
+    setSlotsError(null);
+    if (!activeRecruitment?.id) {
+      setIsLoadingSlots(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadInterviewSlots = async () => {
+      setIsLoadingSlots(true);
+      setSlotsError(null);
+
+      try {
+        const slots = await getRecruitmentInterviewSlots(
+          activeRecruitment.id
+        );
+
+        if (!cancelled) {
+          setInterviewSlots(slots);
+          setSlotsRecruitmentId(activeRecruitment.id);
+        }
+      } catch {
+        if (!cancelled) {
+          setInterviewSlots([]);
+          setSlotsError("면접 일정을 불러오지 못했습니다.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingSlots(false);
+        }
+      }
+    };
+
+    void loadInterviewSlots();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeRecruitment?.id]);
+
+  const canUseSlots = !isLoadingSlots && slotsRecruitmentId === activeRecruitment?.id;
+  const availableDates = (canUseSlots ? interviewSlots : [])
+    .filter((slot) => slot.isAvailable)
+    .map((slot) => slot.date)
+    .sort();
+
+  const availableStartDate = availableDates[0] ?? "";
+  const availableEndDate =
+    availableDates[availableDates.length - 1] ?? "";
+
   const isCustomEmailDomain = values.emailDomain === CUSTOM_EMAIL_DOMAIN;
   const domainDisplayText = values.emailDomain || "선택";
-  const interviewTimeDisplayText = values.interviewTime || "선택";
+  const interviewTimeDisplayText = selectedSlotId !== null ? values.interviewTime || "선택" : "선택";
 
   const handleDomainSelect = (domain: string) => {
     selectEmailDomain(domain);
     setIsDomainMenuOpen(false);
   };
 
-  const handleInterviewTimeSelect = (time: string) => {
-    setField("interviewTime", time);
+  const availableTimeSlots = (canUseSlots ? interviewSlots : []).filter(
+    (slot) => slot.isAvailable && slot.date === values.interviewDate
+  );
+  const selectedSlot = availableTimeSlots.find((slot) => slot.slotId === selectedSlotId);
+
+  const handleInterviewTimeSelect = (slot: InterviewSlot) => {
+    setField("interviewTime", formatInterviewSlotTime(slot));
+    setSelectedSlotId(slot.slotId);
     setIsInterviewTimeMenuOpen(false);
   };
 
   const handleSubmitClick = async () => {
     const isValid = await validate();
 
-    if (!isValid || !activeRecruitment) {
+    if (!isValid || !isRecruitmentOpen(activeRecruitment) || isLoadingRecruitments || !canUseSlots) {
       return;
     }
 
+    if (!selectedSlot) {
+      setSlotsError("면접 시간을 선택해 주세요.");
+      return;
+    }
+
+    setSlotsError(null);
     setIsSubmitConfirmOpen(true);
   };
 
   const handleConfirmSubmit = async () => {
-    if (!activeRecruitment) {
+    if (!activeRecruitment || !isRecruitmentOpen(activeRecruitment) || !selectedSlot || !canUseSlots ||
+        isLoadingRecruitments || isSubmittingApplication || submissionLockRef.current) {
       return;
     }
 
@@ -107,11 +180,11 @@ export default function RecruitApplyForm() {
       email: `${values.emailLocal.trim()}@${emailDomain}`,
       termsAgreed: values.isPrivacyAgreed,
       categories: values.supportFields,
-      interviewDate: values.interviewDate,
-      interviewTime: values.interviewTime,
+      interviewSlotId: selectedSlot.slotId,
     };
 
     try {
+      submissionLockRef.current = true;
       console.log("[Recruit application] request payload", payload);
       await submitApplication(payload);
 
@@ -127,6 +200,8 @@ export default function RecruitApplyForm() {
         console.error("[Recruit application] failed", error);
       }
       setIsSubmitConfirmOpen(false);
+    } finally {
+      submissionLockRef.current = false;
     }
   };
 
@@ -311,9 +386,15 @@ export default function RecruitApplyForm() {
         <S.InterviewScheduleRow>
           <RecruitInterviewCalendar
             selectedDate={values.interviewDate}
-            onSelectDate={(date) => setField("interviewDate", date)}
-            availableStartDate={INTERVIEW_DATE_RANGE.start}
-            availableEndDate={INTERVIEW_DATE_RANGE.end}
+            onSelectDate={(date) => {
+              setField("interviewDate", date);
+              setField("interviewTime", "");
+              setSelectedSlotId(null);
+              setIsInterviewTimeMenuOpen(false);
+            }}
+            availableStartDate={availableStartDate}
+            availableEndDate={availableEndDate}
+            availableDates={availableDates}
             error={getErrorMessage(errors.interviewDate?.message) ?? undefined}
           />
 
@@ -337,13 +418,13 @@ export default function RecruitApplyForm() {
 
               {isInterviewTimeMenuOpen ? (
                 <S.InterviewTimeMenu>
-                  {INTERVIEW_TIMES.map((time) => (
+                  {availableTimeSlots.map((slot) => (
                     <S.InterviewTimeOption
-                      key={time}
+                      key={slot.slotId}
                       type="button"
-                      onClick={() => handleInterviewTimeSelect(time)}
+                      onClick={() => handleInterviewTimeSelect(slot)}
                     >
-                      {time}
+                      {formatInterviewSlotTime(slot)}
                     </S.InterviewTimeOption>
                   ))}
                 </S.InterviewTimeMenu>
@@ -354,6 +435,17 @@ export default function RecruitApplyForm() {
                 {getErrorMessage(errors.interviewTime.message)}
               </S.ErrorMessage>
             ) : null}
+            {isLoadingSlots && (
+              <S.ErrorMessage>
+                면접 일정을 불러오는 중입니다.
+              </S.ErrorMessage>
+            )}
+
+            {slotsError && (
+              <S.ErrorMessage>
+                {slotsError}
+              </S.ErrorMessage>
+            )}
           </S.InterviewTimeField>
         </S.InterviewScheduleRow>
 
@@ -390,7 +482,7 @@ export default function RecruitApplyForm() {
         <S.SubmitButton
           type="button"
           onClick={handleSubmitClick}
-          disabled={!activeRecruitment || isSubmittingApplication}
+          disabled={!isRecruitmentOpen(activeRecruitment) || isLoadingRecruitments || !canUseSlots || isSubmittingApplication}
         >
           {isSubmittingApplication ? "제출 중..." : "제출"}
         </S.SubmitButton>
