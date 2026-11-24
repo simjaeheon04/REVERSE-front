@@ -1,10 +1,12 @@
 import { axiosInstance } from "./axiosInstance";
+import { isAxiosError } from "axios";
 
 export type RecruitmentItem = {
   id: number;
   title: string;
-  description: string;
+  description?: string | null;
   isActive: boolean;
+  isApplyPeriod?: boolean | null;
   createdAt: string;
   updatedAt: string;
   applyStartDate?: string;
@@ -14,7 +16,7 @@ export type RecruitmentItem = {
 export type RecruitmentPayload = {
   roleId?: number;
   title: string;
-  description: string;
+  description: string | null;
   applyStartDate: string;
   applyEndDate: string;
   isActive?: boolean;
@@ -35,8 +37,7 @@ export type RecruitApplicationPayload = {
   email: string;
   termsAgreed: boolean;
   categories: string[];
-  interviewDate: string;
-  interviewTime: string;
+  interviewSlotId: number;
 };
 
 export type RecruitApplicationStatus = "PENDING" | "PASS" | "FAIL";
@@ -87,12 +88,76 @@ export type RecruitAdminPagePayload = {
 };
 
 export type RecruitAdminSlotsPayload = {
-  roleId: number;
+  roleId?: number;
   adminId?: string;
   slots: Array<{
+    slotId?: number | null;
     slotDate: string;
+    startTime?: string | null;
+    endTime?: string | null;
     capacity: number;
+    isActive?: boolean;
   }>;
+};
+
+export type InterviewSlot = {
+  slotId: number;
+  date: string;
+  time?: string;
+  startTime: string | null;
+  endTime: string | null;
+  capacity: number;
+  currentCount: number;
+  remainingCount: number;
+  isActive: boolean;
+  isAvailable: boolean;
+};
+
+export const isInterviewSlotAvailable = (slot: InterviewSlot) =>
+  slot.isAvailable === true && slot.isActive === true && slot.remainingCount > 0;
+
+export const toRecruitAdminSlots = (
+  slots: InterviewSlot[]
+): RecruitAdminSlotsPayload["slots"] => slots.map((slot) => {
+  if (!Number.isSafeInteger(slot.slotId) || slot.slotId <= 0 ||
+      !Number.isSafeInteger(slot.capacity) || slot.capacity < 1 ||
+      typeof slot.isActive !== "boolean") {
+    throw new Error("기존 슬롯의 ID·정원·활성 상태를 확인할 수 없습니다. 최신 상세 정보를 다시 조회해 주세요.");
+  }
+  return {
+    slotId: slot.slotId,
+    slotDate: slot.date,
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    capacity: slot.capacity,
+    isActive: slot.isActive,
+  };
+});
+
+export const getRecruitApiErrorMessage = (error: unknown, fallback: string) => {
+  if (!isAxiosError(error)) return error instanceof Error ? error.message : fallback;
+  const guidance: Record<number, string> = {
+    400: "입력 내용을 확인해 주세요.",
+    401: "로그인이 필요합니다. 다시 로그인해 주세요.",
+    403: "요청을 처리할 권한이 없습니다.",
+    404: "공고 또는 면접 슬롯을 찾을 수 없습니다. 다시 조회해 주세요.",
+    409: "면접 슬롯 정보가 충돌했습니다. 최신 일정을 확인해 주세요.",
+  };
+  let data: unknown = error.response?.data;
+  if (typeof data === "string") {
+    try { data = JSON.parse(data) as unknown; } catch { /* 일반 문자열 응답 유지 */ }
+  }
+  const message = typeof data === "string" ? data.trim()
+    : data && typeof data === "object" && "message" in data && typeof data.message === "string"
+      ? data.message.trim() : "";
+  const hint = guidance[error.response?.status ?? 0];
+  return [message, hint].filter(Boolean).join(" ") || fallback;
+};
+
+export type RecruitmentDetail = RecruitmentItem & {
+  page: {
+    interviewSlots: InterviewSlot[];
+  } | null;
 };
 
 type RecruitmentApiRecord = Partial<RecruitmentItem> & {
@@ -139,13 +204,29 @@ const unwrapRecruitmentResponse = <T>(payload: RecruitmentApiResponse<T>) => {
   return payload as T;
 };
 
+const assertRecruitmentSuccess = (value: unknown) => {
+  const data: unknown = typeof value === "string" && value.trim().startsWith("{")
+    ? JSON.parse(value)
+    : value;
+  if (data && typeof data === "object") {
+    const result = data as { success?: boolean; status?: string; message?: string };
+    if (result.success === false || ["error", "fail", "failed"].includes(result.status?.toLowerCase() ?? "")) {
+      throw new Error(result.message || "서버에서 요청을 처리하지 못했습니다.");
+    }
+  }
+};
+
+export const formatInterviewSlotTime = (slot: InterviewSlot) =>
+  `${slot.startTime?.slice(0, 5) ?? "시간 미정"} ~ ${slot.endTime?.slice(0, 5) ?? "시간 미정"}`;
+
 const normalizeRecruitmentItem = (
   item: RecruitmentApiRecord
 ): RecruitmentItem => ({
   id: Number(item.id ?? item.recruitmentId ?? 0),
   title: item.title ?? "",
-  description: item.description ?? "",
+  description: item.description,
   isActive: Boolean(item.isActive),
+  isApplyPeriod: item.isApplyPeriod,
   createdAt: item.createdAt ?? "",
   updatedAt: item.updatedAt ?? "",
   applyStartDate: item.applyStartDate,
@@ -168,13 +249,20 @@ export const getRecruitmentList = async (): Promise<RecruitmentItem[]> => {
 
 export const getRecruitmentDetail = async (
   id: number | string
-): Promise<RecruitmentItem> => {
-  const response = await axiosInstance.get<RecruitmentApiResponse<RecruitmentApiRecord>>(
+): Promise<RecruitmentDetail> => {
+  const response = await axiosInstance.get<RecruitmentApiResponse<RecruitmentApiRecord & { page?: RecruitmentDetail["page"] }>>(
     `/api/recruit/${id}`
   );
   const unwrapped = unwrapRecruitmentResponse(response.data);
 
-  return normalizeRecruitmentItem(unwrapped);
+  return { ...normalizeRecruitmentItem(unwrapped), page: unwrapped.page ?? null };
+};
+
+export const getRecruitmentInterviewSlots = async (
+  recruitmentId: number
+): Promise<InterviewSlot[]> => {
+  const detail = await getRecruitmentDetail(recruitmentId);
+  return detail.page?.interviewSlots ?? [];
 };
 
 export const createRecruitment = async (
@@ -229,28 +317,22 @@ export const deleteRecruitment = async (
   return response.data;
 };
 
-export const updateRecruitmentStatus = async (
-  id: number | string,
-  roleId: number,
-  payload: RecruitmentStatusPayload
-) => {
-  const response = await axiosInstance.patch(
-    `/api/recruit/admin/${id}/status`,
-    payload,
-    {
-      params: { roleId },
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
-
-  return response.data;
+export const updateRecruitmentStatus = async (): Promise<never> => {
+  throw new Error("현재 백엔드는 공고 상태 변경 API를 지원하지 않습니다. 설명 원본을 조회할 수 없어 기본 정보 수정 API로도 안전하게 대체할 수 없습니다.");
 };
+
+export const isRecruitmentOpen = (recruitment: RecruitmentItem | null) =>
+  recruitment?.isActive === true && recruitment.isApplyPeriod === true;
 
 export const submitRecruitApplication = async (
   payload: RecruitApplicationPayload
 ): Promise<string> => {
+  const recruitment = await getRecruitmentDetail(payload.recruitmentId);
+  if (!isRecruitmentOpen(recruitment)) {
+    throw new Error(recruitment.isApplyPeriod == null
+      ? "모집 기간을 확인할 수 없어 지원서를 제출할 수 없습니다. 다시 조회해 주세요."
+      : "현재 지원 가능한 모집공고가 아닙니다.");
+  }
   const response = await axiosInstance.post("/api/recruit/apply", payload, {
     headers: {
       "Content-Type": "application/json",
@@ -258,6 +340,7 @@ export const submitRecruitApplication = async (
     responseType: "text",
   });
 
+  assertRecruitmentSuccess(response.data);
   return response.data;
 };
 
@@ -314,10 +397,17 @@ export const updateRecruitAdminApplicationStatus = async (
   return response.data;
 };
 
-export const assignRecruitAdminInterviews = async (roleId: number) => {
+export const assignRecruitAdminInterviews = async (payload: {
+  applicationId: number;
+  slotId: number;
+}) => {
+  if (!Number.isSafeInteger(payload.applicationId) || payload.applicationId <= 0 ||
+      !Number.isSafeInteger(payload.slotId) || payload.slotId <= 0) {
+    throw new Error("applicationId와 slotId를 양의 정수로 지정해 주세요.");
+  }
   const response = await axiosInstance.post(
     "/api/recruit/admin/applications/interview",
-    { roleId },
+    { applicationId: payload.applicationId, slotId: payload.slotId },
     {
       headers: {
         "Content-Type": "application/json",
@@ -325,6 +415,7 @@ export const assignRecruitAdminInterviews = async (roleId: number) => {
     }
   );
 
+  assertRecruitmentSuccess(response.data);
   return response.data;
 };
 
@@ -364,9 +455,54 @@ export const updateRecruitAdminSlots = async (
   recruitmentId: number | string,
   payload: RecruitAdminSlotsPayload
 ) => {
+  if (!Array.isArray(payload.slots) || !payload.slots.length) {
+    throw new Error("저장할 면접 슬롯을 입력해 주세요.");
+  }
+  const slots = payload.slots.map((slot) => {
+    if (!slot || typeof slot !== "object") {
+      throw new Error("슬롯은 JSON 객체로 입력해 주세요.");
+    }
+    if (slot.slotId != null && (!Number.isSafeInteger(slot.slotId) || slot.slotId <= 0)) {
+      throw new Error("기존 슬롯의 slotId는 양의 정수여야 합니다.");
+    }
+    if (typeof slot.slotDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(slot.slotDate) ||
+        !Number.isFinite(Date.parse(`${slot.slotDate}T00:00:00Z`)) ||
+        new Date(`${slot.slotDate}T00:00:00Z`).toISOString().slice(0, 10) !== slot.slotDate) {
+      throw new Error("면접 날짜는 유효한 YYYY-MM-DD 형식이어야 합니다.");
+    }
+    const normalizeTime = (value?: string | null) => {
+      if (value == null) return null;
+      if (typeof value !== "string" || !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(value)) {
+        throw new Error("면접 시간은 HH:mm:ss 형식으로 입력해 주세요.");
+      }
+      return value.length === 5 ? `${value}:00` : value;
+    };
+    const startTime = normalizeTime(slot.startTime);
+    const endTime = normalizeTime(slot.endTime);
+    if ((startTime === null) !== (endTime === null)) {
+      throw new Error("면접 시작 시간과 종료 시간은 함께 입력하거나 모두 비워 주세요.");
+    }
+    if (startTime !== null && endTime !== null && endTime <= startTime) {
+      throw new Error("면접 종료 시간은 시작 시간보다 늦어야 합니다.");
+    }
+    if (!Number.isSafeInteger(slot.capacity) || slot.capacity < 1) {
+      throw new Error("정원은 1 이상의 정수로 명시해 주세요. 기존 슬롯은 조회된 정원을 유지해 주세요.");
+    }
+    if (slot.isActive !== undefined && typeof slot.isActive !== "boolean") {
+      throw new Error("isActive는 true 또는 false로 지정해 주세요.");
+    }
+    return {
+      ...(slot.slotId != null ? { slotId: slot.slotId } : {}),
+      slotDate: slot.slotDate,
+      startTime,
+      endTime,
+      capacity: slot.capacity,
+      ...(slot.isActive !== undefined ? { isActive: slot.isActive } : {}),
+    };
+  });
   const response = await axiosInstance.post(
-    `/api/recruit/admin/${recruitmentId}/slots`,
-    payload,
+    `/api/recruit/admin/${recruitmentId}/slots/v2`,
+    { ...payload, slots },
     {
       headers: {
         "Content-Type": "application/json",
@@ -374,5 +510,6 @@ export const updateRecruitAdminSlots = async (
     }
   );
 
+  assertRecruitmentSuccess(response.data);
   return response.data;
 };

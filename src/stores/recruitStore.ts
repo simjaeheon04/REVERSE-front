@@ -2,12 +2,16 @@ import { AxiosError } from "axios";
 import { create } from "zustand";
 import {
   getRecruitmentList,
+  getRecruitmentDetail,
+  isRecruitmentOpen,
   submitRecruitApplication,
   type RecruitApplicationPayload,
   type RecruitmentItem,
 } from "../services/recruitApi";
 
 type RecruitState = {
+  createdRecruitmentId: number | null;
+  setCreatedRecruitmentId: (id: number) => void;
   recruitments: RecruitmentItem[];
   activeRecruitment: RecruitmentItem | null;
   isLoadingRecruitments: boolean;
@@ -44,6 +48,8 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export const useRecruitStore = create<RecruitState>((set) => ({
+  createdRecruitmentId: null,
+  setCreatedRecruitmentId: (id) => set({ createdRecruitmentId: id }),
   recruitments: [],
   activeRecruitment: null,
   isLoadingRecruitments: false,
@@ -54,21 +60,42 @@ export const useRecruitStore = create<RecruitState>((set) => ({
   fetchRecruitments: async () => {
     set({
       isLoadingRecruitments: true,
+      activeRecruitment: null,
       recruitmentError: null,
     });
 
     try {
       const recruitments = await getRecruitmentList();
       const sortedRecruitments = [...recruitments].sort((a, b) => b.id - a.id);
-      const activeRecruitment =
-        sortedRecruitments.find((item) => item.isActive) ?? sortedRecruitments[0] ?? null;
+      let activeRecruitment: RecruitmentItem | null = null;
+      let recruitmentError: string | null = null;
+      for (const item of sortedRecruitments) {
+        if (!item.isActive || item.isApplyPeriod === false) continue;
+        try {
+          const verified = item.isApplyPeriod == null
+            ? await getRecruitmentDetail(item.id)
+            : item;
+          if (isRecruitmentOpen(verified)) {
+            activeRecruitment = verified;
+            break;
+          }
+          if (verified.isApplyPeriod == null) {
+            recruitmentError = "모집 기간을 확인할 수 없습니다. 다시 조회해 주세요.";
+          }
+        } catch (error) {
+          recruitmentError = getApiErrorMessage(error, "모집 기간을 확인하지 못했습니다.");
+        }
+      }
 
       set({
         recruitments: sortedRecruitments,
         activeRecruitment,
+        recruitmentError: activeRecruitment ? null : recruitmentError,
       });
     } catch (error) {
       set({
+        recruitments: [],
+        activeRecruitment: null,
         recruitmentError: getApiErrorMessage(
           error,
           "모집 공고를 불러오지 못했습니다."

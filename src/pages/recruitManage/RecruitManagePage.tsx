@@ -12,7 +12,9 @@ import {
   type RecruitmentPayload,
 } from "../../services/recruitApi";
 import { useAuthStore } from "../../stores/authStore";
+import { useRecruitStore } from "../../stores/recruitStore";
 import { AxiosError } from "axios";
+import { useNavigate } from "react-router-dom";
 
 const initialForm: RecruitmentPayload = {
   title: "",
@@ -47,7 +49,9 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export default function RecruitManagePage() {
+  const navigate = useNavigate();
   const userId = useAuthStore((state) => state.userId);
+  const setCreatedRecruitmentId = useRecruitStore((state) => state.setCreatedRecruitmentId);
   const [form, setForm] = useState<RecruitmentPayload>(initialForm);
   const [recruitments, setRecruitments] = useState<RecruitmentItem[]>([]);
   const [selectedRecruitment, setSelectedRecruitment] =
@@ -134,7 +138,7 @@ export default function RecruitManagePage() {
       setEditingId(detail.id);
       setForm({
         title: detail.title,
-        description: detail.description,
+        description: detail.description ?? "",
         applyStartDate: detail.applyStartDate?.slice(0, 10) ?? "",
         applyEndDate: detail.applyEndDate?.slice(0, 10) ?? "",
         updatedBy: userId ?? "",
@@ -157,22 +161,59 @@ export default function RecruitManagePage() {
       setIsSaving(true);
       setSaveMessage("");
 
+      if (!form.title.trim()) {
+        throw new Error("모집공고 제목을 입력해 주세요.");
+      }
+      if (!form.applyStartDate || !form.applyEndDate) {
+        throw new Error("모집 시작일과 종료일을 입력해 주세요.");
+      }
+      if (form.applyStartDate > form.applyEndDate) {
+        throw new Error("모집 시작일은 종료일보다 늦을 수 없습니다.");
+      }
+      let successMessage: string;
       if (editingId !== null) {
+        if (!selectedRecruitment || selectedRecruitment.id !== editingId ||
+            selectedRecruitment.description === undefined) {
+          throw new Error("기존 설명 원본을 조회할 수 없어 안전하게 수정할 수 없습니다. 백엔드 상세 응답에 description이 필요합니다.");
+        }
+        const preserveTime = (date: string, original?: string) => {
+          if (!original || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(original) ||
+              !Number.isFinite(Date.parse(original))) {
+            throw new Error("기존 모집 기간의 날짜·시간 원본을 확인할 수 없어 안전하게 수정할 수 없습니다.");
+          }
+          return date === original.slice(0, 10) ? original : `${date}${original.slice(10)}`;
+        };
+        const applyStartDate = preserveTime(form.applyStartDate, selectedRecruitment.applyStartDate);
+        const applyEndDate = preserveTime(form.applyEndDate, selectedRecruitment.applyEndDate);
+        if (applyStartDate > applyEndDate) {
+          throw new Error("모집 시작일은 종료일보다 늦을 수 없습니다.");
+        }
         await updateRecruitment(editingId, {
           ...form,
+          description: form.description === (selectedRecruitment.description ?? "")
+            ? selectedRecruitment.description
+            : form.description,
+          applyStartDate,
+          applyEndDate,
+          isActive: selectedRecruitment.isActive,
           roleId: statusRoleId.trim() ? Number(statusRoleId) : form.roleId,
         });
-        setSaveMessage("모집공고가 수정되었습니다.");
+        successMessage = "모집공고가 수정되었습니다.";
       } else {
-        await createRecruitment({
+        const created = await createRecruitment({
           ...form,
           roleId: statusRoleId.trim() ? Number(statusRoleId) : form.roleId,
         });
-        setSaveMessage("모집공고가 등록되었습니다.");
+        if (!Number.isSafeInteger(created.id) || created.id <= 0) {
+          throw new Error("공고 생성 응답에서 모집공고 ID를 확인하지 못했습니다. 목록을 확인한 뒤 슬롯 화면에 ID를 입력해 주세요.");
+        }
+        setCreatedRecruitmentId(created.id);
+        successMessage = "모집공고가 등록되었습니다.";
       }
 
       await loadRecruitments();
       handleReset();
+      setSaveMessage(successMessage);
     } catch (error) {
       setSaveMessage(getApiErrorMessage(error, "모집공고 저장에 실패했습니다."));
     } finally {
@@ -180,35 +221,12 @@ export default function RecruitManagePage() {
     }
   };
 
-  const handleStatusChange = async (recruitment: RecruitmentItem, nextIsActive: boolean) => {
-    if (!statusRoleId.trim()) {
-      setStatusMessage("상태를 변경하려면 roleId를 입력해 주세요.");
-      return;
-    }
-
+  const handleStatusChange = async () => {
     try {
       setIsUpdatingStatus(true);
       setStatusMessage("");
 
-      await updateRecruitmentStatus(recruitment.id, Number(statusRoleId), {
-        isActive: nextIsActive,
-      });
-
-      setStatusMessage(
-        `모집공고 ${recruitment.id}의 상태가 ${nextIsActive ? "활성" : "비활성"}으로 변경되었습니다.`
-      );
-      await loadRecruitments();
-
-      if (selectedRecruitment?.id === recruitment.id) {
-        setSelectedRecruitment((prev) =>
-          prev
-            ? {
-                ...prev,
-                isActive: nextIsActive,
-              }
-            : prev
-        );
-      }
+      await updateRecruitmentStatus();
     } catch (error) {
       setStatusMessage(getApiErrorMessage(error, "모집공고 상태 변경에 실패했습니다."));
     } finally {
@@ -277,7 +295,7 @@ export default function RecruitManagePage() {
               <S.Field>
                 <S.FieldLabel>설명</S.FieldLabel>
                 <S.TextArea
-                  value={form.description}
+                  value={form.description ?? ""}
                   onChange={handleFieldChange("description")}
                   placeholder="모집공고 설명"
                 />
@@ -379,10 +397,23 @@ export default function RecruitManagePage() {
                 <S.SecondaryButton
                   key={`status-${recruitment.id}`}
                   type="button"
-                  onClick={() => void handleStatusChange(recruitment, !recruitment.isActive)}
+                  onClick={() => void handleStatusChange()}
                   disabled={isUpdatingStatus}
                 >
                   {recruitment.id}. {recruitment.isActive ? "비활성화" : "활성화"}
+                </S.SecondaryButton>
+              ))}
+            </S.ButtonRow>
+
+            <S.CardTitle as="h3">면접 일정 관리</S.CardTitle>
+            <S.ButtonRow>
+              {recruitments.map((recruitment) => (
+                <S.SecondaryButton
+                  key={`slots-${recruitment.id}`}
+                  type="button"
+                  onClick={() => navigate(`/admin/recruit-applications?recruitmentId=${recruitment.id}`)}
+                >
+                  {recruitment.id}. {recruitment.title} 면접 일정 관리
                 </S.SecondaryButton>
               ))}
             </S.ButtonRow>
