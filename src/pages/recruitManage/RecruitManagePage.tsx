@@ -14,6 +14,7 @@ import {
 import { useAuthStore } from "../../stores/authStore";
 import { useRecruitStore } from "../../stores/recruitStore";
 import { AxiosError } from "axios";
+import { useNavigate } from "react-router-dom";
 
 const initialForm: RecruitmentPayload = {
   title: "",
@@ -48,6 +49,7 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export default function RecruitManagePage() {
+  const navigate = useNavigate();
   const userId = useAuthStore((state) => state.userId);
   const setCreatedRecruitmentId = useRecruitStore((state) => state.setCreatedRecruitmentId);
   const [form, setForm] = useState<RecruitmentPayload>(initialForm);
@@ -399,6 +401,19 @@ export default function RecruitManagePage() {
                   disabled={isUpdatingStatus}
                 >
                   {recruitment.id}. {recruitment.isActive ? "비활성화" : "활성화"}
+                </S.SecondaryButton>
+              ))}
+            </S.ButtonRow>
+
+            <S.CardTitle as="h3">면접 일정 관리</S.CardTitle>
+            <S.ButtonRow>
+              {recruitments.map((recruitment) => (
+                <S.SecondaryButton
+                  key={`slots-${recruitment.id}`}
+                  type="button"
+                  onClick={() => navigate(`/admin/recruit-applications?recruitmentId=${recruitment.id}`)}
+                >
+                  {recruitment.id}. {recruitment.title} 면접 일정 관리
                 </S.SecondaryButton>
               ))}
             </S.ButtonRow>

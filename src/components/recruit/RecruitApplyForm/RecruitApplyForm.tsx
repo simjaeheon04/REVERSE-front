@@ -2,6 +2,8 @@ import {
   getRecruitmentInterviewSlots,
   formatInterviewSlotTime,
   isRecruitmentOpen,
+  isInterviewSlotAvailable,
+  getRecruitApiErrorMessage,
   type InterviewSlot,
 } from "../../../services/recruitApi";
 import { useEffect, useRef, useState } from "react";
@@ -37,6 +39,8 @@ export default function RecruitApplyForm() {
   const [slotsError, setSlotsError] = useState<string | null>(null);
   const [slotsRecruitmentId, setSlotsRecruitmentId] = useState<number | null>(null);
   const submissionLockRef = useRef(false);
+  const slotsRequestRef = useRef(0);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const isLoadingRecruitments = useRecruitStore(
     (state) => state.isLoadingRecruitments
   );
@@ -69,6 +73,8 @@ export default function RecruitApplyForm() {
   }, [clearApplicationState, fetchRecruitments]);
 
   useEffect(() => {
+    const requests = slotsRequestRef;
+    requests.current++;
     setInterviewSlots([]);
     setSelectedSlotId(null);
     setSlotsRecruitmentId(null);
@@ -94,10 +100,10 @@ export default function RecruitApplyForm() {
           setInterviewSlots(slots);
           setSlotsRecruitmentId(activeRecruitment.id);
         }
-      } catch {
+      } catch (error) {
         if (!cancelled) {
           setInterviewSlots([]);
-          setSlotsError("면접 일정을 불러오지 못했습니다.");
+          setSlotsError(getRecruitApiErrorMessage(error, "면접 일정을 불러오지 못했습니다."));
         }
       } finally {
         if (!cancelled) {
@@ -110,14 +116,21 @@ export default function RecruitApplyForm() {
 
     return () => {
       cancelled = true;
+      requests.current++;
     };
   }, [activeRecruitment?.id]);
 
   const canUseSlots = !isLoadingSlots && slotsRecruitmentId === activeRecruitment?.id;
   const availableDates = (canUseSlots ? interviewSlots : [])
-    .filter((slot) => slot.isAvailable)
+    .filter(isInterviewSlotAvailable)
     .map((slot) => slot.date)
     .sort();
+  const hasAvailableSlots = canUseSlots && availableDates.length > 0;
+  const emptySlotsMessage = canUseSlots && !hasAvailableSlots
+    ? interviewSlots.length === 0
+      ? "아직 등록된 면접 일정이 없습니다. 모집 담당자에게 문의해 주세요."
+      : "현재 선택 가능한 면접 일정이 없습니다. 모든 일정이 마감되었거나 비활성 상태입니다."
+    : null;
 
   const availableStartDate = availableDates[0] ?? "";
   const availableEndDate =
@@ -133,11 +146,12 @@ export default function RecruitApplyForm() {
   };
 
   const availableTimeSlots = (canUseSlots ? interviewSlots : []).filter(
-    (slot) => slot.isAvailable && slot.date === values.interviewDate
+    (slot) => isInterviewSlotAvailable(slot) && slot.date === values.interviewDate
   );
   const selectedSlot = availableTimeSlots.find((slot) => slot.slotId === selectedSlotId);
 
   const handleInterviewTimeSelect = (slot: InterviewSlot) => {
+    setSlotsError(null);
     setField("interviewTime", formatInterviewSlotTime(slot));
     setSelectedSlotId(slot.slotId);
     setIsInterviewTimeMenuOpen(false);
@@ -146,7 +160,7 @@ export default function RecruitApplyForm() {
   const handleSubmitClick = async () => {
     const isValid = await validate();
 
-    if (!isValid || !isRecruitmentOpen(activeRecruitment) || isLoadingRecruitments || !canUseSlots) {
+    if (!isValid || !isRecruitmentOpen(activeRecruitment) || isLoadingRecruitments || !hasAvailableSlots) {
       return;
     }
 
@@ -160,7 +174,7 @@ export default function RecruitApplyForm() {
   };
 
   const handleConfirmSubmit = async () => {
-    if (!activeRecruitment || !isRecruitmentOpen(activeRecruitment) || !selectedSlot || !canUseSlots ||
+    if (!activeRecruitment || !isRecruitmentOpen(activeRecruitment) || !selectedSlot || !hasAvailableSlots ||
         isLoadingRecruitments || isSubmittingApplication || submissionLockRef.current) {
       return;
     }
@@ -183,8 +197,10 @@ export default function RecruitApplyForm() {
       interviewSlotId: selectedSlot.slotId,
     };
 
+    const requestId = slotsRequestRef.current;
     try {
       submissionLockRef.current = true;
+      setSubmissionError(null);
       console.log("[Recruit application] request payload", payload);
       await submitApplication(payload);
 
@@ -200,6 +216,31 @@ export default function RecruitApplyForm() {
         console.error("[Recruit application] failed", error);
       }
       setIsSubmitConfirmOpen(false);
+      setSubmissionError(getRecruitApiErrorMessage(error, "지원서 제출에 실패했습니다."));
+      if (error instanceof AxiosError && [404, 409].includes(error.response?.status ?? 0) &&
+          requestId === slotsRequestRef.current) {
+        setSelectedSlotId(null);
+        setField("interviewDate", "");
+        setField("interviewTime", "");
+        setIsInterviewTimeMenuOpen(false);
+        setSlotsRecruitmentId(null);
+        setInterviewSlots([]);
+        setIsLoadingSlots(true);
+        setSlotsError(null);
+        try {
+          const slots = await getRecruitmentInterviewSlots(payload.recruitmentId);
+          if (requestId === slotsRequestRef.current) {
+            setInterviewSlots(slots);
+            setSlotsRecruitmentId(payload.recruitmentId);
+          }
+        } catch (refreshError) {
+          if (requestId === slotsRequestRef.current) {
+            setSlotsError(getRecruitApiErrorMessage(refreshError, "최신 면접 일정을 불러오지 못했습니다. 다시 접속해 주세요."));
+          }
+        } finally {
+          if (requestId === slotsRequestRef.current) setIsLoadingSlots(false);
+        }
+      }
     } finally {
       submissionLockRef.current = false;
     }
@@ -441,9 +482,9 @@ export default function RecruitApplyForm() {
               </S.ErrorMessage>
             )}
 
-            {slotsError && (
+            {(slotsError || emptySlotsMessage) && (
               <S.ErrorMessage>
-                {slotsError}
+                {slotsError || emptySlotsMessage}
               </S.ErrorMessage>
             )}
           </S.InterviewTimeField>
@@ -475,14 +516,14 @@ export default function RecruitApplyForm() {
           </S.ErrorMessage>
         ) : null}
 
-        {applicationError ? (
-          <S.ErrorMessage>{applicationError}</S.ErrorMessage>
+        {submissionError || applicationError ? (
+          <S.ErrorMessage>{submissionError || applicationError}</S.ErrorMessage>
         ) : null}
 
         <S.SubmitButton
           type="button"
           onClick={handleSubmitClick}
-          disabled={!isRecruitmentOpen(activeRecruitment) || isLoadingRecruitments || !canUseSlots || isSubmittingApplication}
+          disabled={!isRecruitmentOpen(activeRecruitment) || isLoadingRecruitments || !hasAvailableSlots || isSubmittingApplication}
         >
           {isSubmittingApplication ? "제출 중..." : "제출"}
         </S.SubmitButton>

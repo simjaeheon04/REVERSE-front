@@ -1,4 +1,5 @@
 import { axiosInstance } from "./axiosInstance";
+import { isAxiosError } from "axios";
 
 export type RecruitmentItem = {
   id: number;
@@ -92,10 +93,10 @@ export type RecruitAdminSlotsPayload = {
   slots: Array<{
     slotId?: number | null;
     slotDate: string;
-    startTime: string;
-    endTime: string;
+    startTime?: string | null;
+    endTime?: string | null;
     capacity: number;
-    isActive: boolean;
+    isActive?: boolean;
   }>;
 };
 
@@ -105,7 +106,52 @@ export type InterviewSlot = {
   time?: string;
   startTime: string | null;
   endTime: string | null;
+  capacity: number;
+  currentCount: number;
+  remainingCount: number;
+  isActive: boolean;
   isAvailable: boolean;
+};
+
+export const isInterviewSlotAvailable = (slot: InterviewSlot) =>
+  slot.isAvailable === true && slot.isActive === true && slot.remainingCount > 0;
+
+export const toRecruitAdminSlots = (
+  slots: InterviewSlot[]
+): RecruitAdminSlotsPayload["slots"] => slots.map((slot) => {
+  if (!Number.isSafeInteger(slot.slotId) || slot.slotId <= 0 ||
+      !Number.isSafeInteger(slot.capacity) || slot.capacity < 1 ||
+      typeof slot.isActive !== "boolean") {
+    throw new Error("기존 슬롯의 ID·정원·활성 상태를 확인할 수 없습니다. 최신 상세 정보를 다시 조회해 주세요.");
+  }
+  return {
+    slotId: slot.slotId,
+    slotDate: slot.date,
+    startTime: slot.startTime,
+    endTime: slot.endTime,
+    capacity: slot.capacity,
+    isActive: slot.isActive,
+  };
+});
+
+export const getRecruitApiErrorMessage = (error: unknown, fallback: string) => {
+  if (!isAxiosError(error)) return error instanceof Error ? error.message : fallback;
+  const guidance: Record<number, string> = {
+    400: "입력 내용을 확인해 주세요.",
+    401: "로그인이 필요합니다. 다시 로그인해 주세요.",
+    403: "요청을 처리할 권한이 없습니다.",
+    404: "공고 또는 면접 슬롯을 찾을 수 없습니다. 다시 조회해 주세요.",
+    409: "면접 슬롯 정보가 충돌했습니다. 최신 일정을 확인해 주세요.",
+  };
+  let data: unknown = error.response?.data;
+  if (typeof data === "string") {
+    try { data = JSON.parse(data) as unknown; } catch { /* 일반 문자열 응답 유지 */ }
+  }
+  const message = typeof data === "string" ? data.trim()
+    : data && typeof data === "object" && "message" in data && typeof data.message === "string"
+      ? data.message.trim() : "";
+  const hint = guidance[error.response?.status ?? 0];
+  return [message, hint].filter(Boolean).join(" ") || fallback;
 };
 
 export type RecruitmentDetail = RecruitmentItem & {
@@ -424,7 +470,8 @@ export const updateRecruitAdminSlots = async (
         new Date(`${slot.slotDate}T00:00:00Z`).toISOString().slice(0, 10) !== slot.slotDate) {
       throw new Error("면접 날짜는 유효한 YYYY-MM-DD 형식이어야 합니다.");
     }
-    const normalizeTime = (value: string) => {
+    const normalizeTime = (value?: string | null) => {
+      if (value == null) return null;
       if (typeof value !== "string" || !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(value)) {
         throw new Error("면접 시간은 HH:mm:ss 형식으로 입력해 주세요.");
       }
@@ -432,13 +479,16 @@ export const updateRecruitAdminSlots = async (
     };
     const startTime = normalizeTime(slot.startTime);
     const endTime = normalizeTime(slot.endTime);
-    if (endTime <= startTime) {
+    if ((startTime === null) !== (endTime === null)) {
+      throw new Error("면접 시작 시간과 종료 시간은 함께 입력하거나 모두 비워 주세요.");
+    }
+    if (startTime !== null && endTime !== null && endTime <= startTime) {
       throw new Error("면접 종료 시간은 시작 시간보다 늦어야 합니다.");
     }
     if (!Number.isSafeInteger(slot.capacity) || slot.capacity < 1) {
-      throw new Error("정원은 1 이상의 정수로 명시해 주세요. 현재 조회 API는 기존 정원을 제공하지 않아 자동으로 채울 수 없습니다.");
+      throw new Error("정원은 1 이상의 정수로 명시해 주세요. 기존 슬롯은 조회된 정원을 유지해 주세요.");
     }
-    if (typeof slot.isActive !== "boolean") {
+    if (slot.isActive !== undefined && typeof slot.isActive !== "boolean") {
       throw new Error("isActive는 true 또는 false로 지정해 주세요.");
     }
     return {
@@ -447,7 +497,7 @@ export const updateRecruitAdminSlots = async (
       startTime,
       endTime,
       capacity: slot.capacity,
-      isActive: slot.isActive,
+      ...(slot.isActive !== undefined ? { isActive: slot.isActive } : {}),
     };
   });
   const response = await axiosInstance.post(
