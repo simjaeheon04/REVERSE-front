@@ -93,10 +93,28 @@ export const ImageList = styled.div`
 `;
 
 export const ImageItem = styled.img`
-  width: 100%;
-  max-height: 560px;
-  object-fit: cover;
-  border-radius: 8px;
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  margin: 16px 0;
+  object-fit: contain;
+
+  &[hidden] {
+    display: none;
+  }
+`;
+
+export const BodyLink = styled.a`
+  color: inherit;
+  overflow-wrap: anywhere;
+`;
+
+export const ImageNotice = styled.span`
+  display: block;
+  margin: 8px 0;
+  color: inherit;
+  font-size: inherit;
 `;
 
 export const FileList = styled.div`
