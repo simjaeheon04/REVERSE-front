@@ -20,6 +20,8 @@ import {
 } from "../../services/boardApi";
 import { useAuthStore } from "../../stores/authStore";
 import * as S from "./BoardDetailPage.styles";
+import BoardPostContent from "./BoardPostContent";
+import { getAttachmentName, getSafeHttpUrl } from "./boardImage";
 
 type BoardDetailLocationState = {
   boardPostFallback?: BoardPostDetail;
@@ -166,12 +168,7 @@ export default function BoardDetailPage() {
     await Promise.all([loadPost(), loadComments()]);
   };
 
-  const getFileName = (fileUrl: string) => {
-    const cleanUrl = fileUrl.split("?")[0] ?? fileUrl;
-    const fileName = cleanUrl.split("/").pop();
-
-    return fileName ? decodeURIComponent(fileName) : "첨부 파일";
-  };
+  const getFileName = getAttachmentName;
 
   const downloadFile = async (fileUrl: string) => {
     const fileName = getFileName(fileUrl);
@@ -205,7 +202,7 @@ export default function BoardDetailPage() {
   };
 
   const handleDownloadFiles = () => {
-    post?.imageUrls.forEach((fileUrl) => {
+    post?.imageUrls.filter((fileUrl) => getSafeHttpUrl(fileUrl) !== null).forEach((fileUrl) => {
       void downloadFile(fileUrl);
     });
   };
@@ -478,23 +475,7 @@ export default function BoardDetailPage() {
                 </S.MetaRow>
 
                 <S.BodyBox>
-                  <S.BodyText>{post.content}</S.BodyText>
-
-                  {post.imageUrls?.length ? (
-                    <S.FileList>
-                      {post.imageUrls.map((fileUrl) => (
-                        <S.FileItem
-                          key={fileUrl}
-                          href={fileUrl}
-                          download={getFileName(fileUrl)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          (파일) {getFileName(fileUrl)}
-                        </S.FileItem>
-                      ))}
-                    </S.FileList>
-                  ) : null}
+                  <BoardPostContent content={post.content} imageUrls={post.imageUrls} />
                 </S.BodyBox>
 
                 <S.ActionBar>
