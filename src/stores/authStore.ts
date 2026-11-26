@@ -82,6 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const storedTokens = getStoredAuthTokens();
 
     if (!storedTokens) {
+      get().clearAuth();
       return;
     }
 
@@ -161,12 +162,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return currentUser;
     } catch (error) {
       if (error instanceof AxiosError && error.response?.status === 401) {
-        set((prev) => ({
-          ...prev,
-          userName: null,
-          roleName: null,
-          roleId: null,
-        }));
+        get().clearAuth();
         return null;
       }
 
