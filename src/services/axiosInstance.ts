@@ -1,11 +1,9 @@
 import axios from "axios";
 import {
-  clearStoredAuthTokens,
   getStoredAccessToken,
   getStoredAuthTokens,
   getStoredRefreshToken,
   isStoredAccessTokenExpired,
-  setStoredAuthTokens,
 } from "../utils/tokenStorage";
 
 const DEFAULT_BASE_URL = "https://api.nsu-reverse.website";
@@ -65,6 +63,9 @@ axiosInstance.interceptors.request.use(async (config) => {
 
   if (accessToken && shouldAttachAuthorization && isStoredAccessTokenExpired()) {
     accessToken = await getRefreshedAccessToken();
+    if (!accessToken) {
+      throw new axios.AxiosError("로그인이 만료되었습니다.", "ERR_AUTH_EXPIRED", config);
+    }
   }
 
   if (accessToken && shouldAttachAuthorization) {
@@ -79,7 +80,9 @@ let refreshPromise: Promise<string | null> | null = null;
 const getRefreshedAccessToken = async () => {
   const refreshToken = getStoredRefreshToken();
 
-  if (!refreshToken) {
+  if (!refreshToken || !getStoredAuthTokens()) {
+    const { useAuthStore } = await import("../stores/authStore");
+    useAuthStore.getState().clearAuth();
     return null;
   }
 
@@ -97,20 +100,22 @@ const getRefreshedAccessToken = async () => {
         accessTokenExpiry: string;
         refreshTokenExpiry: string;
       })
-      .then((tokens) => {
-        const storedAuthTokens = getStoredAuthTokens();
-
-        setStoredAuthTokens({
-          ...tokens,
-          userId: storedAuthTokens?.userId ?? null,
-          userName: storedAuthTokens?.userName ?? null,
-          roleName: storedAuthTokens?.roleName ?? null,
-          roleId: storedAuthTokens?.roleId ?? null,
-        });
+      .then(async (tokens) => {
+        const { useAuthStore } = await import("../stores/authStore");
+        if (getStoredRefreshToken() !== refreshToken) {
+          return null;
+        }
+        useAuthStore.getState().applyTokens(tokens);
+        if (isStoredAccessTokenExpired(0)) {
+          throw new Error("갱신된 액세스 토큰이 만료되었습니다.");
+        }
         return tokens.accessToken;
       })
-      .catch(() => {
-        clearStoredAuthTokens();
+      .catch(async () => {
+        const { useAuthStore } = await import("../stores/authStore");
+        if (getStoredRefreshToken() === refreshToken) {
+          useAuthStore.getState().clearAuth();
+        }
         return null;
       })
       .finally(() => {
@@ -138,7 +143,13 @@ axiosInstance.interceptors.response.use(
 
     originalRequest._retry = true;
 
-    const refreshedAccessToken = await getRefreshedAccessToken();
+    const currentAccessToken = getStoredAccessToken();
+    const requestAuthorization = getHeaderValue(originalRequest.headers, "Authorization");
+    const refreshedAccessToken = currentAccessToken &&
+      requestAuthorization !== `Bearer ${currentAccessToken}` &&
+      !isStoredAccessTokenExpired(0)
+      ? currentAccessToken
+      : await getRefreshedAccessToken();
 
     if (!refreshedAccessToken) {
       return Promise.reject(error);

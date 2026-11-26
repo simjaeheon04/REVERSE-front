@@ -20,10 +20,37 @@ export type StoredAuthTokens = {
 
 const isBrowser = typeof window !== "undefined";
 
-const isExpired = (expiry: string, skewMs = 0) => {
-  const expiresAt = Date.parse(expiry);
+const getExpiryTime = (expiry: string, token: string) => {
+  // LocalDateTime responses have no guaranteed timezone. JWT exp is an absolute time.
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:?\d{2})?$/i.exec(expiry);
+  if (!match) {
+    return NaN;
+  }
 
-  return Number.isFinite(expiresAt) && expiresAt <= Date.now() + skewMs;
+  const dateTime = `${match[1]}T${match[2]}.${(match[3] ?? "").padEnd(3, "0").slice(0, 3)}`;
+  const calendarTime = Date.parse(`${dateTime}Z`);
+  if (!Number.isFinite(calendarTime) || new Date(calendarTime).toISOString() !== `${dateTime}Z`) {
+    return NaN;
+  }
+
+  if (match[4]) {
+    return Date.parse(`${dateTime}${match[4]}`);
+  }
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload.exp === "number" && Number.isFinite(payload.exp)
+      ? payload.exp * 1000
+      : NaN;
+  } catch {
+    return NaN;
+  }
+};
+
+const isExpired = (expiry: string, token: string, skewMs = 0) => {
+  const expiresAt = getExpiryTime(expiry, token);
+
+  return !Number.isFinite(expiresAt) || expiresAt <= Date.now() + skewMs;
 };
 
 export const isStoredAccessTokenExpired = (skewMs = 5_000) => {
@@ -32,7 +59,7 @@ export const isStoredAccessTokenExpired = (skewMs = 5_000) => {
   }
 
   const expiry = window.localStorage.getItem(ACCESS_TOKEN_EXPIRY_KEY);
-  return expiry ? isExpired(expiry, skewMs) : false;
+  return !expiry || isExpired(expiry, getStoredAccessToken() ?? "", skewMs);
 };
 
 export const getStoredAccessToken = () =>
@@ -73,7 +100,8 @@ export const getStoredAuthTokens = (): StoredAuthTokens | null => {
     return null;
   }
 
-  if (isExpired(refreshTokenExpiry)) {
+  if (!Number.isFinite(getExpiryTime(accessTokenExpiry, accessToken)) ||
+      isExpired(refreshTokenExpiry, refreshToken)) {
     return null;
   }
 
@@ -92,6 +120,12 @@ export const getStoredAuthTokens = (): StoredAuthTokens | null => {
 export const setStoredAuthTokens = (tokens: StoredAuthTokens) => {
   if (!isBrowser) {
     return;
+  }
+
+  if (!tokens.accessToken || !tokens.refreshToken ||
+      !Number.isFinite(getExpiryTime(tokens.accessTokenExpiry, tokens.accessToken)) ||
+      isExpired(tokens.refreshTokenExpiry, tokens.refreshToken)) {
+    throw new Error("유효하지 않거나 만료된 인증 정보입니다.");
   }
 
   window.localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
