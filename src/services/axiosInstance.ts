@@ -8,7 +8,7 @@ import {
   setStoredAuthTokens,
 } from "../utils/tokenStorage";
 
-const DEFAULT_BASE_URL = "http://localhost:8080";
+const DEFAULT_BASE_URL = "https://api.nsu-reverse.website";
 const baseURL = import.meta.env.DEV
   ? ""
   : import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL;
